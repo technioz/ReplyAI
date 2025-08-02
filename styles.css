@@ -1,0 +1,157 @@
+/* ReplyAI Styles */
+.replyai-tone-container {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(239, 243, 244, 0.1);
+}
+
+.replyai-tone-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.replyai-tone-btn {
+  background: rgba(29, 155, 240, 0.1);
+  color: rgb(29, 155, 240);
+  border: 1px solid rgba(29, 155, 240, 0.3);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.replyai-tone-btn:hover {
+  background: rgba(29, 155, 240, 0.2);
+  border-color: rgba(29, 155, 240, 0.5);
+}
+
+.replyai-tone-btn:active {
+  background: rgba(29, 155, 240, 0.3);
+  transform: scale(0.95);
+}
+
+.replyai-tone-btn[data-tone="professional"] {
+  background: rgba(0, 186, 124, 0.1);
+  color: rgb(0, 186, 124);
+  border-color: rgba(0, 186, 124, 0.3);
+}
+
+.replyai-tone-btn[data-tone="professional"]:hover {
+  background: rgba(0, 186, 124, 0.2);
+  border-color: rgba(0, 186, 124, 0.5);
+}
+
+.replyai-tone-btn[data-tone="casual"] {
+  background: rgba(249, 24, 128, 0.1);
+  color: rgb(249, 24, 128);
+  border-color: rgba(249, 24, 128, 0.3);
+}
+
+.replyai-tone-btn[data-tone="casual"]:hover {
+  background: rgba(249, 24, 128, 0.2);
+  border-color: rgba(249, 24, 128, 0.5);
+}
+
+.replyai-tone-btn[data-tone="humorous"] {
+  background: rgba(255, 173, 31, 0.1);
+  color: rgb(255, 173, 31);
+  border-color: rgba(255, 173, 31, 0.3);
+}
+
+.replyai-tone-btn[data-tone="humorous"]:hover {
+  background: rgba(255, 173, 31, 0.2);
+  border-color: rgba(255, 173, 31, 0.5);
+}
+
+.replyai-tone-btn[data-tone="empathetic"] {
+  background: rgba(120, 86, 255, 0.1);
+  color: rgb(120, 86, 255);
+  border-color: rgba(120, 86, 255, 0.3);
+}
+
+.replyai-tone-btn[data-tone="empathetic"]:hover {
+  background: rgba(120, 86, 255, 0.2);
+  border-color: rgba(120, 86, 255, 0.5);
+}
+
+.replyai-tone-btn[data-tone="analytical"] {
+  background: rgba(255, 122, 0, 0.1);
+  color: rgb(255, 122, 0);
+  border-color: rgba(255, 122, 0, 0.3);
+}
+
+.replyai-tone-btn[data-tone="analytical"]:hover {
+  background: rgba(255, 122, 0, 0.2);
+  border-color: rgba(255, 122, 0, 0.5);
+}
+
+.replyai-tone-btn[data-tone="enthusiastic"] {
+  background: rgba(255, 0, 0, 0.1);
+  color: rgb(255, 0, 0);
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
+.replyai-tone-btn[data-tone="enthusiastic"]:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+
+.replyai-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(113, 118, 123);
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.replyai-loading::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(29, 155, 240, 0.3);
+  border-top: 2px solid rgb(29, 155, 240);
+  border-radius: 50%;
+  animation: replyai-spin 1s linear infinite;
+}
+
+@keyframes replyai-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .replyai-tone-container {
+    border-top-color: rgba(239, 243, 244, 0.1);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .replyai-tone-buttons {
+    gap: 6px;
+  }
+  
+  .replyai-tone-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Ensure buttons don't interfere with X's native elements */
+.replyai-tone-container {
+  position: relative;
+  z-index: 1000;
+}
+
+.replyai-tone-btn {
+  position: relative;
+  z-index: 1001;
+} 

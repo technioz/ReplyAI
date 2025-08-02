@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to ReplyAI</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .welcome-container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 600px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #1d9bf0, #794bc4);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 32px;
+      margin: 0 auto 24px;
+    }
+
+    h1 {
+      color: #0f1419;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 16px;
+    }
+
+    .subtitle {
+      color: #536471;
+      font-size: 16px;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 32px 0;
+    }
+
+    .feature {
+      text-align: left;
+      padding: 20px;
+      background: #f7f9fa;
+      border-radius: 12px;
+      border-left: 4px solid #1d9bf0;
+    }
+
+    .feature h3 {
+      color: #0f1419;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+
+    .feature p {
+      color: #536471;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .setup-steps {
+      background: #f7f9fa;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 32px 0;
+      text-align: left;
+    }
+
+    .setup-steps h3 {
+      color: #0f1419;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px;
+      text-align: center;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      background: #1d9bf0;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-content h4 {
+      color: #0f1419;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+
+    .step-content p {
+      color: #536471;
+      font-size: 13px;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .cta-button {
+      background: #1d9bf0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-top: 16px;
+    }
+
+    .cta-button:hover {
+      background: #1a8cd8;
+    }
+
+    .tones-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin: 24px 0;
+    }
+
+    .tone-preview {
+      background: rgba(29, 155, 240, 0.1);
+      color: rgb(29, 155, 240);
+      border: 1px solid rgba(29, 155, 240, 0.3);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .tone-preview.professional {
+      background: rgba(0, 186, 124, 0.1);
+      color: rgb(0, 186, 124);
+      border-color: rgba(0, 186, 124, 0.3);
+    }
+
+    .tone-preview.casual {
+      background: rgba(249, 24, 128, 0.1);
+      color: rgb(249, 24, 128);
+      border-color: rgba(249, 24, 128, 0.3);
+    }
+
+    .tone-preview.humorous {
+      background: rgba(255, 173, 31, 0.1);
+      color: rgb(255, 173, 31);
+      border-color: rgba(255, 173, 31, 0.3);
+    }
+
+    .tone-preview.empathetic {
+      background: rgba(120, 86, 255, 0.1);
+      color: rgb(120, 86, 255);
+      border-color: rgba(120, 86, 255, 0.3);
+    }
+
+    .tone-preview.analytical {
+      background: rgba(255, 122, 0, 0.1);
+      color: rgb(255, 122, 0);
+      border-color: rgba(255, 122, 0, 0.3);
+    }
+
+    .tone-preview.enthusiastic {
+      background: rgba(255, 0, 0, 0.1);
+      color: rgb(255, 0, 0);
+      border-color: rgba(255, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="welcome-container">
+    <div class="logo">X</div>
+    <h1>Welcome to ReplyAI!</h1>
+    <p class="subtitle">
+      Generate AI-powered replies to X posts with different tones. 
+      Make your social media interactions more engaging and efficient.
+    </p>
+
+    <div class="features">
+      <div class="feature">
+        <h3>🎯 Multiple Tones</h3>
+        <p>Choose from 6 different tones: Professional, Casual, Humorous, Empathetic, Analytical, and Enthusiastic.</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ Instant Generation</h3>
+        <p>Get AI-generated replies instantly with just one click. No more staring at blank reply boxes.</p>
+      </div>
+      <div class="feature">
+        <h3>🔒 Privacy First</h3>
+        <p>Your data stays secure. We only send the necessary information to generate relevant replies.</p>
+      </div>
+      <div class="feature">
+        <h3>🎨 Seamless Integration</h3>
+        <p>Works seamlessly with X's interface. No disruption to your normal workflow.</p>
+      </div>
+    </div>
+
+    <div class="tones-preview">
+      <span class="tone-preview professional">Professional</span>
+      <span class="tone-preview casual">Casual</span>
+      <span class="tone-preview humorous">Humorous</span>
+      <span class="tone-preview empathetic">Empathetic</span>
+      <span class="tone-preview analytical">Analytical</span>
+      <span class="tone-preview enthusiastic">Enthusiastic</span>
+    </div>
+
+    <div class="setup-steps">
+      <h3>🚀 Quick Setup</h3>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Configure n8n Webhook</h4>
+          <p>Set up your n8n workflow and get the webhook URL</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+                  <h4>Configure Extension</h4>
+        <p>Click the extension icon in your toolbar to open settings</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Start Replying</h4>
+          <p>Go to X and start generating AI-powered replies!</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="cta-button">Get Started</button>
+  </div>
+
+  <script src="welcome.js"></script>
+</body>
+</html> 
