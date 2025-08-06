@@ -3,266 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>ReplyAI Settings</title>
-  <style>
-    body {
-      width: 350px;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #ffffff;
-      color: #0f1419;
-      margin: 0;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #eff3f4;
-    }
-
-    .logo {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #1d9bf0, #794bc4);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #0f1419;
-      margin: 0;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      color: #536471;
-      margin-bottom: 6px;
-    }
-
-    input[type="url"], input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cfd9de;
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: inherit;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease;
-    }
-
-    input[type="url"]:focus, input[type="text"]:focus {
-      outline: none;
-      border-color: #1d9bf0;
-      box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
-    }
-
-    .toggle-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #536471;
-      margin: 0;
-    }
-
-    .toggle {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      background: #cfd9de;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    .toggle.active {
-      background: #1d9bf0;
-    }
-
-    .toggle::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      background: white;
-      border-radius: 50%;
-      transition: transform 0.2s ease;
-    }
-
-    .toggle.active::after {
-      transform: translateX(20px);
-    }
-
-    .save-btn {
-      width: 100%;
-      padding: 12px;
-      background: #1d9bf0;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    .save-btn:hover {
-      background: #1a8cd8;
-    }
-
-    .save-btn:disabled {
-      background: #cfd9de;
-      cursor: not-allowed;
-    }
-
-    .status {
-      margin-top: 12px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      text-align: center;
-    }
-
-    .status.success {
-      background: rgba(0, 186, 124, 0.1);
-      color: #00ba7c;
-    }
-
-    .status.error {
-      background: rgba(244, 33, 46, 0.1);
-      color: #f4212e;
-    }
-
-    .help-text {
-      font-size: 12px;
-      color: #536471;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-
-    .tones-section {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid #eff3f4;
-    }
-
-    .tones-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #0f1419;
-      margin-bottom: 12px;
-    }
-
-    .tones-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .tone-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 6px;
-      background: #f7f9fa;
-      font-size: 12px;
-    }
-
-    .tone-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    .tone-color.professional { background: #00ba7c; }
-    .tone-color.casual { background: #f91880; }
-    .tone-color.humorous { background: #ffad1f; }
-    .tone-color.empathetic { background: #7856ff; }
-    .tone-color.analytical { background: #ff7a00; }
-    .tone-color.enthusiastic { background: #ff0000; }
-  </style>
+  <title>ReplyAI Settings</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Professional UI Libraries -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div class="header">
-    <div class="logo">X</div>
-    <h1 class="title">ReplyAI Settings</h1>
-  </div>
+<body class="replyai-popup" style="width: 400px !important; min-width: 400px !important; max-width: 400px !important; min-height: 600px !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important;">
+  <div class="noise-background"></div>
+  <div class="popup-container" style="width: 100% !important; min-width: 100% !important; max-width: 100% !important; height: 100% !important; min-height: 600px !important; padding: 24px !important; box-sizing: border-box !important;">
+    <div class="header">
+      <div class="logo">
+        <i class="fas fa-robot"></i>
+      </div>
+      <h1 class="title">ReplyAI Settings</h1>
+      <p class="subtitle">AI-powered reply generator for X</p>
+    </div>
 
-  <form id="settingsForm">
-    <div class="form-group">
-      <label for="n8nWebhookUrl">n8n Webhook URL</label>
-      <input 
-        type="url" 
-        id="n8nWebhookUrl" 
-        placeholder="https://your-n8n-instance.com/webhook/xbot"
-        required
-      >
-      <div class="help-text">
-        Enter the webhook URL from your n8n workflow. This is where ReplyAI will send requests to generate replies.
+    <form id="settingsForm">
+      <div class="form-group">
+        <label for="n8nWebhookUrl">
+          <i class="fas fa-link"></i>
+          n8n Webhook URL
+        </label>
+        <input 
+          type="url" 
+          id="n8nWebhookUrl" 
+          placeholder="https://your-n8n-instance.com/webhook/xbot"
+          required
+        >
+        <div class="help-text">
+          <i class="fas fa-info-circle"></i>
+          Enter the webhook URL from your n8n workflow. This is where ReplyAI will send requests to generate replies.
+        </div>
+      </div>
+
+      <div class="toggle-container">
+        <div class="toggle-label">
+          <i class="fas fa-power-off"></i>
+          Enable ReplyAI
+        </div>
+        <div class="toggle-switch" id="enableToggle">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="saveBtn">
+        <i class="fas fa-save"></i>
+        Save Settings
+      </button>
+    </form>
+
+    <div id="status" class="status" style="display: none;"></div>
+
+    <div class="tones-section">
+      <h3 class="tones-title">
+        <i class="fas fa-palette"></i>
+        Available Tones
+      </h3>
+      <div class="tones-grid">
+        <div class="tone-item">
+          <div class="tone-color professional"></div>
+          <span>Professional</span>
+          <i class="fas fa-briefcase"></i>
+        </div>
+        <div class="tone-item">
+          <div class="tone-color casual"></div>
+          <span>Casual</span>
+          <i class="fas fa-smile"></i>
+        </div>
+        <div class="tone-item">
+          <div class="tone-color humorous"></div>
+          <span>Humorous</span>
+          <i class="fas fa-laugh"></i>
+        </div>
+        <div class="tone-item">
+          <div class="tone-color empathetic"></div>
+          <span>Empathetic</span>
+          <i class="fas fa-heart"></i>
+        </div>
+        <div class="tone-item">
+          <div class="tone-color analytical"></div>
+          <span>Analytical</span>
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="tone-item">
+          <div class="tone-color enthusiastic"></div>
+          <span>Enthusiastic</span>
+          <i class="fas fa-fire"></i>
+        </div>
       </div>
     </div>
 
-    <div class="toggle-container">
-      <p class="toggle-label">Enable ReplyAI</p>
-      <div class="toggle" id="enableToggle"></div>
-    </div>
-
-    <button type="submit" class="save-btn" id="saveBtn">Save Settings</button>
-  </form>
-
-  <div id="status" class="status" style="display: none;"></div>
-
-  <div class="tones-section">
-    <h3 class="tones-title">Available Tones</h3>
-    <div class="tones-grid">
-      <div class="tone-item">
-        <div class="tone-color professional"></div>
-        <span>Professional</span>
-      </div>
-      <div class="tone-item">
-        <div class="tone-color casual"></div>
-        <span>Casual</span>
-      </div>
-      <div class="tone-item">
-        <div class="tone-color humorous"></div>
-        <span>Humorous</span>
-      </div>
-      <div class="tone-item">
-        <div class="tone-color empathetic"></div>
-        <span>Empathetic</span>
-      </div>
-      <div class="tone-item">
-        <div class="tone-color analytical"></div>
-        <span>Analytical</span>
-      </div>
-      <div class="tone-item">
-        <div class="tone-color enthusiastic"></div>
-        <span>Enthusiastic</span>
-      </div>
+    <div class="footer">
+      <p>Powered by AI • Made with ❤️</p>
     </div>
   </div>
 
