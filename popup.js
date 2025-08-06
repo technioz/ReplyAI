@@ -66,27 +66,21 @@ document.addEventListener('DOMContentLoaded', function() {
         isEnabled: isEnabled
       });
 
-      // Notify content script about settings update
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && (tab.url.includes('twitter.com') || tab.url.includes('x.com'))) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'settingsUpdated' });
-      }
-
       showStatus('Settings saved successfully!', 'success');
       
       // Re-enable save button
       setTimeout(() => {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save Settings';
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Settings';
       }, 2000);
 
     } catch (error) {
       console.error('Error saving settings:', error);
-      showStatus('Error saving settings', 'error');
+      showStatus('Error saving settings: ' + error.message, 'error');
       
       // Re-enable save button
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Save Settings';
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Settings';
     }
   }
 

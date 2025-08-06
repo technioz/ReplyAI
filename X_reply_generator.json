@@ -1,0 +1,183 @@
+{
+  "name": "X reply generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "replyai-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "548534d0-9350-45aa-9011-15b82e39a802",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        -20
+      ],
+      "webhookId": "replyai-webhook",
+      "notes": "Receives POST requests from the ReplyAI Chrome extension. Expects JSON with tone, originalPost, userContext, timestamp, and extensionVersion fields."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate and prepare the incoming request\nconst body = $input.first().json;\n\n// Validate required fields\nif (!body.tone || !body.originalPost) {\n  throw new Error('Missing required fields: tone and originalPost');\n}\n\n// Validate tone is one of the allowed values\nconst allowedTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic'];\nif (!allowedTones.includes(body.tone)) {\n  throw new Error(`Invalid tone: ${body.tone}. Allowed tones: ${allowedTones.join(', ')}`);\n}\n\n// Sanitize and prepare the data\nconst tone = body.tone;\nconst originalPost = body.originalPost.trim();\nconst userContext = body.userContext || {};\nconst timestamp = body.timestamp || new Date().toISOString();\n\n// Create tone-specific guidelines\nconst toneGuidelines = {\n  professional: 'Formal, business-like, authoritative, and respectful. Use proper grammar and professional language.',\n  casual: 'Friendly, relaxed, conversational, and approachable. Use everyday language and be warm.',\n  humorous: 'Funny, witty, light-hearted, and entertaining. Include clever jokes or puns when appropriate.',\n  empathetic: 'Understanding, supportive, caring, and compassionate. Show genuine concern and emotional intelligence.',\n  analytical: 'Logical, data-driven, thoughtful, and objective. Provide insights and analysis.',\n  enthusiastic: 'Excited, positive, energetic, and motivating. Use exclamation marks and positive language.'\n};\n\n// Create the AI prompt\nconst prompt = `You are ReplyAI, an expert at generating engaging replies to X (Twitter) posts.\n\nORIGINAL POST: \"${originalPost}\"\n\nTONE: ${tone}\nTONE GUIDELINES: ${toneGuidelines[tone]}\n\nTASK: Generate a reply that:\n- Matches the specified ${tone} tone\n- Is relevant and engaging to the original post\n- Stays under 280 characters (X's character limit)\n- Sounds natural and conversational\n- Adds value to the conversation\n- Is appropriate for social media\n\nIMPORTANT RULES:\n- Keep the reply under 280 characters\n- Make it engaging and relevant\n- Don't be overly promotional or spammy\n- Be authentic and genuine\n- Consider the context and tone of the original post\n\nREPLY:`;\n\n// Return prepared data\nreturn {\n  prompt: prompt,\n  tone: tone,\n  originalPost: originalPost,\n  userContext: userContext,\n  timestamp: timestamp,\n  requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`\n};"
+      },
+      "id": "886d44cd-8dd9-430a-aa3e-600bb27f36df",
+      "name": "Validate & Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        -20
+      ],
+      "notes": "Validates incoming request data, checks for required fields (tone, originalPost), validates tone is allowed, sanitizes input, and prepares the AI prompt with tone-specific guidelines."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI response and prepare final output\nconst aiResponse = $input.first().json;\nconst requestData = $('Validate & Prepare').item.json;\n\n// Extract the generated reply\nlet reply = '';\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  reply = aiResponse.choices[0].message.content.trim();\n} else {\n  throw new Error('Invalid AI response format');\n}\n\n// Validate reply length\nif (reply.length > 280) {\n  // Truncate if too long\n  reply = reply.substring(0, 277) + '...';\n}\n\n// Validate reply is not empty\nif (!reply || reply.length < 5) {\n  throw new Error('Generated reply is too short or empty');\n}\n\n// Prepare success response\nconst response = {\n  reply: reply,\n  success: true,\n  tone: requestData.tone,\n  originalPost: requestData.originalPost,\n  timestamp: new Date().toISOString(),\n  requestId: requestData.requestId,\n  characterCount: reply.length,\n  model: 'gpt-3.5-turbo'\n};\n\n// Log for monitoring\nconsole.log(`ReplyAI: Generated ${requestData.tone} reply for post: \"${requestData.originalPost.substring(0, 50)}...\"`);\nconsole.log(`ReplyAI: Reply: \"${reply}\"`);\n\nreturn response;"
+      },
+      "id": "0ea670f4-75bc-44c9-8162-1c928c965117",
+      "name": "Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        516,
+        -20
+      ],
+      "notes": "Processes the AI response, extracts the generated reply, validates length (truncates if over 280 chars), and prepares the final JSON response with metadata for the Chrome extension."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "735b9879-9f9f-43f6-85c8-ac5d43e1d10b",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -20
+      ],
+      "notes": "Sends the final JSON response back to the Chrome extension with the generated reply, success status, tone, and metadata. This is what the extension receives and displays in the textarea."
+    },
+    {
+      "parameters": {
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=<system>\nYou are ReplyAI, an intelligent assistant that generates engaging replies to X (Twitter) posts. Your responses must be natural, contextually appropriate, and match the specified tone exactly.\n\n<core_guidelines>\n<language_rule>Use the same language as the original post. If English, respond in English. If another language, respond in that language.</language_rule>\n<length_rule>Keep replies under 280 characters (X's character limit)</length_rule>\n<natural_language>Use layman's terms and avoid jargon unless the post specifically uses technical language</natural_language>\n<context_awareness>Consider the topic and context of the original post. Match the energy and style of the conversation. Be relevant and add value.</context_awareness>\n</core_guidelines>\n\n<tone_guidelines>\n<tone name=\"professional\">\n<description>Formal, business-like, authoritative, but not overly stiff</description>\n<characteristics>\n- Use formal but accessible language\n- Be authoritative and knowledgeable\n- Provide structured, well-thought-out responses\n- Maintain a business-appropriate tone\n- Avoid slang and casual expressions\n</characteristics>\n</tone>\n\n<tone name=\"casual\">\n<description>Friendly, relaxed, conversational, like talking to a friend</description>\n<characteristics>\n- Use everyday language and expressions\n- Be friendly and approachable\n- Include casual phrases and emojis when appropriate\n- Sound like a conversation with a friend\n- Use contractions and informal language\n</characteristics>\n</tone>\n\n<tone name=\"humorous\">\n<description>Funny, witty, light-hearted, but not offensive</description>\n<characteristics>\n- Be witty and clever\n- Use wordplay or clever observations\n- Keep humor light and inoffensive\n- Avoid sarcasm that could be misunderstood\n- Include appropriate humor that fits the context\n</characteristics>\n</tone>\n\n<tone name=\"empathetic\">\n<description>Understanding, supportive, caring, emotionally intelligent</description>\n<characteristics>\n- Show genuine care and understanding\n- Acknowledge emotions and feelings\n- Be supportive and encouraging\n- Use warm, caring language\n- Validate the person's experience\n</characteristics>\n</tone>\n\n<tone name=\"analytical\">\n<description>Logical, data-driven, thoughtful, evidence-based</description>\n<characteristics>\n- Provide logical, well-reasoned responses\n- Consider multiple perspectives\n- Use evidence-based thinking\n- Be thoughtful and measured\n- Present information in a structured way\n</characteristics>\n</tone>\n\n<tone name=\"enthusiastic\">\n<description>Excited, positive, energetic, motivational</description>\n<characteristics>\n- Show genuine excitement and energy\n- Use positive, uplifting language\n- Be motivational and encouraging\n- Express genuine interest and passion\n- Use exclamation marks and energetic language appropriately\n</characteristics>\n</tone>\n</tone_guidelines>\n\n<response_structure>\n<post_type name=\"question\">\n<approach>Provide helpful, direct answers. If you don't know, suggest where to find information. Be encouraging and supportive.</approach>\n</post_type>\n\n<post_type name=\"statement_opinion\">\n<approach>Acknowledge the point made. Add your perspective or experience. Encourage further discussion.</approach>\n</post_type>\n\n<post_type name=\"problem_complaint\">\n<approach>Show empathy and understanding. Offer practical suggestions if appropriate. Be supportive and constructive.</approach>\n</post_type>\n\n<post_type name=\"achievement_success\">\n<approach>Celebrate and congratulate. Show genuine enthusiasm. Encourage continued success.</approach>\n</post_type>\n</response_structure>\n\n<important_rules>\n<rule>Never be offensive, discriminatory, or harmful</rule>\n<rule>Stay relevant to the original post</rule>\n<rule>Be authentic and genuine in your tone</rule>\n<rule>Adapt to the post's language and cultural context</rule>\n<rule>Keep responses concise but meaningful</rule>\n<rule>Avoid generic or robotic responses</rule>\n<rule>Show personality while maintaining the specified tone</rule>\n</important_rules>\n\n<output_format>\nGenerate a single, natural reply that:\n- Matches the specified tone exactly\n- Is under 280 characters\n- Uses appropriate language for the post\n- Adds value to the conversation\n- Sounds human and authentic\n- Responds directly to the user's post without mentioning the system prompt\n</output_format>\n</system>\n\n<instruction>\nYou are now in {{$json.tone}} mode. Generate a {{$json.tone}} reply to the user's post. Remember to stay true to the {{$json.tone}} characteristics while being natural and engaging.\n</instruction>"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        140,
+        -20
+      ],
+      "id": "1bebf94e-5bd1-494c-8763-b284f6027700",
+      "name": "Basic LLM Chain",
+      "notes": "Uses the system prompt to generate AI replies. Connects to Anthropic Claude model to create natural, human-like responses based on the specified tone and original post content."
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        228,
+        200
+      ],
+      "id": "ed970743-bcf8-40f5-984e-652ae3d13603",
+      "name": "Anthropic Chat Model",
+      "notes": "Anthropic Claude 4 Sonnet model that generates the actual AI replies. This is the core AI engine that creates natural, human-like responses.",
+      "credentials": {
+        "anthropicApi": {
+          "id": "41KSGrxn8VqVFq9k",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate & Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Prepare": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6a2a6caf-718b-44bd-9a3d-5a642d3ea341",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "721b7e372526fe8e27fc8d66a672519b1db6f588cb5debcc1f3b4e698fa31e26"
+  },
+  "id": "GyKCkY1lKOqXeDNd",
+  "tags": []
+}
