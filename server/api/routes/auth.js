@@ -28,14 +28,12 @@ const signupValidation = [
     .withMessage('Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
-  body('firstName')
+  body('fullName')
     .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('First name is required and must be less than 50 characters'),
-  body('lastName')
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Last name is required and must be less than 50 characters')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Full name is required and must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Full name can only contain letters and spaces')
 ];
 
 const loginValidation = [
@@ -62,12 +60,34 @@ const checkValidation = (req, res, next) => {
 // @route   POST /api/auth/signup
 // @access  Public
 const signup = catchAsync(async (req, res, next) => {
-  const { email, password, firstName, lastName, action, timestamp, source } = req.body;
+  const { email, password, fullName, action, timestamp, source } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(AppError.conflict('An account with this email already exists'));
+  }
+
+  // Split fullName into firstName and lastName
+  const nameParts = fullName.trim().split(/\s+/);
+  let firstName, lastName;
+  
+  if (nameParts.length === 1) {
+    // Only one name provided, use it as firstName
+    firstName = nameParts[0];
+    lastName = '';
+  } else {
+    // Multiple names provided, use first as firstName and rest as lastName
+    firstName = nameParts[0];
+    lastName = nameParts.slice(1).join(' ');
+  }
+
+  // Validate name lengths
+  if (firstName.length > 50) {
+    return next(AppError.badRequest('First name is too long (max 50 characters)'));
+  }
+  if (lastName.length > 50) {
+    return next(AppError.badRequest('Last name is too long (max 50 characters)'));
   }
 
   // Create new user
@@ -95,7 +115,7 @@ const signup = catchAsync(async (req, res, next) => {
   await newUser.save();
 
   // Log successful signup
-  console.log(`✅ New user registered: ${email} from ${source || 'unknown'}`);
+  console.log(`✅ New user registered: ${email} (${firstName} ${lastName}) from ${source || 'unknown'}`);
 
   res.status(201).json({
     success: true,

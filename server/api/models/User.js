@@ -127,9 +127,10 @@ const userSchema = new mongoose.Schema({
   },
   lastName: {
     type: String,
-    required: [true, 'Last name is required'],
+    required: false, // Made optional since some users might only provide first name
     trim: true,
-    maxlength: [50, 'Last name cannot exceed 50 characters']
+    maxlength: [50, 'Last name cannot exceed 50 characters'],
+    default: '' // Default to empty string
   },
   apiKey: {
     type: String,
@@ -272,7 +273,10 @@ userSchema.index({ 'apiKeys.key': 1, status: 1 });
 
 // Virtual for full name
 userSchema.virtual('fullName').get(function() {
-  return `${this.firstName} ${this.lastName}`;
+  if (this.lastName && this.lastName.trim()) {
+    return `${this.firstName} ${this.lastName}`;
+  }
+  return this.firstName;
 });
 
 // Virtual for account lock status
