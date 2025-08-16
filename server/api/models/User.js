@@ -11,8 +11,8 @@ const { v4: uuidv4 } = require('uuid');
 const sessionSchema = new mongoose.Schema({
   token: {
     type: String,
-    required: true,
-    unique: true
+    required: true
+    // Removed unique: true to prevent index issues with empty sessions
   },
   createdAt: {
     type: Date,
@@ -173,7 +173,10 @@ const userSchema = new mongoose.Schema({
   },
   
   // Authentication & Security
-  sessions: [sessionSchema],
+  sessions: {
+    type: [sessionSchema],
+    default: []
+  },
   loginAttempts: {
     type: Number,
     default: 0
