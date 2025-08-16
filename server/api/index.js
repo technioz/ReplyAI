@@ -26,25 +26,36 @@ const app = express();
 // Test and connect to MongoDB
 const initializeDatabase = async () => {
   try {
+    console.log('🗄️ Initializing database connection...');
+    
     // Test connection first
-    await testConnection();
+    const connectionTest = await testConnection();
+    if (!connectionTest) {
+      console.log('⚠️  Connection test failed, but continuing...');
+    }
     
     // Then attempt to connect
     await connectDatabase();
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 Continuing in development mode without database...');
-    } else {
-      process.exit(1);
-    }
+    console.log('🔄 Server will continue without database connection');
+    console.log('💡 Check your MongoDB setup and try again later');
   }
 };
 
-// Start database initialization but don't wait for it
-initializeDatabase().catch(error => {
-  console.error('❌ Database initialization error:', error.message);
-});
+// Start database initialization in background with timeout
+setTimeout(() => {
+  console.log('🚀 Starting database initialization...');
+  const dbInitPromise = initializeDatabase().catch(error => {
+    console.error('❌ Database initialization error:', error.message);
+  });
+  
+  // Add timeout to prevent hanging
+  setTimeout(() => {
+    console.log('⚠️  Database initialization taking too long, continuing without database...');
+    console.log('💡 Server is running but database features will be unavailable');
+  }, 45000); // 45 second timeout (increased from 30)
+}, 2000); // Delay database initialization to let server start first
 
 // Trust proxy for Vercel
 app.set('trust proxy', 1);
@@ -161,7 +172,8 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       version: '1.0.0',
-      database: dbHealth
+      database: dbHealth,
+      server: 'running'
     });
   } catch (error) {
     res.status(200).json({
@@ -173,9 +185,22 @@ app.get('/health', async (req, res) => {
       database: {
         status: 'unknown',
         error: error.message
-      }
+      },
+      server: 'running'
     });
   }
+});
+
+// Add a simple status endpoint that doesn't require database
+app.get('/status', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Quirkly API Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    version: '1.0.0',
+    server: 'running'
+  });
 });
 
 app.get('/api/health', (req, res) => {

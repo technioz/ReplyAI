@@ -265,8 +265,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // Indexes for performance (only add explicit indexes for fields without inline indexes)
-userSchema.index({ stripeCustomerId: 1 }, { sparse: true });
-userSchema.index({ 'sessions.token': 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ status: 1 });
 // Add index for apiKeys array queries
