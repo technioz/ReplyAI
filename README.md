@@ -1,33 +1,140 @@
-# ReplyAI - AI Reply Generator for X (Twitter)
+# Quirkly - Premium AI Reply Generator for X (Twitter)
 
-ReplyAI is a production-ready Chrome extension that generates human-like AI replies to X posts with different tones. It integrates seamlessly with X's interface and sends requests to an n8n workflow for AI processing.
+## Overview
+
+Quirkly is a premium Chrome extension that generates intelligent, contextual replies for X (Twitter) posts using advanced AI. With multiple tone options and a sleek, professional interface, Quirkly helps you engage more effectively on social media.
 
 ## ✨ Features
 
-- 🎯 **6 Different Tones**: Professional, Casual, Humorous, Empathetic, Analytical, and Enthusiastic
-- ⚡ **Instant Generation**: One-click AI reply generation with beautiful UI
-- 🔒 **Privacy First**: Only sends necessary data to your n8n workflow
-- 🎨 **Modern Design**: Professional UI with noise patterns and responsive design
-- 🌙 **Dark Mode**: Automatic dark mode detection and support
-- 📱 **Responsive**: Works perfectly on all screen sizes
-- ♿ **Accessible**: Full keyboard navigation and screen reader support
+### 🔐 **Secure Authentication**
+- API key-based authentication system
+- Secure user data storage
+- Dashboard integration for key management
 
-## 🚀 Quick Setup
+### 🎨 **Multiple AI Tones**
+- **Professional** 💼 - Business-appropriate responses
+- **Casual** 😊 - Relaxed, friendly conversations  
+- **Humorous** 😄 - Witty and entertaining replies
+- **Empathetic** ❤️ - Understanding and supportive responses
+- **Analytical** 🧠 - Data-driven, logical responses
+- **Enthusiastic** 🔥 - Energetic and passionate replies
 
-1. **Install Extension**: Load as unpacked extension in Chrome
-2. **Configure n8n**: Set up webhook endpoint in extension settings
-3. **Start Using**: Click tone buttons on X reply interface
+### 🚀 **Premium Design**
+- Dark theme matching modern UI standards
+- Smooth animations and transitions
+- Professional gradient effects
+- Responsive layout
 
-## 🔧 n8n Workflow Setup
+### 📊 **Usage Analytics**
+- Real-time API call tracking
+- Monthly usage limits
+- Subscription tier management
+
+## 🛠 Installation
+
+1. **Download the Extension**
+   - Clone this repository or download the ZIP file
+   - Extract to your desired location
+
+2. **Load in Chrome**
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode" (top-right toggle)
+   - Click "Load unpacked" and select the extension folder
+
+3. **Get Your API Key**
+   - Visit [Quirkly Dashboard](https://quirkly.technioz.com)
+   - Sign up for an account
+   - Generate your API key from the dashboard
+
+4. **Authenticate**
+   - Click the Quirkly extension icon
+   - Enter your API key
+   - Start generating replies!
+
+## 🔧 Configuration
+
+### Environment Setup
+The extension automatically detects whether it's running in development or production:
+
+**Development Mode** (unpacked extension):
+- Auth: `https://ai.technioz.com/webhook-test/quirkly-auth`
+- Reply: `https://ai.technioz.com/webhook-test/replyai-webhook`
+- Dashboard: `http://localhost:3000`
+
+**Production Mode** (Chrome Web Store):
+- Auth: `https://ai.technioz.com/webhook/quirkly-auth`
+- Reply: `https://ai.technioz.com/webhook/replyai-webhook`
+- Dashboard: `https://quirkly.technioz.com`
+
+### Required Setup
+1. **API Key**: Obtain from the Quirkly dashboard
+2. **n8n Webhooks**: Set up both auth and reply endpoints
+3. **Permissions**: The extension requires access to X/Twitter domains
+
+### Settings
+- **Enable/Disable**: Toggle extension functionality
+- **Tone Selection**: Preview available AI tones
+- **Usage Stats**: Monitor your API call usage
+
+### Development Configuration
+The extension uses `config.js` for environment management:
+- Automatically detects development vs production
+- Switches endpoints based on environment
+- Provides debug information in console
+
+## 🎯 How to Use
+
+1. **Navigate to X (Twitter)**
+2. **Find a post you want to reply to**
+3. **Click the reply button** (standard X interface)
+4. **Look for Quirkly buttons** above the text area
+5. **Select your preferred tone** (Professional, Casual, etc.)
+6. **Wait for AI generation** (usually 2-3 seconds)
+7. **Review and send** the generated reply
+
+## 🏗 Technical Architecture
+
+### Files Structure
+```
+XBot/
+├── manifest.json          # Extension configuration
+├── popup.html            # Settings interface
+├── popup.js              # Popup functionality
+├── content.js            # X/Twitter integration
+├── background.js         # Service worker
+├── styles.css            # Premium styling
+└── icons/                # Extension icons
+    ├── icon16.png
+    ├── icon48.png
+    └── icon128.png
+```
+
+### Authentication Flow
+1. User enters API key in popup
+2. Extension validates key with server
+3. User data stored securely in Chrome storage
+4. Content script checks authentication before showing buttons
+5. All API requests include authentication headers
+
+### API Integration
+- **Endpoint**: `https://ai.technioz.com/webhook/replyai-webhook`
+- **Method**: POST
+- **Authentication**: Bearer token (API key)
+- **Payload**: Original post content, selected tone, user data
 
 ### Request Format
 ```json
 {
   "tone": "professional",
   "originalPost": "Which language is best to start DSA?",
-  "userContext": { "username": "", "displayName": "" },
+  "apiKey": "user_api_key_here",
+  "user": {
+    "id": "user_123",
+    "email": "user@example.com",
+    "subscriptionTier": "free"
+  },
   "timestamp": "2025-01-27T10:30:00.000Z",
-  "extensionVersion": "1.0.0"
+  "source": "chrome-extension"
 }
 ```
 
@@ -37,78 +144,90 @@ ReplyAI is a production-ready Chrome extension that generates human-like AI repl
   "reply": "For DSA, I'd recommend starting with Python. It's beginner-friendly with clean syntax and extensive libraries.",
   "success": true,
   "tone": "professional",
-  "characterCount": 108,
-  "model": "claude-sonnet-4-20250514"
+  "user": {
+    "apiCallsUsed": 46,
+    "apiCallsLimit": 100
+  }
 }
 ```
 
-### Workflow Structure
-1. **Webhook Trigger**: Receives POST requests from extension
-2. **Validate & Prepare**: Validates input and prepares AI prompt
-3. **AI Processing**: Uses Claude 4 Sonnet for natural, human-like responses
-4. **Process Response**: Validates and formats the reply
-5. **Success Response**: Returns JSON with generated reply
+## 🔒 Security & Privacy
+
+- **No Data Logging**: We don't store your posts or generated replies
+- **Secure API Keys**: Stored locally in Chrome's encrypted storage
+- **HTTPS Only**: All communications use secure protocols
+- **Minimal Permissions**: Only requests necessary browser permissions
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Extension not showing buttons:**
+- Verify you're authenticated with a valid API key
+- Check that the extension is enabled in settings
+- Refresh the X/Twitter page
+
+**Authentication failing:**
+- Ensure API key is copied correctly from dashboard
+- Check your internet connection
+- Verify your subscription is active
+
+**Generated replies not appearing:**
+- Try refreshing the page
+- Check browser console for error messages
+- Ensure you have remaining API calls in your quota
+
+### Debug Mode
+Enable Chrome Developer Tools and check the Console tab for detailed logs:
+- Extension logs are prefixed with "Quirkly:"
+- Network requests show API communication
+- Storage tab shows saved authentication data
+
+## 🚀 Production Deployment
+
+### Pre-deployment Checklist
+- [x] API keys configured correctly
+- [x] n8n webhook endpoint accessible
+- [x] All permissions properly set
+- [x] Icons and branding updated
+- [x] Error handling tested
+- [x] Authentication flow verified
+- [x] Premium design implemented
+- [x] Responsive layout tested
+
+### Chrome Web Store Submission
+1. Update `manifest.json` version
+2. Test on multiple Chrome versions
+3. Prepare store assets (screenshots, descriptions)
+4. Submit for review
 
 ## 🎨 Design Features
 
-- **Modern UI**: Clean, professional design with gradient buttons
-- **Noise Patterns**: Subtle animated background patterns
+- **Premium Dark Theme**: Matches dashboard design system
+- **Gradient Effects**: Professional brand colors (#6D5EF8, #22D3EE)
+- **Smooth Animations**: Hover effects, loading states, notifications
+- **Plus Jakarta Sans Font**: Professional typography
 - **Responsive Grid**: Adapts to different screen sizes
-- **Smooth Animations**: Hover effects and transitions
-- **Dark Mode**: Automatic theme detection
 - **Accessibility**: Full keyboard and screen reader support
 
-## 📖 Usage
+## 🛣 Roadmap
 
-1. Navigate to any X post you want to reply to
-2. Click the "Reply" button
-3. Click any tone button to generate an AI reply
-4. The generated reply will automatically fill the textbox
-5. Edit if needed and post as usual
+- [ ] Support for additional social platforms
+- [ ] Custom tone creation
+- [ ] Reply templates
+- [ ] Bulk reply generation
+- [ ] Advanced analytics dashboard
 
-## 🧪 Testing
+## 📞 Support
 
-Run the integration test to verify your setup:
-
-```bash
-node test-integration.js <your-webhook-url>
-```
-
-## 🔍 Troubleshooting
-
-- **No tone buttons**: Check if extension is enabled and webhook URL is configured
-- **Replies not appearing**: Verify n8n workflow is running and returning correct format
-- **Extension not working**: Check browser console for errors
-- **UI issues**: Ensure you're using the latest version with modern CSS
-
-## 📁 Project Structure
-
-```
-ReplyAI/
-├── manifest.json          # Extension manifest
-├── content.js            # Main content script (enhanced)
-├── popup.html            # Settings popup (modern UI)
-├── popup.js              # Popup functionality
-├── background.js         # Background service worker
-├── styles.css            # Modern CSS with design system
-├── icons/                # Extension icons
-├── test-integration.js   # Integration test suite
-├── systemPrompt.xml      # Enhanced AI system prompt
-├── X_reply_generator.json # n8n workflow with notes
-└── README.md             # Documentation
-```
-
-## 🎯 Production Ready Features
-
-- ✅ **Error Handling**: Comprehensive error handling and user feedback
-- ✅ **Performance**: Optimized for speed and responsiveness
-- ✅ **Security**: Input validation and sanitization
-- ✅ **Accessibility**: WCAG compliant design
-- ✅ **Testing**: Integration test suite included
-- ✅ **Documentation**: Complete setup and usage guides
-- ✅ **Modern Design**: Professional UI with design system
-- ✅ **Responsive**: Works on all devices and screen sizes
+- **Dashboard**: [https://quirkly.technioz.com](https://quirkly.technioz.com)
+- **Documentation**: Available in dashboard
+- **Issues**: Report via GitHub or dashboard support
 
 ## 📄 License
 
-MIT License 
+Copyright © 2024 Technioz. All rights reserved.
+
+---
+
+**Made with ❤️ by Technioz**

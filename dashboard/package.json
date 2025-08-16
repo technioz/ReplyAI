@@ -1,7 +1,7 @@
 {
-  "name": "replyai-dashboard",
+  "name": "quirkly-dashboard",
   "version": "1.0.0",
-  "description": "ReplyAI Dashboard - User management and subscription platform",
+  "description": "Quirkly Dashboard - AI-powered reply generator for X (Twitter)",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,34 +11,36 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "14.0.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@supabase/supabase-js": "^2.38.5",
+    "@hookform/resolvers": "^3.3.2",
+    "@stripe/stripe-js": "^2.2.0",
+    "@stripe/react-stripe-js": "^2.4.0",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/auth-helpers-react": "^0.4.2",
-    "@stripe/stripe-js": "^2.2.0",
-    "stripe": "^14.10.0",
-    "framer-motion": "^10.16.16",
-    "lucide-react": "^0.294.0",
+    "@supabase/supabase-js": "^2.38.5",
+    "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0",
     "date-fns": "^2.30.0",
-    "react-hot-toast": "^2.4.1",
-    "zod": "^3.22.4",
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.294.0",
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-hook-form": "^7.48.2",
-    "@hookform/resolvers": "^3.3.2"
+    "react-hot-toast": "^2.4.1",
+    "stripe": "^14.10.0",
+    "tailwind-merge": "^2.0.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.39",
     "@types/react-dom": "^18.2.17",
-    "typescript": "^5.3.2",
-    "tailwindcss": "^3.3.6",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32",
     "eslint": "^8.54.0",
-    "eslint-config-next": "14.0.4"
+    "eslint-config-next": "14.0.4",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.2"
   },
   "engines": {
     "node": ">=18.17.0",

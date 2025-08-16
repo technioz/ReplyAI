@@ -1,17 +1,17 @@
-# ReplyAI Dashboard 🚀
+# Quirkly Dashboard 🚀
 
-A modern Next.js dashboard for managing ReplyAI Chrome extension users, subscriptions, and API keys.
+A modern Next.js dashboard for managing Quirkly Chrome extension users, subscriptions, and API keys.
 
-## ✨ **Features**
+## ✨ Features
 
-- **User Authentication**: Sign up, login, password reset
-- **API Key Management**: Generate, regenerate, and manage API keys
-- **Subscription Tiers**: Free, Pro, Business plans
-- **Usage Analytics**: Track API usage and limits
-- **Dashboard**: User statistics and management
-- **Payment Integration**: Stripe for subscriptions (coming soon)
+- User Authentication: Sign up, login, password reset
+- API Key Management: Generate, regenerate, and manage API keys
+- Subscription Tiers: Free, Pro, Business plans
+- Usage Analytics: Track API usage and limits
+- Dashboard: User statistics and management
+- Payment Integration: Stripe for subscriptions (coming soon)
 
-## 🏗️ **Architecture**
+## 🏗️ Architecture
 
 ```
 Dashboard (Next.js + Supabase)
@@ -22,28 +22,28 @@ Dashboard (Next.js + Supabase)
 └── Authentication: Supabase Auth
 ```
 
-## 🚀 **Quick Start**
+## 🚀 Quick Start
 
-### **1. Install Dependencies**
+### 1. Install Dependencies
 ```bash
 cd dashboard
 npm install
 ```
 
-### **2. Set up Environment Variables**
+### 2. Set up Environment Variables
 ```bash
 cp env.example .env.local
 # Fill in your Supabase and Stripe credentials
 ```
 
-### **3. Run Development Server**
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
 
-### **4. Open [http://localhost:3000](http://localhost:3000)**
+### 4. Open [http://localhost:3000](http://localhost:3000)
 
-## 🔧 **Environment Variables**
+## 🔧 Environment Variables
 
 ```env
 # Supabase
@@ -60,7 +60,7 @@ STRIPE_WEBHOOK_SECRET=your_webhook_secret
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-## 📁 **Project Structure**
+## 📁 Project Structure
 
 ```
 dashboard/
@@ -84,50 +84,50 @@ dashboard/
 └── env.example              # Environment variables template
 ```
 
-## 🎨 **Design System**
+## 🎨 Design System
 
-### **Colors**
-- **Primary**: Blue (#1d9bf0) - Main brand color
-- **Secondary**: Gray (#536471) - Text and borders
-- **Accent**: Green (#00ba7c) - Success and highlights
-- **Danger**: Pink (#f91880) - Errors and warnings
+### Colors
+- Primary: Blue (#1d9bf0) - Main brand color
+- Secondary: Gray (#536471) - Text and borders
+- Accent: Green (#00ba7c) - Success and highlights
+- Danger: Pink (#f91880) - Errors and warnings
 
-### **Components**
-- **Button**: Multiple variants (default, outline, ghost, etc.)
-- **Input**: Form inputs with validation and icons
-- **Card**: Content containers with shadows and hover effects
-- **Typography**: Inter font family with consistent sizing
+### Components
+- Button: Multiple variants (default, outline, ghost, etc.)
+- Input: Form inputs with validation and icons
+- Card: Content containers with shadows and hover effects
+- Typography: Inter font family with consistent sizing
 
-## 🔐 **Authentication Flow**
+## 🔐 Authentication Flow
 
 1. User signs up/logs in via form
 2. JWT token stored in localStorage
 3. Protected routes check authentication
 4. Dashboard shows user-specific data
 
-## 📱 **Responsive Design**
+## 📱 Responsive Design
 
 - Mobile-first approach
 - Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
 - Flexible grid layouts
 - Touch-friendly interactions
 
-## 🚀 **Deployment**
+## 🚀 Deployment
 
-### **Vercel (Recommended)**
+### Vercel (Recommended)
 1. Connect GitHub repository to Vercel
 2. Set environment variables
 3. Deploy automatically on push to main branch
 
-### **Manual Deployment**
+### Manual Deployment
 ```bash
 npm run build
 npm start
 ```
 
-## 🔧 **Development**
+## 🔧 Development
 
-### **Available Scripts**
+### Available Scripts
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -136,15 +136,15 @@ npm run lint         # Run ESLint
 npm run type-check   # Run TypeScript check
 ```
 
-### **Code Quality**
+### Code Quality
 - TypeScript for type safety
 - ESLint for code linting
 - Prettier for code formatting
 - Tailwind CSS for styling
 
-## 📊 **Database Schema**
+## 📊 Database Schema
 
-### **Users Table**
+### Users Table
 ```sql
 CREATE TABLE users (
   id UUID REFERENCES auth.users PRIMARY KEY,
@@ -159,7 +159,7 @@ CREATE TABLE users (
 );
 ```
 
-### **API Keys Table**
+### API Keys Table
 ```sql
 CREATE TABLE api_keys (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -172,7 +172,7 @@ CREATE TABLE api_keys (
 );
 ```
 
-## 🌟 **Next Steps**
+## 🌟 Next Steps
 
 - [ ] Integrate with Supabase backend
 - [ ] Add Stripe payment processing
@@ -183,7 +183,7 @@ CREATE TABLE api_keys (
 - [ ] Implement email notifications
 - [ ] Add dark mode support
 
-## 🤝 **Contributing**
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -191,16 +191,16 @@ CREATE TABLE api_keys (
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 **License**
+## 📄 License
 
 MIT License - see LICENSE file for details
 
-## 🆘 **Support**
+## 🆘 Support
 
-- **Documentation**: [docs.replyai.tech](https://docs.replyai.tech)
-- **Email**: support@replyai.tech
-- **Issues**: [GitHub Issues](https://github.com/technioz/ReplyAI/issues)
+- Documentation: [docs.quirkly.app](https://docs.quirkly.app)
+- Email: support@quirkly.app
+- Issues: [GitHub Issues](https://github.com/technioz/Quirkly/issues)
 
----
 
-**Built with ❤️ by the ReplyAI Team**
+
+Built with ❤️ by the Quirkly Team

@@ -1,15 +1,33 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import QuirklyDashboardConfig from '@/lib/config';
 
 interface User {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   fullName?: string;
-  avatarUrl?: string;
-  subscriptionTier: 'free' | 'pro' | 'business';
-  apiCallsUsed: number;
-  apiCallsLimit: number;
+  apiKey?: string;
+  role?: 'user' | 'admin';
+  status: 'active' | 'suspended' | 'expired';
+  hasActiveSubscription?: boolean;
+  credits?: {
+    available: number;
+    used: number;
+    total: number;
+    lastResetAt: string;
+  };
+  preferences?: {
+    notifications?: {
+      email: boolean;
+      marketing: boolean;
+    };
+    defaultTone?: string;
+  };
+  createdAt: string;
+  lastLoginAt?: string;
 }
 
 interface AuthContextType {
@@ -35,21 +53,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       // Check localStorage for existing token
-      const token = localStorage.getItem('replyai_token');
+      const token = localStorage.getItem('quirkly_token');
       if (token) {
-        // Validate token and get user data
-        // For now, we'll simulate a user
-        setUser({
-          id: '1',
-          email: 'user@example.com',
-          fullName: 'Demo User',
-          subscriptionTier: 'free',
-          apiCallsUsed: 45,
-          apiCallsLimit: 100,
+        // Validate token with authentication server
+        const authUrl = QuirklyDashboardConfig.getAuthUrl();
+        
+        const response = await fetch(authUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'validate_session',
+            token: token,
+            timestamp: new Date().toISOString(),
+            source: 'dashboard'
+          })
         });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setUser(data.user);
+          } else {
+            // Invalid token, remove it
+            localStorage.removeItem('quirkly_token');
+          }
+        } else {
+          // Token validation failed, remove it
+          localStorage.removeItem('quirkly_token');
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      // Remove invalid token on error
+      localStorage.removeItem('quirkly_token');
     } finally {
       setLoading(false);
     }
@@ -58,21 +97,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo purposes, create a mock user
-      const mockUser: User = {
-        id: '1',
-        email,
-        fullName: email.split('@')[0],
-        subscriptionTier: 'free',
-        apiCallsUsed: 45,
-        apiCallsLimit: 100,
-      };
+      // Validate input
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
+      // Call authentication API
+      const authUrl = QuirklyDashboardConfig.getAuthUrl();
       
-      setUser(mockUser);
-      localStorage.setItem('replyai_token', 'demo_token');
+      const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'login',
+          email: email.toLowerCase().trim(),
+          password: password,
+          timestamp: new Date().toISOString(),
+          source: 'dashboard',
+          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+          ipAddress: 'client-side' // Will be detected server-side
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Invalid email or password');
+        } else if (response.status === 403) {
+          throw new Error('Account suspended or expired');
+        } else if (response.status === 429) {
+          throw new Error('Too many login attempts. Please try again later');
+        }
+        throw new Error('Login failed. Please try again');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.user && data.token) {
+        setUser(data.user);
+        localStorage.setItem('quirkly_token', data.token);
+      } else {
+        throw new Error(data.message || 'Login failed');
+      }
     } catch (error) {
       console.error('Sign in failed:', error);
       throw error;
@@ -84,21 +153,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo purposes, create a mock user
-      const mockUser: User = {
-        id: '1',
-        email,
-        fullName,
-        subscriptionTier: 'free',
-        apiCallsUsed: 0,
-        apiCallsLimit: 100,
-      };
+      // Validate input
+      if (!email || !password || !fullName) {
+        throw new Error('All fields are required');
+      }
+
+      if (password.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
+      }
+
+      // Call authentication API
+      const authUrl = QuirklyDashboardConfig.getAuthUrl();
       
-      setUser(mockUser);
-      localStorage.setItem('replyai_token', 'demo_token');
+      const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'signup',
+          email: email.toLowerCase().trim(),
+          password: password,
+          fullName: fullName.trim(),
+          timestamp: new Date().toISOString(),
+          source: 'dashboard',
+          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+          ipAddress: 'client-side', // Will be detected server-side
+          subscriptionTier: 'free' // Default to free tier
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error('An account with this email already exists');
+        } else if (response.status === 400) {
+          throw new Error('Invalid email or password format');
+        } else if (response.status === 429) {
+          throw new Error('Too many signup attempts. Please try again later');
+        }
+        throw new Error('Signup failed. Please try again');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.user && data.token) {
+        setUser(data.user);
+        localStorage.setItem('quirkly_token', data.token);
+      } else {
+        throw new Error(data.message || 'Signup failed');
+      }
     } catch (error) {
       console.error('Sign up failed:', error);
       throw error;
@@ -110,14 +215,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const token = localStorage.getItem('quirkly_token');
+      if (token) {
+        // Notify server about logout
+        const authUrl = QuirklyDashboardConfig.getAuthUrl();
+        
+        try {
+          await fetch(authUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              action: 'logout',
+              token: token,
+              timestamp: new Date().toISOString(),
+              source: 'dashboard'
+            })
+          });
+        } catch (error) {
+          // Silent fail - logout locally even if server call fails
+          console.warn('Server logout failed, continuing with local logout:', error);
+        }
+      }
       
       setUser(null);
-      localStorage.removeItem('replyai_token');
+      localStorage.removeItem('quirkly_token');
     } catch (error) {
       console.error('Sign out failed:', error);
-      throw error;
+      // Always clear local state even if server call fails
+      setUser(null);
+      localStorage.removeItem('quirkly_token');
     } finally {
       setLoading(false);
     }

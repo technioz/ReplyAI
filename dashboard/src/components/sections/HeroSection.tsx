@@ -1,121 +1,101 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { motion } from 'framer-motion';
+import { ArrowRight, Sparkles, Zap, Clock } from 'lucide-react';
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-white py-20 sm:py-32">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50" />
-      <div className="absolute inset-0 noise-texture opacity-30" />
+    <section className="relative overflow-hidden section-padding-lg">
+      {/* Background with grain texture */}
+      <div className="absolute inset-0 bg-bg grain-overlay" />
+      
+      {/* Gradient ring accent */}
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-96 h-96 gradient-ring" />
       
       {/* Floating elements */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-primary-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-bounce-gentle" />
-      <div className="absolute top-40 right-20 w-72 h-72 bg-accent-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-bounce-gentle" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-accent/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-bounce-gentle" />
+      <div className="absolute top-40 right-20 w-72 h-72 bg-accent-cyan/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-bounce-gentle" style={{ animationDelay: '1s' }} />
       
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative section-container">
         <div className="text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-8"
-          >
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-6">
-              <span className="w-2 h-2 bg-primary-500 rounded-full mr-2"></span>
-              AI-Powered Social Media Engagement
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Generate{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">
-                Human-Like Replies
-              </span>
-              <br />
-              for X (Twitter)
-            </h1>
-            
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              ReplyAI helps you maintain meaningful social media presence without spending hours creating replies. 
-              Generate engaging, contextual responses in seconds with our Chrome extension.
-            </p>
-          </motion.div>
+          {/* Badge */}
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-8 border border-accent/20 fade-scale">
+            <Sparkles className="w-4 h-4 mr-2" />
+            #1 AI Reply Generator for X (Twitter)
+          </div>
+          
+          {/* Main Headline */}
+          <h1 className="text-hero font-bold text-ink mb-6 leading-editorial text-balance fade-scale">
+            Replies that read like you—<br />
+            <span className="gradient-text">on your best day.</span>
+          </h1>
+          
+          {/* Subheadline */}
+          <p className="text-subhero text-ink-mute mb-8 max-w-3xl mx-auto leading-tight text-balance fade-scale">
+            One-line responses that spark conversation, not cringe. 
+            Join 2,000+ creators who've increased their engagement by 340% while saving 15+ hours per week.
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
-          >
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 fade-scale">
             <Link href="/signup">
-              <Button size="xl" className="text-lg px-8 py-4">
-                Get Started Free
-              </Button>
+              <button className="btn-primary text-lg px-8 py-4 flex items-center space-x-2">
+                <span>Try Quirkly Free</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </Link>
             <Link href="#demo">
-              <Button variant="outline" size="xl" className="text-lg px-8 py-4">
-                Watch Demo
-              </Button>
+              <button className="btn-secondary text-lg px-8 py-4 flex items-center space-x-2">
+                <span>Watch 2-Min Demo</span>
+                <Zap className="w-5 h-5" />
+              </button>
             </Link>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex items-center justify-center space-x-8 text-sm text-gray-500"
-          >
+          {/* Trust indicators */}
+          <div className="flex items-center justify-center space-x-8 text-sm text-ink-mute mb-16 fade-scale">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-              <span>No credit card required</span>
+              <div className="w-2 h-2 bg-success rounded-full"></div>
+              <span>Free forever plan available</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-              <span>Free tier available</span>
+              <div className="w-2 h-2 bg-success rounded-full"></div>
+              <span>Setup in 60 seconds</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-              <span>Setup in 2 minutes</span>
+              <div className="w-2 h-2 bg-success rounded-full"></div>
+              <span>Cancel anytime</span>
             </div>
-          </motion.div>
+          </div>
+        </div>
+        
+        {/* Social Proof */}
+        <div className="text-center mb-16 fade-scale">
+          <p className="text-sm text-ink-mute mb-4">Trusted by creators, marketers, and businesses worldwide</p>
+          <div className="flex items-center justify-center space-x-8 opacity-60">
+            <div className="text-ink-mute font-medium">TechCrunch</div>
+            <div className="text-ink-mute font-medium">Buffer</div>
+            <div className="text-ink-mute font-medium">Hootsuite</div>
+            <div className="text-ink-mute font-medium">Later</div>
+          </div>
         </div>
 
         {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 fade-scale">
           <div className="text-center">
-            <div className="text-3xl font-bold text-primary-600 mb-2">50M+</div>
-            <div className="text-gray-600">Twitter Impressions</div>
+            <div className="text-3xl font-bold text-accent mb-2">340%</div>
+            <div className="text-ink-mute">Average engagement increase</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-primary-600 mb-2">100K+</div>
-            <div className="text-gray-600">Engaging Posts Created</div>
+            <div className="text-3xl font-bold text-accent mb-2 flex items-center justify-center">
+              <Clock className="w-8 h-8 mr-2" />
+              15+ hrs
+            </div>
+            <div className="text-ink-mute">Time saved per week</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-primary-600 mb-2">2K+</div>
-            <div className="text-gray-600">Marketers Growing</div>
+            <div className="text-3xl font-bold text-accent mb-2">2,000+</div>
+            <div className="text-ink-mute">Active creators</div>
           </div>
-        </motion.div>
-
-        {/* Social proof */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-sm text-gray-500 mb-4">Trusted by growing businesses and content creators worldwide</p>
-          <div className="flex items-center justify-center space-x-8 opacity-60">
-            <div className="text-gray-400 font-medium">OBI Real Estate</div>
-            <div className="text-gray-400 font-medium">Producta</div>
-            <div className="text-gray-400 font-medium">SavvyCal</div>
-            <div className="text-gray-400 font-medium">Novasoft</div>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

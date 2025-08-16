@@ -3,103 +3,157 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReplyAI Settings</title>
+  <title>Quirkly</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Professional UI Libraries -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="replyai-popup" style="width: 400px !important; min-width: 400px !important; max-width: 400px !important; min-height: 600px !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important;">
+<body class="quirkly-popup">
   <div class="noise-background"></div>
-  <div class="popup-container" style="width: 100% !important; min-width: 100% !important; max-width: 100% !important; height: 100% !important; min-height: 600px !important; padding: 24px !important; box-sizing: border-box !important;">
+  <div class="popup-container">
+    <!-- Header -->
     <div class="header">
       <div class="logo">
-        <i class="fas fa-robot"></i>
+        <div class="logo-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="logo-shine"></div>
       </div>
-      <h1 class="title">ReplyAI Settings</h1>
-      <p class="subtitle">AI-powered reply generator for X</p>
+      <h1 class="title">Quirkly</h1>
+      <p class="subtitle">AI-powered X replies</p>
     </div>
 
-    <form id="settingsForm">
+    <!-- Authentication Section -->
+    <div id="authSection" class="auth-section">
+      <div class="auth-message">
+        <i class="fas fa-key auth-icon"></i>
+        <h3>Authentication Required</h3>
+        <p>Enter your API key from the Quirkly dashboard to get started.</p>
+      </div>
+      
       <div class="form-group">
-        <label for="n8nWebhookUrl">
-          <i class="fas fa-link"></i>
-          n8n Webhook URL
+        <label for="apiKey">
+          <i class="fas fa-key"></i>
+          API Key
         </label>
-        <input 
-          type="url" 
-          id="n8nWebhookUrl" 
-          placeholder="https://your-n8n-instance.com/webhook/xbot"
-          required
-        >
+        <div class="input-container">
+          <input 
+            type="password" 
+            id="apiKey" 
+            placeholder="Enter your API key..."
+            required
+          >
+          <button type="button" class="toggle-visibility" id="toggleApiKey">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
         <div class="help-text">
           <i class="fas fa-info-circle"></i>
-          Enter the webhook URL from your n8n workflow. This is where ReplyAI will send requests to generate replies.
+          Get your API key from the <a href="#" id="dashboardLink" class="dashboard-link">Quirkly Dashboard</a>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="authenticateBtn">
+        <i class="fas fa-unlock"></i>
+        Authenticate
+      </button>
+    </div>
+
+    <!-- Settings Section (hidden initially) -->
+    <div id="settingsSection" class="settings-section" style="display: none;">
+      <div class="user-info">
+        <div class="user-avatar">
+          <span id="userInitials">U</span>
+        </div>
+        <div class="user-details">
+          <span id="userEmail">user@example.com</span>
+          <span class="user-status">Authenticated</span>
+        </div>
+        <button class="btn-ghost" id="signOutBtn">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="apiCallsUsed">0</span>
+            <span class="stat-label">Calls Used</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="apiCallsLimit">100</span>
+            <span class="stat-label">Monthly Limit</span>
+          </div>
         </div>
       </div>
 
       <div class="toggle-container">
         <div class="toggle-label">
           <i class="fas fa-power-off"></i>
-          Enable ReplyAI
+          Enable Extension
         </div>
         <div class="toggle-switch" id="enableToggle">
           <div class="toggle-slider"></div>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" id="saveBtn">
-        <i class="fas fa-save"></i>
-        Save Settings
-      </button>
-    </form>
-
-    <div id="status" class="status" style="display: none;"></div>
-
-    <div class="tones-section">
-      <h3 class="tones-title">
-        <i class="fas fa-palette"></i>
-        Available Tones
-      </h3>
-      <div class="tones-grid">
-        <div class="tone-item">
-          <div class="tone-color professional"></div>
-          <span>Professional</span>
-          <i class="fas fa-briefcase"></i>
-        </div>
-        <div class="tone-item">
-          <div class="tone-color casual"></div>
-          <span>Casual</span>
-          <i class="fas fa-smile"></i>
-        </div>
-        <div class="tone-item">
-          <div class="tone-color humorous"></div>
-          <span>Humorous</span>
-          <i class="fas fa-laugh"></i>
-        </div>
-        <div class="tone-item">
-          <div class="tone-color empathetic"></div>
-          <span>Empathetic</span>
-          <i class="fas fa-heart"></i>
-        </div>
-        <div class="tone-item">
-          <div class="tone-color analytical"></div>
-          <span>Analytical</span>
-          <i class="fas fa-brain"></i>
-        </div>
-        <div class="tone-item">
-          <div class="tone-color enthusiastic"></div>
-          <span>Enthusiastic</span>
-          <i class="fas fa-fire"></i>
+      <div class="tones-section">
+        <h3 class="tones-title">
+          <i class="fas fa-palette"></i>
+          Available Tones
+        </h3>
+        <div class="tones-grid">
+          <div class="tone-item" data-tone="professional">
+            <div class="tone-color professional"></div>
+            <span>Professional</span>
+            <i class="fas fa-briefcase"></i>
+          </div>
+          <div class="tone-item" data-tone="casual">
+            <div class="tone-color casual"></div>
+            <span>Casual</span>
+            <i class="fas fa-smile"></i>
+          </div>
+          <div class="tone-item" data-tone="humorous">
+            <div class="tone-color humorous"></div>
+            <span>Humorous</span>
+            <i class="fas fa-laugh"></i>
+          </div>
+          <div class="tone-item" data-tone="empathetic">
+            <div class="tone-color empathetic"></div>
+            <span>Empathetic</span>
+            <i class="fas fa-heart"></i>
+          </div>
+          <div class="tone-item" data-tone="analytical">
+            <div class="tone-color analytical"></div>
+            <span>Analytical</span>
+            <i class="fas fa-brain"></i>
+          </div>
+          <div class="tone-item" data-tone="enthusiastic">
+            <div class="tone-color enthusiastic"></div>
+            <span>Enthusiastic</span>
+            <i class="fas fa-fire"></i>
+          </div>
         </div>
       </div>
     </div>
 
+    <div id="status" class="status" style="display: none;"></div>
+
     <div class="footer">
-      <p>Powered by AI • Made with ❤️</p>
+      <p>Powered by AI • <a href="#" class="footer-link">Technioz</a></p>
     </div>
   </div>
 
+  <script src="config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html> 
