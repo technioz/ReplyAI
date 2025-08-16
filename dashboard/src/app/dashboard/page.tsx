@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Card } from '@/components/ui/Card';
@@ -9,24 +9,75 @@ import {
   Bot, 
   Key, 
   BarChart3, 
-  Settings, 
   LogOut,
   Plus,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  CreditCard,
+  Trash2,
+  Edit3,
+  Shield,
+  Settings,
+  Users
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import QuirklyDashboardConfig from '@/lib/config';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { ProfileSettings } from '@/components/user/ProfileSettings';
+import { DetailedAnalytics } from '@/components/analytics/DetailedAnalytics';
+
+interface ApiKey {
+  id: string;
+  key: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  isActive: boolean;
+}
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [loadingApiKeys, setLoadingApiKeys] = useState(true);
+  const [showNewKeyForm, setShowNewKeyForm] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+    } else if (user) {
+      fetchApiKeys();
     }
   }, [user, loading, router]);
+
+  const fetchApiKeys = async () => {
+    try {
+      const token = localStorage.getItem('quirkly_token');
+      if (!token) return;
+
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setApiKeys(data.apiKeys || []);
+      } else {
+        console.error('Failed to fetch API keys');
+      }
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+    } finally {
+      setLoadingApiKeys(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -39,16 +90,96 @@ export default function DashboardPage() {
   };
 
   const copyApiKey = () => {
-    navigator.clipboard.writeText('demo_api_key_123456789');
+    if (user?.apiKey) {
+      navigator.clipboard.writeText(user.apiKey);
+      toast.success('API key copied to clipboard');
+    } else {
+      toast.error('No API key available');
+    }
+  };
+
+  const toggleApiKeyVisibility = () => {
+    setShowApiKey(!showApiKey);
+  };
+
+  const maskApiKey = (apiKey: string) => {
+    if (!apiKey) return '';
+    return apiKey.slice(0, 8) + '•'.repeat(20) + apiKey.slice(-8);
+  };
+
+  const generateApiKey = async () => {
+    try {
+      const token = localStorage.getItem('quirkly_token');
+      if (!token) return;
+
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: newKeyName.trim() || 'New API Key'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('API key generated successfully');
+        setNewKeyName('');
+        setShowNewKeyForm(false);
+        await fetchApiKeys(); // Refresh the list
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to generate API key');
+      }
+    } catch (error) {
+      toast.error('Error generating API key');
+      console.error('Error generating API key:', error);
+    }
+  };
+
+  const deleteApiKey = async (keyId: string, keyName: string) => {
+    if (!confirm(`Are you sure you want to delete "${keyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('quirkly_token');
+      if (!token) return;
+
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys/${keyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        toast.success('API key deleted successfully');
+        await fetchApiKeys(); // Refresh the list
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to delete API key');
+      }
+    } catch (error) {
+      toast.error('Error deleting API key');
+      console.error('Error deleting API key:', error);
+    }
+  };
+
+  const copyApiKeyToClipboard = (apiKey: string) => {
+    navigator.clipboard.writeText(apiKey);
     toast.success('API key copied to clipboard');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-ink-mute">Loading...</p>
         </div>
       </div>
     );
@@ -59,153 +190,364 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-surface border-b border-stroke">
+        <div className="section-container">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">R</span>
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">Q</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">ReplyAI Dashboard</span>
+              <span className="text-xl font-bold text-ink">Quirkly Dashboard</span>
+              {user?.role === 'admin' && (
+                <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
+                  Admin
+                </span>
+              )}
             </div>
             
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-primary-600 font-medium text-sm">
+                <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
+                  <span className="text-accent font-medium text-sm">
                     {user.fullName?.charAt(0) || user.email.charAt(0)}
                   </span>
                 </div>
-                <span className="text-sm text-gray-700">{user.fullName || user.email}</span>
+                <span className="text-sm text-ink">{user.fullName || user.email}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <button className="btn-ghost" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user.fullName || user.email}!</h1>
-          <p className="text-gray-600">Manage your ReplyAI settings and monitor your usage.</p>
+      {/* Navigation */}
+      <nav className="bg-surface border-b border-stroke">
+        <div className="section-container">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveSection('overview')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSection === 'overview'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-ink-mute hover:text-ink'
+              }`}
+            >
+              <Bot className="h-4 w-4" />
+              <span>Overview</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveSection('settings')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSection === 'settings'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-ink-mute hover:text-ink'
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSection('analytics')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSection === 'analytics'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-ink-mute hover:text-ink'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>Analytics</span>
+            </button>
+
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setActiveSection('admin')}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeSection === 'admin'
+                    ? 'border-accent text-accent'
+                    : 'border-transparent text-ink-mute hover:text-ink'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                <span>Admin</span>
+              </button>
+            )}
+          </div>
         </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="section-container section-padding">
+        {activeSection === 'overview' && (
+          <>
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-ink">Welcome back, {user.fullName || user.email}!</h1>
+              <p className="text-ink-mute">Here's what's happening with your Quirkly account today.</p>
+            </div>
+          </>
+        )}
+
+        {activeSection === 'settings' && <ProfileSettings />}
+        
+        {activeSection === 'analytics' && <DetailedAnalytics />}
+        
+        {activeSection === 'admin' && user?.role === 'admin' && <AdminDashboard />}
+
+        {activeSection === 'overview' && (
+          <>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <div className="premium-card p-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mr-4">
-                <Bot className="h-6 w-6 text-primary-600" />
+              <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mr-4">
+                <Bot className="h-6 w-6 text-accent" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">API Calls Used</p>
-                <p className="text-2xl font-bold text-gray-900">{user.apiCallsUsed}</p>
+                <p className="text-sm font-medium text-ink-mute">Credits Used</p>
+                <p className="text-2xl font-bold text-ink">{user.credits?.used || 0}</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card>
+          <div className="premium-card p-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-accent-100 rounded-lg flex items-center justify-center mr-4">
-                <BarChart3 className="h-6 w-6 text-accent-600" />
+              <div className="w-12 h-12 bg-accent-cyan/20 rounded-lg flex items-center justify-center mr-4">
+                <BarChart3 className="h-6 w-6 text-accent-cyan" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Limit</p>
-                <p className="text-2xl font-bold text-gray-900">{user.apiCallsLimit}</p>
+                <p className="text-sm font-medium text-ink-mute">Credits Available</p>
+                <p className="text-2xl font-bold text-ink">{user.credits?.available || 0}</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card>
+          <div className="premium-card p-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-success-100 rounded-lg flex items-center justify-center mr-4">
-                <Key className="h-6 w-6 text-success-600" />
+              <div className="w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center mr-4">
+                <CreditCard className="h-6 w-6 text-success" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Plan</p>
-                <p className="text-2xl font-bold text-gray-900 capitalize">{user.subscriptionTier}</p>
+                <p className="text-sm font-medium text-ink-mute">Plan</p>
+                <p className="text-2xl font-bold text-ink capitalize">
+                  {user.hasActiveSubscription ? 'Pro' : 'Free'}
+                </p>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
 
-        {/* API Key Section */}
-        <Card className="mb-8">
+        {/* API Keys Management Section */}
+        <div className="premium-card p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">API Key</h2>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Generate New Key
-            </Button>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <code className="text-sm text-gray-700 font-mono">
-                demo_api_key_123456789
-              </code>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="ghost" onClick={copyApiKey}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
-                </Button>
-                <Button size="sm" variant="ghost">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Show
-                </Button>
-              </div>
+            <h2 className="text-lg font-semibold text-ink">API Keys</h2>
+            <div className="flex items-center space-x-3">
+              <button 
+                className="btn-ghost text-sm"
+                onClick={toggleApiKeyVisibility}
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                {showApiKey ? 'Hide Keys' : 'Show Keys'}
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={() => setShowNewKeyForm(!showNewKeyForm)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Generate New Key
+              </button>
             </div>
           </div>
+
+          {/* New Key Form */}
+          {showNewKeyForm && (
+            <div className="bg-surface rounded-button p-4 mb-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="text"
+                  placeholder="Enter key name (optional)"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-card border border-stroke rounded-lg text-ink placeholder-ink-mute focus:border-accent focus:outline-none"
+                />
+                <button
+                  onClick={generateApiKey}
+                  className="btn-primary"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewKeyForm(false);
+                    setNewKeyName('');
+                  }}
+                  className="btn-ghost"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           
-          <p className="text-sm text-gray-600 mt-3">
-            Use this API key in your ReplyAI Chrome extension to authenticate requests.
-          </p>
-        </Card>
+          {/* API Keys List */}
+          {loadingApiKeys ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-2"></div>
+              <p className="text-ink-mute">Loading API keys...</p>
+            </div>
+          ) : apiKeys.length === 0 ? (
+            <div className="text-center py-8">
+              <Key className="h-12 w-12 text-ink-mute mx-auto mb-3" />
+              <p className="text-ink-mute">No API keys found</p>
+              <p className="text-sm text-ink-mute mt-1">Generate your first API key to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {apiKeys.map((apiKey) => (
+                <div key={apiKey.id} className="bg-surface rounded-button p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-sm font-medium text-ink">{apiKey.name}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          apiKey.isActive 
+                            ? 'bg-success/20 text-success' 
+                            : 'bg-ink-mute/20 text-ink-mute'
+                        }`}>
+                          {apiKey.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <code className="text-sm text-ink-mute font-mono block truncate">
+                        {showApiKey ? apiKey.key : maskApiKey(apiKey.key)}
+                      </code>
+                      <p className="text-xs text-ink-mute mt-1">
+                        Created: {new Date(apiKey.createdAt).toLocaleDateString()}
+                        {apiKey.lastUsedAt && ` • Last used: ${new Date(apiKey.lastUsedAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2 ml-4">
+                      <button 
+                        className="btn-ghost text-sm"
+                        onClick={() => copyApiKeyToClipboard(apiKey.key)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <button 
+                        className="btn-ghost text-sm text-danger hover:bg-danger/10"
+                        onClick={() => deleteApiKey(apiKey.id, apiKey.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="mt-4 p-3 bg-accent/10 rounded-lg">
+            <p className="text-sm text-accent">
+              💡 Use these API keys in your Quirkly Chrome extension to authenticate requests. 
+              Keep them secure and don't share them publicly.
+            </p>
+          </div>
+        </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <Settings className="h-4 w-4 mr-2" />
-                Extension Settings
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
+          <div className="premium-card p-6">
+            <h3 className="text-lg font-semibold text-ink mb-4">Usage Analytics</h3>
+            <div className="space-y-4">
+              {/* Usage Chart */}
+              <div className="bg-surface rounded-button p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-ink">Credits Usage (Last 7 Days)</span>
+                  <span className="text-xs text-ink-mute">Daily</span>
+                </div>
+                
+                {/* Simple Bar Chart */}
+                <div className="flex items-end space-x-1 h-16">
+                  {[0, 2, 1, 4, 3, 0, 1].map((usage, index) => (
+                    <div key={index} className="flex-1 flex flex-col items-center">
+                      <div 
+                        className="w-full bg-accent rounded-sm transition-all duration-300"
+                        style={{ 
+                          height: `${Math.max(4, (usage / 5) * 100)}%`,
+                          opacity: usage === 0 ? 0.2 : 1
+                        }}
+                      ></div>
+                      <span className="text-xs text-ink-mute mt-1">
+                        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-between text-xs text-ink-mute mt-2">
+                  <span>0 credits</span>
+                  <span>5 credits</span>
+                </div>
+              </div>
+              
+              {/* Usage Summary */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-surface rounded-button p-3 text-center">
+                  <div className="text-lg font-bold text-accent">{user.credits?.used || 0}</div>
+                  <div className="text-xs text-ink-mute">This Week</div>
+                </div>
+                <div className="bg-surface rounded-button p-3 text-center">
+                  <div className="text-lg font-bold text-success">{user.credits?.available || 0}</div>
+                  <div className="text-xs text-ink-mute">Remaining</div>
+                </div>
+              </div>
+              
+              <button 
+                className="btn-secondary w-full justify-start"
+                onClick={() => setActiveSection('analytics')}
+              >
                 <BarChart3 className="h-4 w-4 mr-2" />
-                View Analytics
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Key className="h-4 w-4 mr-2" />
-                Manage API Keys
-              </Button>
+                View Detailed Analytics
+              </button>
             </div>
-          </Card>
+          </div>
 
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="premium-card p-6">
+            <h3 className="text-lg font-semibold text-ink mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">API call generated</span>
-                <span className="text-gray-400">2 min ago</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Settings updated</span>
-                <span className="text-gray-400">1 hour ago</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">New API key created</span>
-                <span className="text-gray-400">2 days ago</span>
-              </div>
+              <button 
+                className="btn-secondary w-full justify-start"
+                onClick={() => router.push('/subscription')}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Manage Subscription
+              </button>
+              <button 
+                className="btn-secondary w-full justify-start"
+                onClick={() => setActiveSection('settings')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Account Settings
+              </button>
+              {user?.role === 'admin' && (
+                <button 
+                  className="btn-secondary w-full justify-start"
+                  onClick={() => setActiveSection('admin')}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Admin Dashboard
+                </button>
+              )}
             </div>
-          </Card>
+          </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   );

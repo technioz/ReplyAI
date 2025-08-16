@@ -1,0 +1,59 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://quirkly.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /dashboard/
+Disallow: /login/
+Disallow: /signup/
+
+# Allow important pages
+Allow: /
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /help
+Allow: /docs
+Allow: /blog
+Allow: /case-studies
+Allow: /tutorials
+Allow: /community
+Allow: /extension
+Allow: /roadmap
+Allow: /careers
+Allow: /press
+Allow: /partnerships
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /gdpr
+Allow: /security
+Allow: /status
+Allow: /bug-report
+Allow: /feature-request
+Allow: /chat
+
+# Block common bot patterns
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /

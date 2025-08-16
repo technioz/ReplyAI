@@ -28,6 +28,7 @@ export default function LoginPage() {
       toast.success('Signed in successfully!');
       router.push('/dashboard');
     } catch (error) {
+      console.error(error);
       toast.error('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
@@ -51,7 +52,7 @@ export default function LoginPage() {
         
         <div className="flex justify-center mb-6">
           <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">R</span>
+            <span className="text-white font-bold text-xl">Q</span>
           </div>
         </div>
         
@@ -59,7 +60,7 @@ export default function LoginPage() {
           Welcome back
         </h2>
         <p className="text-center text-gray-600">
-          Sign in to your ReplyAI account
+          Sign in to your Quirkly account
         </p>
       </div>
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ReplyAI",
+  "name": "Quirkly",
   "version": "1.0.0",
-  "description": "Generate AI-powered replies to X posts with different tones",
+  "description": "Premium AI-powered reply generator for X (Twitter) with multiple tones and styles",
   "permissions": [
     "activeTab",
     "storage",
@@ -11,7 +11,10 @@
   "host_permissions": [
     "https://twitter.com/*",
     "https://x.com/*",
-    "<all_urls>"
+    "https://ai.technioz.com/*",
+    "https://api.quirkly.technioz.com/*",
+    "https://quirkly.technioz.com/*",
+    "http://localhost:3001/*"
   ],
   "content_scripts": [
     {
@@ -19,7 +22,7 @@
         "https://twitter.com/*",
         "https://x.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["config.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_end"
     }
@@ -29,6 +32,18 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ReplyAI Settings"
-  }
+    "default_title": "Quirkly - AI Reply Generator",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "homepage_url": "https://quirkly.technioz.com",
+  "author": "Technioz"
 } 
