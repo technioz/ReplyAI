@@ -108,7 +108,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#6D5EF8" />
       </head>
-      <body className={`${plusJakartaSans.className} h-full bg-bg text-ink`}>
+      <body className={`${plusJakartaSans.className} h-full bg-bg text-ink`} suppressHydrationWarning>
         <AuthProvider>
           {children}
           <Toaster

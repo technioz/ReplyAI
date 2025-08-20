@@ -19,7 +19,8 @@ import {
   Edit3,
   Shield,
   Settings,
-  Users
+  Users,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuirklyDashboardConfig from '@/lib/config';
@@ -39,11 +40,12 @@ interface ApiKey {
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [loadingApiKeys, setLoadingApiKeys] = useState(true);
-  const [showNewKeyForm, setShowNewKeyForm] = useState(false);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [loadingApiKeys, setLoadingApiKeys] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
+  const [showNewKeyForm, setShowNewKeyForm] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [newlyGeneratedKeys, setNewlyGeneratedKeys] = useState<{[key: string]: string}>({});
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('quirkly_token');
       if (!token) return;
 
-      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys`, {
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -69,6 +71,19 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         setApiKeys(data.apiKeys || []);
+        
+        // Clean up newly generated keys that are no longer in the list
+        if (data.apiKeys) {
+          setNewlyGeneratedKeys(prev => {
+            const newKeys: {[key: string]: string} = {};
+            data.apiKeys.forEach((key: any) => {
+              if (prev[key.id]) {
+                newKeys[key.id] = prev[key.id];
+              }
+            });
+            return newKeys;
+          });
+        }
       } else {
         console.error('Failed to fetch API keys');
       }
@@ -103,7 +118,7 @@ export default function DashboardPage() {
   };
 
   const maskApiKey = (apiKey: string) => {
-    if (!apiKey) return '';
+    if (!apiKey) return '••••••••••••••••••••••••••••••••';
     return apiKey.slice(0, 8) + '•'.repeat(20) + apiKey.slice(-8);
   };
 
@@ -112,7 +127,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('quirkly_token');
       if (!token) return;
 
-      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys`, {
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -125,6 +140,15 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Store the newly generated key in state
+        if (data.apiKey && data.apiKey.key) {
+          setNewlyGeneratedKeys(prev => ({
+            ...prev,
+            [data.apiKey.id]: data.apiKey.key
+          }));
+        }
+        
         toast.success('API key generated successfully');
         setNewKeyName('');
         setShowNewKeyForm(false);
@@ -148,7 +172,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('quirkly_token');
       if (!token) return;
 
-      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/user/api-keys/${keyId}`, {
+      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys/${keyId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -169,9 +193,72 @@ export default function DashboardPage() {
     }
   };
 
-  const copyApiKeyToClipboard = (apiKey: string) => {
-    navigator.clipboard.writeText(apiKey);
-    toast.success('API key copied to clipboard');
+  const regenerateApiKey = async (keyId: string, keyName: string) => {
+    if (!confirm(`Are you sure you want to regenerate "${keyName}"? The old key will become invalid.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('quirkly_token');
+      if (!token) return;
+
+      // First delete the old key
+      const deleteResponse = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ keyId })
+      });
+
+      if (deleteResponse.ok) {
+        // Then generate a new one
+        const generateResponse = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: keyName })
+        });
+
+        if (generateResponse.ok) {
+          const data = await generateResponse.json();
+          
+          // Store the newly generated key
+          if (data.apiKey && data.apiKey.key) {
+            setNewlyGeneratedKeys(prev => ({
+              ...prev,
+              [data.apiKey.id]: data.apiKey.key
+            }));
+          }
+          
+          toast.success('API key regenerated successfully');
+          await fetchApiKeys(); // Refresh the list
+        } else {
+          const errorData = await generateResponse.json();
+          toast.error(errorData.message || 'Failed to regenerate API key');
+        }
+      } else {
+        toast.error('Failed to delete old API key');
+      }
+    } catch (error) {
+      toast.error('Error regenerating API key');
+      console.error('Error regenerating API key:', error);
+    }
+  };
+
+  const copyApiKeyToClipboard = (apiKey: any) => {
+    // Check if we have the key value (either from newly generated or if it exists)
+    const keyValue = newlyGeneratedKeys[apiKey.id] || apiKey.key;
+    
+    if (keyValue) {
+      navigator.clipboard.writeText(keyValue);
+      toast.success('API key copied to clipboard');
+    } else {
+      toast.error('API key value not available. Please regenerate the key.');
+    }
   };
 
   if (loading) {
@@ -422,10 +509,20 @@ export default function DashboardPage() {
                         }`}>
                           {apiKey.isActive ? 'Active' : 'Inactive'}
                         </span>
+                        {newlyGeneratedKeys[apiKey.id] && (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
+                            New
+                          </span>
+                        )}
                       </div>
                       <code className="text-sm text-ink-mute font-mono block truncate">
-                        {showApiKey ? apiKey.key : maskApiKey(apiKey.key)}
+                        {showApiKey ? (newlyGeneratedKeys[apiKey.id] || apiKey.key || 'Key not available') : maskApiKey(newlyGeneratedKeys[apiKey.id] || apiKey.key || '')}
                       </code>
+                      {!newlyGeneratedKeys[apiKey.id] && !apiKey.key && (
+                        <p className="text-xs text-warning mt-1">
+                          ⚠️ Key value not available. Please regenerate to copy.
+                        </p>
+                      )}
                       <p className="text-xs text-ink-mute mt-1">
                         Created: {new Date(apiKey.createdAt).toLocaleDateString()}
                         {apiKey.lastUsedAt && ` • Last used: ${new Date(apiKey.lastUsedAt).toLocaleDateString()}`}
@@ -434,10 +531,19 @@ export default function DashboardPage() {
                     <div className="flex space-x-2 ml-4">
                       <button 
                         className="btn-ghost text-sm"
-                        onClick={() => copyApiKeyToClipboard(apiKey.key)}
+                        onClick={() => copyApiKeyToClipboard(apiKey)}
                       >
                         <Copy className="h-4 w-4" />
                       </button>
+                      {!newlyGeneratedKeys[apiKey.id] && !apiKey.key && (
+                        <button 
+                          className="btn-ghost text-sm text-accent hover:bg-accent/10"
+                          onClick={() => regenerateApiKey(apiKey.id, apiKey.name)}
+                          title="Regenerate API key to copy its value"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                      )}
                       <button 
                         className="btn-ghost text-sm text-danger hover:bg-danger/10"
                         onClick={() => deleteApiKey(apiKey.id, apiKey.name)}
@@ -455,6 +561,10 @@ export default function DashboardPage() {
             <p className="text-sm text-accent">
               💡 Use these API keys in your Quirkly Chrome extension to authenticate requests. 
               Keep them secure and don't share them publicly.
+            </p>
+            <p className="text-xs text-accent mt-2">
+              🔒 For security, API key values are only shown once when generated. 
+              Use the regenerate button if you need to copy a key again.
             </p>
           </div>
         </div>

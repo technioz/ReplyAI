@@ -3,6 +3,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import QuirklyDashboardConfig from '@/lib/config';
 
+// Add TypeScript declaration for requestIdleCallback
+declare global {
+  interface Window {
+    requestIdleCallback: (
+      callback: IdleRequestCallback,
+      opts?: IdleRequestOptions
+    ) => number;
+  }
+}
+
 interface User {
   id: string;
   email: string;
@@ -44,53 +54,146 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
+  // Error boundary for hydration issues
   useEffect(() => {
-    // Check for existing session
-    checkAuth();
+    const handleError = (event: ErrorEvent) => {
+      if (event.error && (
+        event.error.message.includes('hydration') ||
+        event.error.message.includes('Grammarly') ||
+        event.error.message.includes('data-new-gr-c-s-check-loaded') ||
+        event.error.message.includes('data-gr-ext-installed')
+      )) {
+        console.log('🛡️ Caught hydration error, attempting recovery:', event.error.message);
+        setError(event.error);
+        
+        // Try to recover by re-running auth check
+        setTimeout(() => {
+          setError(null);
+          checkAuth();
+        }, 1000);
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
   }, []);
 
-  const checkAuth = async () => {
+  useEffect(() => {
+    // Wait for DOM to be fully hydrated before checking auth
+    const checkAuthAfterHydration = () => {
+      // Check for existing session
+      checkAuth();
+      
+      // Handle Grammarly extension attributes to prevent hydration errors
+      const handleGrammarlyAttributes = () => {
+        const body = document.body;
+        if (body) {
+          // Remove Grammarly attributes that cause hydration mismatches
+          body.removeAttribute('data-new-gr-c-s-check-loaded');
+          body.removeAttribute('data-gr-ext-installed');
+        }
+      };
+      
+      // Run immediately and also on DOM changes
+      handleGrammarlyAttributes();
+      
+      // Use MutationObserver to watch for Grammarly attributes being added
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && 
+              (mutation.attributeName === 'data-new-gr-c-s-check-loaded' || 
+               mutation.attributeName === 'data-gr-ext-installed')) {
+            handleGrammarlyAttributes();
+          }
+        });
+      });
+      
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['data-new-gr-c-s-check-loaded', 'data-gr-ext-installed']
+      });
+      
+      // Cleanup observer on unmount
+      return () => observer.disconnect();
+    };
+    
+    // Check if we're in the browser and DOM is ready
+    if (typeof window !== 'undefined') {
+      // Use requestIdleCallback for better performance, fallback to setTimeout
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(checkAuthAfterHydration);
+      } else {
+        setTimeout(checkAuthAfterHydration, 100);
+      }
+    }
+  }, []);
+
+  const checkAuth = async (retryCount = 0) => {
     try {
       // Check localStorage for existing token
       const token = localStorage.getItem('quirkly_token');
+      console.log('🔍 Checking auth, token exists:', !!token, 'retry:', retryCount);
+      console.log('🔍 Token length:', token ? token.length : 0);
+      console.log('🔍 Token preview:', token ? `${token.substring(0, 20)}...${token.substring(token.length - 10)}` : 'none');
+      
       if (token) {
-        // Validate token with authentication server
-        const authUrl = QuirklyDashboardConfig.getAuthUrl();
-        
-        const response = await fetch(authUrl, {
-          method: 'POST',
+        // Validate token by calling the /api/auth/me endpoint
+        const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/auth/me`, {
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            action: 'validate_session',
-            token: token,
-            timestamp: new Date().toISOString(),
-            source: 'dashboard'
-          })
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
 
+        console.log('🔍 Auth check response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('🔍 Auth check response data:', data);
+          
           if (data.success && data.user) {
+            console.log('✅ User authenticated:', data.user.email);
             setUser(data.user);
           } else {
+            console.log('❌ Auth failed - no user data');
             // Invalid token, remove it
             localStorage.removeItem('quirkly_token');
           }
         } else {
+          console.log('❌ Auth failed - response not ok');
           // Token validation failed, remove it
           localStorage.removeItem('quirkly_token');
         }
+      } else {
+        console.log('🔍 No token found in localStorage');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      // Remove invalid token on error
-      localStorage.removeItem('quirkly_token');
+      console.error('❌ Auth check failed:', error);
+      
+      // Retry logic for hydration-related issues
+      if (retryCount < 2 && (
+        error instanceof TypeError && error.message.includes('fetch') ||
+        error.message.includes('hydration') ||
+        error.message.includes('Grammarly')
+      )) {
+        console.log(`🔄 Retrying auth check (${retryCount + 1}/2) due to:`, error.message);
+        // Wait a bit before retrying
+        setTimeout(() => checkAuth(retryCount + 1), 1000);
+        return;
+      }
+      
+      // Don't remove token on network errors, only on validation errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log('🔍 Network error, keeping token for retry');
+      } else {
+        localStorage.removeItem('quirkly_token');
+      }
     } finally {
-      setLoading(false);
+      if (retryCount === 0) {
+        setLoading(false);
+      }
     }
   };
 
@@ -271,7 +374,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshUser }}>
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">🔄 Recovering from error...</span>
+            <button 
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   );

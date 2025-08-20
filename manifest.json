@@ -6,7 +6,8 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://twitter.com/*",
@@ -14,7 +15,8 @@
     "https://ai.technioz.com/*",
     "https://api.quirkly.technioz.com/*",
     "https://quirkly.technioz.com/*",
-    "http://localhost:3001/*"
+    "http://localhost:3001/*",
+    "http://localhost:3000/*"
   ],
   "content_scripts": [
     {
@@ -45,5 +47,8 @@
     "128": "icons/icon128.png"
   },
   "homepage_url": "https://quirkly.technioz.com",
-  "author": "Technioz"
+  "author": "Technioz",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*"
+  }
 } 

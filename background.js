@@ -13,7 +13,7 @@ chrome.runtime.onInstalled.addListener((details) => {
       isEnabled: false, // Disabled by default until authenticated
       apiKey: '',
       user: null,
-      n8nWebhookUrl: config.replyUrl
+      replyEndpoint: config.replyUrl
     });
     
     // Show welcome notification
@@ -31,13 +31,13 @@ chrome.runtime.onInstalled.addListener((details) => {
     
     // Migrate old settings if needed
     const config = QuirklyConfig.getConfig();
-    chrome.storage.sync.get(['n8nWebhookUrl']).then((result) => {
-      if (result.n8nWebhookUrl && result.n8nWebhookUrl !== config.replyUrl) {
+    chrome.storage.sync.get(['replyEndpoint']).then((result) => {
+      if (result.replyEndpoint && result.replyEndpoint !== config.replyUrl) {
         // Update to environment-specific webhook URL
         chrome.storage.sync.set({
-          n8nWebhookUrl: config.replyUrl
+          replyEndpoint: config.replyUrl
         });
-        console.log('Quirkly: Updated webhook URL to:', config.replyUrl);
+        console.log('Quirkly: Updated reply endpoint to:', config.replyUrl);
       }
     });
   }
@@ -72,6 +72,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === 'refreshUser') {
     refreshUserData(sendResponse);
+    return true; // Keep the message channel open for async response
+  }
+  
+  if (request.action === 'generateReply') {
+    handleReplyGeneration(request, sendResponse);
+    return true; // Keep the message channel open for async response
+  }
+  
+  if (request.action === 'setLoadingState') {
+    handleLoadingState(request, sendResponse);
+    return true; // Keep the message channel open for async response
+  }
+  
+  if (request.action === 'injectReplyIntoPage') {
+    handleReplyInjection(request, sendResponse);
     return true; // Keep the message channel open for async response
   }
 });
@@ -131,6 +146,481 @@ async function handleAuthentication(apiKey, sendResponse) {
   }
 }
 
+// Handle AI reply generation requests
+async function handleReplyGeneration(request, sendResponse) {
+  try {
+    console.log('Quirkly Background: Handling reply generation request:', request);
+    
+    // Get stored API key and user data
+    const result = await chrome.storage.sync.get(['apiKey', 'user']);
+    if (!result.apiKey) {
+      throw new Error('No API key found. Please authenticate first.');
+    }
+    
+    const { tweetText, tone, userContext } = request;
+    
+    if (!tweetText || !tone) {
+      throw new Error('Missing required parameters: tweetText and tone');
+    }
+    
+    // Get config for reply endpoint
+    const config = QuirklyConfig.getConfig();
+    const replyEndpoint = config.replyUrl;
+    
+    console.log('Quirkly Background: Sending request to:', replyEndpoint);
+    
+    // Make the API request from background script (bypasses CORS)
+    const response = await fetch(replyEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${result.apiKey}`,
+        'X-User-ID': result.user?.id || '',
+        'X-Extension-Version': '1.0.0'
+      },
+      body: JSON.stringify({
+        tweetText: tweetText,
+        tone: tone,
+        userContext: userContext || {},
+        timestamp: new Date().toISOString(),
+        source: 'chrome-extension-background'
+      })
+    });
+    
+    console.log('Quirkly Background: Response status:', response.status);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please check your API key.');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      } else if (response.status === 403) {
+        throw new Error('Access denied. Please check your subscription.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Quirkly Background: Reply generated successfully:', data);
+    
+    sendResponse({ success: true, data: data });
+    
+  } catch (error) {
+    console.error('Quirkly Background: Reply generation failed:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Handle loading state management
+function handleLoadingState(request, sendResponse) {
+  try {
+    const { isLoading, tone, timestamp } = request;
+    console.log(`Quirkly Background: Setting loading state: ${isLoading ? 'loading' : 'idle'} for tone: ${tone}`);
+    
+    // Store loading state in storage for other parts of extension to access
+    chrome.storage.local.set({
+      loadingState: {
+        isLoading: isLoading,
+        tone: tone,
+        timestamp: timestamp,
+        lastUpdated: Date.now()
+      }
+    });
+    
+    sendResponse({ success: true, loadingState: { isLoading, tone, timestamp } });
+  } catch (error) {
+    console.error('Quirkly Background: Failed to set loading state:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Handle reply injection into pages using chrome.scripting.executeScript
+async function handleReplyInjection(request, sendResponse) {
+  try {
+    const { reply, pageUrl } = request;
+    console.log('Quirkly Background: Injecting reply into page:', pageUrl);
+    console.log('Quirkly Background: Reply text:', reply.substring(0, 100) + '...');
+    
+    // Get the active tab to inject the script
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      throw new Error('No active tab found');
+    }
+    
+    console.log('Quirkly Background: Found active tab:', tab.id, tab.url);
+    
+    // Inject the reply injection script
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: injectReplyIntoPage,
+      args: [reply]
+    });
+    
+    console.log('Quirkly Background: Script execution results:', results);
+    
+    if (results && results[0] && results[0].result !== undefined) {
+      const success = results[0].result;
+      if (success) {
+        console.log('Quirkly Background: Reply injection successful');
+        sendResponse({ success: true, message: 'Reply injected successfully' });
+      } else {
+        console.log('Quirkly Background: Reply injection script returned false');
+        sendResponse({ success: false, error: 'Reply injection script returned false' });
+      }
+    } else {
+      console.log('Quirkly Background: No result from script execution');
+      sendResponse({ success: false, error: 'No result from script execution' });
+    }
+    
+  } catch (error) {
+    console.error('Quirkly Background: Reply injection failed:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Function that will be injected into the page
+function injectReplyIntoPage(replyText) {
+  try {
+    console.log('Quirkly: Injecting reply into page:', replyText);
+    
+    // Try multiple injection methods with better Twitter compatibility
+    let success = false;
+    
+    // Method 1: Target the specific Twitter reply textarea (most reliable)
+    const twitterTextarea = document.querySelector('[data-testid="tweetTextarea_0"]');
+    if (twitterTextarea) {
+      try {
+        console.log('Quirkly: Found Twitter textarea:', twitterTextarea);
+        
+        // Find the Draft.js content structure
+        const draftContent = twitterTextarea.querySelector('[data-contents="true"]');
+        if (draftContent) {
+          console.log('Quirkly: Found Draft.js content structure:', draftContent);
+          
+          // Clear ALL existing content including placeholder text
+          draftContent.innerHTML = '';
+          
+          // Create the complete span structure that Twitter expects
+          const newSpan = document.createElement('span');
+          newSpan.setAttribute('data-offset-key', 'quirkly-0-0');
+          
+          // Create the inner span with data-text="true" containing the reply
+          const innerSpan = document.createElement('span');
+          innerSpan.setAttribute('data-text', 'true');
+          innerSpan.textContent = replyText;
+          
+          // Assemble the complete structure
+          newSpan.appendChild(innerSpan);
+          
+          // Insert the complete span structure into the cleared Draft.js content
+          draftContent.appendChild(newSpan);
+          
+          // Hide the placeholder text completely
+          const placeholder = twitterTextarea.querySelector('.public-DraftEditorPlaceholder-root');
+          if (placeholder) {
+            placeholder.style.display = 'none';
+            placeholder.style.visibility = 'hidden';
+            placeholder.style.opacity = '0';
+            console.log('Quirkly: Hidden placeholder text');
+          }
+          
+          // Ensure our content is the only visible content
+          draftContent.style.minHeight = 'auto';
+          draftContent.style.height = 'auto';
+          
+          // Log the complete structure for debugging
+          console.log('Quirkly: Created complete span structure:');
+          console.log('Outer span:', newSpan.outerHTML);
+          console.log('Inner span:', innerSpan.outerHTML);
+          console.log('Full structure:', draftContent.innerHTML);
+          
+          // Ensure the structure is visible and properly formatted
+          newSpan.style.display = 'inline';
+          newSpan.style.visibility = 'visible';
+          innerSpan.style.display = 'inline';
+          innerSpan.style.visibility = 'visible';
+          
+          // Verify the structure was properly inserted
+          setTimeout(() => {
+            const insertedSpan = draftContent.querySelector('span[data-offset-key="quirkly-0-0"]');
+            if (insertedSpan) {
+              console.log('Quirkly: Span structure successfully inserted and verified:', insertedSpan.outerHTML);
+              
+              // Check if the text is visible
+              const textSpan = insertedSpan.querySelector('span[data-text="true"]');
+              if (textSpan && textSpan.textContent === replyText) {
+                console.log('Quirkly: Text content verified:', textSpan.textContent);
+              } else {
+                console.warn('Quirkly: Text content verification failed');
+              }
+            } else {
+              console.error('Quirkly: Span structure insertion verification failed');
+            }
+          }, 100);
+        } else {
+          // Fallback: direct text injection
+          twitterTextarea.textContent = replyText;
+        }
+        
+        // Trigger multiple events to ensure Twitter recognizes the change
+        const events = ['input', 'change', 'keyup', 'paste', 'compositionend', 'keydown'];
+        events.forEach(eventType => {
+          try {
+            const event = new Event(eventType, { bubbles: true, cancelable: true });
+            twitterTextarea.dispatchEvent(event);
+          } catch (e) {
+            console.log(`Quirkly: Event ${eventType} failed:`, e);
+          }
+        });
+        
+        // Also trigger a focus event and ensure visibility
+        try {
+          twitterTextarea.focus();
+          
+          // Make sure the textarea is visible
+          twitterTextarea.style.display = 'block';
+          twitterTextarea.style.visibility = 'visible';
+          twitterTextarea.style.opacity = '1';
+          
+          // Place cursor at the end of the text
+          const range = document.createRange();
+          const selection = window.getSelection();
+          range.selectNodeContents(twitterTextarea);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          // Force a scroll into view
+          twitterTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+        } catch (e) {
+          console.log('Quirkly: Focus/cursor placement failed:', e);
+        }
+        
+        success = true;
+        console.log('Quirkly: Successfully injected into Twitter textarea with proper Draft.js structure');
+      } catch (error) {
+        console.log('Quirkly: Twitter textarea injection failed:', error);
+      }
+    }
+    
+    // Method 2: Look for any contenteditable element with data-testid (fallback)
+    if (!success) {
+      const contentEditable = document.querySelector('[contenteditable="true"][data-testid]:not([data-quirkly-extension])');
+      if (contentEditable) {
+        try {
+          console.log('Quirkly: Found contenteditable with data-testid:', contentEditable);
+          
+          // Clear and set content
+          contentEditable.textContent = '';
+          contentEditable.textContent = replyText;
+          
+          // Trigger events
+          const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+          contentEditable.dispatchEvent(inputEvent);
+          
+          // Focus with delay
+          setTimeout(() => {
+            try {
+              contentEditable.focus();
+            } catch (e) {
+              console.log('Quirkly: Contenteditable focus failed:', e);
+            }
+          }, 100);
+          
+          success = true;
+          console.log('Quirkly: Injected into contenteditable with data-testid');
+        } catch (error) {
+          console.log('Quirkly: Contenteditable with data-testid injection failed:', error);
+        }
+      }
+    }
+    
+    // Method 3: Look for any contenteditable element (general fallback)
+    if (!success) {
+      const contentEditable = document.querySelector('[contenteditable="true"]:not([data-quirkly-extension])');
+      if (contentEditable) {
+        try {
+          console.log('Quirkly: Found general contenteditable element:', contentEditable);
+          
+          // Clear and set content
+          contentEditable.textContent = '';
+          contentEditable.textContent = replyText;
+          
+          // Trigger events
+          const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+          contentEditable.dispatchEvent(inputEvent);
+          
+          // Focus with delay
+          setTimeout(() => {
+            try {
+              contentEditable.focus();
+            } catch (e) {
+              console.log('Quirkly: General contenteditable focus failed:', e);
+            }
+          }, 100);
+          
+          success = true;
+          console.log('Quirkly: Injected into general contenteditable element');
+        } catch (error) {
+          console.log('Quirkly: General contenteditable injection failed:', error);
+        }
+      }
+    }
+    
+    // Method 4: Try to simulate typing (most Twitter-compatible)
+    if (!success) {
+      try {
+        console.log('Quirkly: Trying typing simulation method...');
+        
+        // Find the Twitter textarea specifically
+        const inputArea = document.querySelector('[data-testid="tweetTextarea_0"]');
+        
+        if (inputArea) {
+          console.log('Quirkly: Found input area for typing simulation:', inputArea);
+          
+          // Focus first
+          inputArea.focus();
+          
+          // Clear existing content
+          inputArea.textContent = '';
+          
+          // Simulate typing character by character
+          let currentText = '';
+          const typeInterval = setInterval(() => {
+            if (currentText.length < replyText.length) {
+              const nextChar = replyText[currentText.length];
+              currentText += nextChar;
+              
+              inputArea.textContent = currentText;
+              
+              // Trigger input event
+              const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+              inputArea.dispatchEvent(inputEvent);
+            } else {
+              clearInterval(typeInterval);
+              console.log('Quirkly: Typing simulation completed');
+            }
+          }, 30); // Type every 30ms for faster typing
+          
+          success = true;
+          console.log('Quirkly: Started typing simulation');
+        }
+      } catch (error) {
+        console.log('Quirkly: Typing simulation failed:', error);
+      }
+    }
+    
+    // Method 5: Create floating text area if nothing else works (least disruptive)
+    if (!success) {
+      try {
+        console.log('Quirkly: Creating floating text area as fallback...');
+        
+        const floatingTextArea = document.createElement('textarea');
+        floatingTextArea.value = replyText;
+        floatingTextArea.setAttribute('data-quirkly-extension', 'true');
+        floatingTextArea.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 10000;
+          width: 500px;
+          height: 200px;
+          padding: 20px;
+          border: 3px solid #1DA1F2;
+          border-radius: 12px;
+          font-size: 16px;
+          background: white;
+          color: black;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+          font-family: Arial, sans-serif;
+        `;
+        floatingTextArea.placeholder = 'Generated Reply (copy and paste into Twitter)';
+        
+        // Add to body with minimal disruption
+        document.body.appendChild(floatingTextArea);
+        
+        // Focus and select with delay
+        setTimeout(() => {
+          try {
+            floatingTextArea.focus();
+            floatingTextArea.select();
+          } catch (e) {
+            console.log('Quirkly: Floating textarea focus failed');
+          }
+        }, 100);
+        
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.setAttribute('data-quirkly-extension', 'true');
+        closeBtn.style.cssText = `
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: #1DA1F2;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          font-size: 20px;
+          cursor: pointer;
+        `;
+        closeBtn.onclick = () => floatingTextArea.remove();
+        floatingTextArea.parentNode.appendChild(closeBtn);
+        
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+          if (floatingTextArea.parentNode) {
+            floatingTextArea.remove();
+          }
+        }, 30000);
+        
+        success = true;
+        console.log('Quirkly: Created floating text area');
+      } catch (error) {
+        console.log('Quirkly: Floating textarea creation failed:', error);
+      }
+    }
+    
+    // Show success message with minimal interference
+    if (success) {
+      try {
+        const successDiv = document.createElement('div');
+        successDiv.textContent = 'Reply generated and inserted successfully! ✨';
+        successDiv.setAttribute('data-quirkly-extension', 'true');
+        successDiv.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #16A34A;
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          z-index: 10001;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          pointer-events: none;
+        `;
+        document.body.appendChild(successDiv);
+        setTimeout(() => successDiv.remove(), 3000);
+      } catch (error) {
+        console.log('Quirkly: Success message failed:', error);
+      }
+    }
+    
+    return success;
+    
+  } catch (error) {
+    console.error('Quirkly: Error in page injection:', error);
+    return false;
+  }
+}
+
 // Get current authentication status
 async function getAuthenticationStatus(sendResponse) {
   try {
@@ -166,40 +656,6 @@ async function updateUserStats(stats, sendResponse) {
   } catch (error) {
     console.error('Quirkly Background: Failed to update stats:', error);
     sendResponse({ success: false, error: error.message });
-  }
-}
-
-// Real API key validation with n8n authentication endpoint
-async function validateApiKeyWithServer(apiKey) {
-  const authEndpoint = QuirklyConfig.getAuthUrl();
-  
-  try {
-    console.log('Background: Validating API key with server');
-    
-    const response = await fetch(authEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        apiKey: apiKey,
-        action: 'validate',
-        timestamp: new Date().toISOString(),
-        source: 'chrome-extension-background'
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Background: Auth validation failed:', response.status);
-      return false;
-    }
-
-    const data = await response.json();
-    return data.success === true;
-  } catch (error) {
-    console.error('Background: API key validation error:', error);
-    return false;
   }
 }
 

@@ -1,206 +1,130 @@
-# Quirkly Dashboard 🚀
+# Quirkly Chrome Extension
 
-A modern Next.js dashboard for managing Quirkly Chrome extension users, subscriptions, and API keys.
+A Chrome extension that integrates with Quirkly AI to generate intelligent replies for X (Twitter).
 
-## ✨ Features
+## Features
 
-- User Authentication: Sign up, login, password reset
-- API Key Management: Generate, regenerate, and manage API keys
-- Subscription Tiers: Free, Pro, Business plans
-- Usage Analytics: Track API usage and limits
-- Dashboard: User statistics and management
-- Payment Integration: Stripe for subscriptions (coming soon)
+- **API Key Validation**: Securely validate your Quirkly API key
+- **Reply Generation**: Generate AI-powered replies with different tones
+- **Twitter Integration**: Add Quirkly buttons directly to tweets
+- **Clipboard Integration**: Automatically copy generated replies
+- **Multiple Tones**: Professional, casual, humorous, empathetic, analytical, enthusiastic
 
-## 🏗️ Architecture
+## Installation
 
-```
-Dashboard (Next.js + Supabase)
-├── Frontend: Next.js 14 with App Router
-├── Backend: Supabase (Auth, Database, Edge Functions)
-├── Styling: Tailwind CSS + Framer Motion
-├── Database: PostgreSQL via Supabase
-└── Authentication: Supabase Auth
-```
+### 1. Load Extension in Chrome
 
-## 🚀 Quick Start
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in top right)
+3. Click "Load unpacked"
+4. Select the `dashboard` folder containing these files
 
-### 1. Install Dependencies
-```bash
-cd dashboard
-npm install
-```
+### 2. Get Your API Key
 
-### 2. Set up Environment Variables
-```bash
-cp env.example .env.local
-# Fill in your Supabase and Stripe credentials
-```
+1. Go to [Quirkly Dashboard](http://localhost:3000/dashboard)
+2. Generate a new API key
+3. Copy the API key (it will only be shown once!)
 
-### 3. Run Development Server
-```bash
-npm run dev
-```
+### 3. Configure Extension
 
-### 4. Open [http://localhost:3000](http://localhost:3000)
+1. Click the Quirkly extension icon in your toolbar
+2. Enter your API key
+3. Click "Validate"
+4. Start generating replies!
 
-## 🔧 Environment Variables
+## Usage
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+### Popup Interface
 
-# Stripe
-STRIPE_SECRET_KEY=your_stripe_secret_key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=your_webhook_secret
+- **API Key**: Enter and validate your Quirkly API key
+- **Tone Selection**: Choose the tone for your reply
+- **Prompt Input**: Describe what you want to reply to
+- **Generate**: Create AI-powered replies
 
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+### Twitter Integration
 
-## 📁 Project Structure
+- **Quirkly Button**: Appears on every tweet
+- **One-Click Reply**: Click to generate a reply to any tweet
+- **Auto-Copy**: Generated replies are automatically copied to clipboard
+- **Smart Integration**: Opens Twitter's reply compose box
+
+## File Structure
 
 ```
 dashboard/
-├── src/
-│   ├── app/                 # Next.js App Router
-│   │   ├── dashboard/       # Dashboard page
-│   │   ├── login/           # Login page
-│   │   ├── signup/          # Signup page
-│   │   ├── globals.css      # Global styles
-│   │   └── layout.tsx       # Root layout
-│   ├── components/          # Reusable UI components
-│   │   ├── ui/              # Basic UI components
-│   │   ├── sections/        # Page sections
-│   │   └── providers/       # Context providers
-│   ├── lib/                 # Utilities and configurations
-│   └── types/               # TypeScript type definitions
-├── public/                  # Static assets
-├── package.json             # Dependencies
-├── next.config.js           # Next.js configuration
-├── tailwind.config.js       # Tailwind CSS configuration
-└── env.example              # Environment variables template
+├── manifest.json          # Extension configuration
+├── background.js          # Background script for API requests
+├── popup.html            # Extension popup interface
+├── popup.js              # Popup functionality
+├── popup.css             # Popup styling
+├── content.js            # Twitter page integration
+└── icons/                # Extension icons (create this folder)
+    ├── icon16.png        # 16x16 icon
+    ├── icon32.png        # 32x32 icon
+    ├── icon48.png        # 48x48 icon
+    └── icon128.png       # 128x128 icon
 ```
 
-## 🎨 Design System
+## API Endpoints
 
-### Colors
-- Primary: Blue (#1d9bf0) - Main brand color
-- Secondary: Gray (#536471) - Text and borders
-- Accent: Green (#00ba7c) - Success and highlights
-- Danger: Pink (#f91880) - Errors and warnings
+The extension communicates with your local Quirkly dashboard:
 
-### Components
-- Button: Multiple variants (default, outline, ghost, etc.)
-- Input: Form inputs with validation and icons
-- Card: Content containers with shadows and hover effects
-- Typography: Inter font family with consistent sizing
+- **Validation**: `http://127.0.0.1:3000/api/auth/validate`
+- **Reply Generation**: `http://127.0.0.1:3000/api/reply/generate`
+- **Test**: `http://127.0.0.1:3000/api/test`
 
-## 🔐 Authentication Flow
+## Troubleshooting
 
-1. User signs up/logs in via form
-2. JWT token stored in localStorage
-3. Protected routes check authentication
-4. Dashboard shows user-specific data
+### "Unable to connect to authentication server"
 
-## 📱 Responsive Design
+1. **Check Dashboard**: Ensure your Quirkly dashboard is running on port 3000
+2. **API Key**: Verify your API key is correct
+3. **Network**: Check if localhost/127.0.0.1 is accessible
+4. **Extension**: Reload the extension after making changes
 
-- Mobile-first approach
-- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
-- Flexible grid layouts
-- Touch-friendly interactions
+### Extension Not Working on Twitter
 
-## 🚀 Deployment
+1. **Permissions**: Check if the extension has access to Twitter
+2. **Reload**: Refresh the Twitter page
+3. **Console**: Check browser console for errors
 
-### Vercel (Recommended)
-1. Connect GitHub repository to Vercel
-2. Set environment variables
-3. Deploy automatically on push to main branch
+### API Key Validation Fails
 
-### Manual Deployment
-```bash
-npm run build
-npm start
-```
+1. **Dashboard Status**: Ensure dashboard is running and accessible
+2. **API Key Format**: Verify the key starts with `qk_`
+3. **Database**: Check if MongoDB is running
+4. **Logs**: Check dashboard console for errors
 
-## 🔧 Development
+## Development
 
-### Available Scripts
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript check
-```
+### Making Changes
 
-### Code Quality
-- TypeScript for type safety
-- ESLint for code linting
-- Prettier for code formatting
-- Tailwind CSS for styling
+1. **Edit Files**: Modify the JavaScript, HTML, or CSS files
+2. **Reload Extension**: Go to `chrome://extensions/` and click reload
+3. **Test**: Refresh Twitter page and test functionality
 
-## 📊 Database Schema
+### Debugging
 
-### Users Table
-```sql
-CREATE TABLE users (
-  id UUID REFERENCES auth.users PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  avatar_url TEXT,
-  subscription_tier TEXT DEFAULT 'free',
-  api_calls_used INTEGER DEFAULT 0,
-  api_calls_limit INTEGER DEFAULT 100,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
+1. **Popup Console**: Right-click extension icon → Inspect
+2. **Content Script**: Check Twitter page console
+3. **Background Script**: Go to `chrome://extensions/` → Service Worker
 
-### API Keys Table
-```sql
-CREATE TABLE api_keys (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  key_hash TEXT NOT NULL,
-  name TEXT,
-  is_active BOOLEAN DEFAULT true,
-  last_used TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
+## Security
 
-## 🌟 Next Steps
+- API keys are stored locally in Chrome storage
+- No data is sent to external servers (only your local dashboard)
+- All communication uses HTTPS when available
+- Background script handles all API requests securely
 
-- [ ] Integrate with Supabase backend
-- [ ] Add Stripe payment processing
-- [ ] Implement real-time usage tracking
-- [ ] Add admin dashboard for user management
-- [ ] Create API documentation
-- [ ] Add unit and integration tests
-- [ ] Implement email notifications
-- [ ] Add dark mode support
+## Support
 
-## 🤝 Contributing
+If you encounter issues:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1. Check the troubleshooting section above
+2. Verify your dashboard is running correctly
+3. Check browser console for error messages
+4. Ensure all files are in the correct locations
 
-## 📄 License
+## License
 
-MIT License - see LICENSE file for details
-
-## 🆘 Support
-
-- Documentation: [docs.quirkly.app](https://docs.quirkly.app)
-- Email: support@quirkly.app
-- Issues: [GitHub Issues](https://github.com/technioz/Quirkly/issues)
-
-
-
-Built with ❤️ by the Quirkly Team
+This extension is part of the Quirkly project and follows the same licensing terms.

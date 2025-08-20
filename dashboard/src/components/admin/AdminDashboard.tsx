@@ -79,7 +79,7 @@ export function AdminDashboard() {
       if (statusFilter !== 'all') queryParams.append('status', statusFilter);
 
       const response = await fetch(
-        `${QuirklyDashboardConfig.getApiBaseUrl()}/user/admin/users?${queryParams}`,
+        `${QuirklyDashboardConfig.getApiBaseUrl()}/users?${queryParams}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -127,7 +127,7 @@ export function AdminDashboard() {
       if (!token) return;
 
       const response = await fetch(
-        `${QuirklyDashboardConfig.getApiBaseUrl()}/user/admin/users/${userId}/status`,
+        `${QuirklyDashboardConfig.getApiBaseUrl()}/users/${userId}/status`,
         {
           method: 'PUT',
           headers: {

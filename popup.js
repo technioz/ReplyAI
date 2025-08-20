@@ -25,6 +25,12 @@ class QuirklyPopup {
     await this.loadSettings();
     this.bindEvents();
     this.updateUI();
+    
+    // Start data refresh if already authenticated
+    if (this.isAuthenticated) {
+      this.startDataRefresh();
+    }
+    
     console.log('Quirkly Popup: Initialization complete');
   }
 
@@ -69,9 +75,42 @@ class QuirklyPopup {
 
     if (apiKeyInput) {
       apiKeyInput.addEventListener('input', this.handleApiKeyInput.bind(this));
-      apiKeyInput.addEventListener('keypress', (e) => {
+      apiKeyInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-          this.authenticate();
+          const apiKey = e.target.value.trim();
+          if (apiKey) {
+            try {
+              this.setButtonLoading(authenticateBtn, true);
+              
+              // Show loading state for data fields
+              this.showLoadingState();
+              
+              const result = await this.authenticate(apiKey);
+              
+              // Store the API key and user data
+              this.apiKey = apiKey;
+              this.user = result.user;
+              this.isAuthenticated = true;
+              
+              await chrome.storage.sync.set({ 
+                apiKey: apiKey, 
+                user: result.user 
+              });
+              
+              // Start data refresh
+              this.startDataRefresh();
+              
+              this.showStatus('Authentication successful!', 'success');
+              this.updateUI();
+              
+            } catch (error) {
+              console.error('Authentication failed:', error);
+              this.showStatus(error.message || 'Authentication failed', 'error');
+            } finally {
+              this.setButtonLoading(authenticateBtn, false);
+              this.hideLoadingState();
+            }
+          }
         }
       });
     }
@@ -81,7 +120,43 @@ class QuirklyPopup {
     }
 
     if (authenticateBtn) {
-      authenticateBtn.addEventListener('click', this.authenticate.bind(this));
+      authenticateBtn.addEventListener('click', async () => {
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+        if (apiKey) {
+          try {
+            this.setButtonLoading(authenticateBtn, true);
+            
+            // Show loading state for data fields
+            this.showLoadingState();
+            
+            const result = await this.authenticate(apiKey);
+            
+            // Store the API key and user data
+            this.apiKey = apiKey;
+            this.user = result.user;
+            this.isAuthenticated = true;
+            
+            await chrome.storage.sync.set({ 
+              apiKey: apiKey, 
+              user: result.user 
+            });
+            
+            // Start data refresh
+            this.startDataRefresh();
+            
+            this.showStatus('Authentication successful!', 'success');
+            this.updateUI();
+            
+          } catch (error) {
+            console.error('Authentication failed:', error);
+            this.showStatus(error.message || 'Authentication failed', 'error');
+          } finally {
+            this.setButtonLoading(authenticateBtn, false);
+            this.hideLoadingState();
+          }
+        }
+      });
     }
 
     if (dashboardLink) {
@@ -148,24 +223,99 @@ class QuirklyPopup {
   updateUserInfo() {
     const userInitials = document.getElementById('userInitials');
     const userEmail = document.getElementById('userEmail');
+    const userStatus = document.getElementById('userStatus');
 
     if (this.user && userInitials && userEmail) {
+      // Set user initials
       const initials = this.user.fullName 
         ? this.user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()
         : this.user.email.charAt(0).toUpperCase();
       
       userInitials.textContent = initials;
       userEmail.textContent = this.user.fullName || this.user.email;
+      
+      // Set user status
+      if (userStatus) {
+        if (this.user.status === 'active') {
+          userStatus.textContent = 'Active';
+          userStatus.className = 'user-status active';
+        } else if (this.user.status === 'suspended') {
+          userStatus.textContent = 'Suspended';
+          userStatus.className = 'user-status suspended';
+        } else {
+          userStatus.textContent = this.user.status || 'Authenticated';
+          userStatus.className = 'user-status';
+        }
+      }
     }
   }
 
   updateStats() {
     const apiCallsUsed = document.getElementById('apiCallsUsed');
     const apiCallsLimit = document.getElementById('apiCallsLimit');
+    const subscriptionStatus = document.getElementById('subscriptionStatus');
+    const userCredits = document.getElementById('userCredits');
 
-    if (this.user && apiCallsUsed && apiCallsLimit) {
-      apiCallsUsed.textContent = this.user.apiCallsUsed || 0;
-      apiCallsLimit.textContent = this.user.apiCallsLimit || 100;
+    if (this.user) {
+      // API Calls Used and Limit
+      if (apiCallsUsed && apiCallsLimit) {
+        const used = this.user.apiCallsUsed || this.user.monthlyApiCalls || 0;
+        const limit = this.user.apiCallsLimit || 100;
+        
+        apiCallsUsed.textContent = used;
+        apiCallsLimit.textContent = limit;
+        
+        // Add visual indicator for usage
+        const usagePercentage = (used / limit) * 100;
+        if (usagePercentage > 80) {
+          apiCallsUsed.style.color = '#ef4444'; // Red for high usage
+        } else if (usagePercentage > 60) {
+          apiCallsUsed.style.color = '#f59e0b'; // Yellow for medium usage
+        } else {
+          apiCallsUsed.style.color = '#10b981'; // Green for low usage
+        }
+      }
+      
+      // Subscription Status
+      if (subscriptionStatus) {
+        const plan = this.user.subscriptionPlan || 'Free';
+        subscriptionStatus.textContent = plan;
+        
+        // Add visual styling based on plan
+        if (plan === 'Free') {
+          subscriptionStatus.style.color = '#6b7280';
+        } else if (plan === 'Pro') {
+          subscriptionStatus.style.color = '#10b981';
+        } else if (plan === 'Enterprise') {
+          subscriptionStatus.style.color = '#8b5cf6';
+        }
+      }
+      
+      // User Credits
+      if (userCredits) {
+        let credits = 0;
+        
+        // Handle different credit formats
+        if (typeof this.user.credits === 'number') {
+          credits = this.user.credits;
+        } else if (this.user.credits && typeof this.user.credits === 'object') {
+          // If credits is an object, try to get the available amount
+          credits = this.user.credits.available || this.user.credits.total || 0;
+        } else {
+          credits = 0;
+        }
+        
+        userCredits.textContent = credits;
+        
+        // Add visual indicator for credits
+        if (credits === 0) {
+          userCredits.style.color = '#ef4444'; // Red for no credits
+        } else if (credits < 10) {
+          userCredits.style.color = '#f59e0b'; // Yellow for low credits
+        } else {
+          userCredits.style.color = '#10b981'; // Green for sufficient credits
+        }
+      }
     }
   }
 
@@ -199,95 +349,30 @@ class QuirklyPopup {
     }
   }
 
-  async authenticate() {
-    const apiKeyInput = document.getElementById('apiKey');
-    const authenticateBtn = document.getElementById('authenticateBtn');
-    const apiKey = apiKeyInput.value.trim();
-
-    if (!apiKey) {
-      this.showStatus('Please enter your API key', 'error');
-      return;
-    }
-
-    // Show loading state
-    this.setButtonLoading(authenticateBtn, true);
-
+  async authenticate(apiKey) {
     try {
-      // Validate API key with real authentication server
-      const userData = await this.validateApiKey(apiKey);
-
-      // Save authentication data
-      await chrome.storage.sync.set({
-        apiKey: apiKey,
-        isEnabled: true,
-        user: userData
-      });
-
-      this.apiKey = apiKey;
-      this.user = userData;
-      this.isAuthenticated = true;
-      this.isEnabled = true;
-
-      this.showStatus('Authentication successful!', 'success');
+      console.log('🔍 Starting authentication via background script...');
       
-      // Update UI after short delay
-      setTimeout(() => {
-        this.updateUI();
-      }, 1000);
-
-    } catch (error) {
-      console.error('Authentication failed:', error);
-      this.showStatus(error.message || 'Authentication failed', 'error');
-    } finally {
-      this.setButtonLoading(authenticateBtn, false);
-    }
-  }
-
-  async validateApiKey(apiKey) {
-    const authEndpoint = this.authUrl;
-    
-    try {
-      console.log('Validating API key with server:', authEndpoint);
-      
-      const response = await fetch(authEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          apiKey: apiKey,
-          action: 'validate',
-          timestamp: new Date().toISOString(),
-          source: 'chrome-extension'
-        })
+      // Use message passing to background script instead of direct fetch
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'authenticate',
+          apiKey: apiKey
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response && response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response?.error || 'Unknown error from background script'));
+          }
+        });
       });
-
-      console.log('Auth response status:', response.status);
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Invalid API key');
-        } else if (response.status === 403) {
-          throw new Error('API key expired or suspended');
-        } else if (response.status === 429) {
-          throw new Error('Too many authentication attempts. Please try again later');
-        }
-        throw new Error(`Authentication failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Auth response data:', data);
-
-      if (data.success && data.user) {
-        return data.user;
-      } else {
-        throw new Error(data.message || 'Invalid API key');
-      }
+      
+      console.log('✅ Authentication successful:', response);
+      return response;
     } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        throw new Error('Unable to connect to authentication server. Please check your internet connection.');
-      }
+      console.error('❌ Authentication failed:', error);
       throw error;
     }
   }
@@ -297,6 +382,9 @@ class QuirklyPopup {
     this.setButtonLoading(signOutBtn, true);
 
     try {
+      // Stop data refresh
+      this.stopDataRefresh();
+      
       // Clear stored data
       await chrome.storage.sync.remove(['apiKey', 'user']);
       
@@ -400,6 +488,117 @@ class QuirklyPopup {
       statusDiv.style.display = 'none';
     }, 4000);
   }
+
+  async refreshUserData() {
+    if (!this.apiKey || !this.isAuthenticated) {
+      return;
+    }
+    
+    try {
+      console.log('🔄 Refreshing user data via background script...');
+      
+      // Use message passing to background script instead of direct fetch
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'refreshUser'
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response && response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response?.error || 'Unknown error from background script'));
+          }
+        });
+      });
+      
+      if (response.success && response.user) {
+        // Update user object with fresh data
+        this.user = response.user;
+        await chrome.storage.sync.set({ user: this.user });
+        this.updateStats();
+        console.log('✅ User data refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh user data:', error);
+      // Don't show error to user for background refresh
+    }
+  }
+
+  startDataRefresh() {
+    // Refresh user data every 5 minutes
+    if (this.dataRefreshInterval) {
+      clearInterval(this.dataRefreshInterval);
+    }
+    
+    this.dataRefreshInterval = setInterval(() => {
+      // Check if extension context is still valid
+      if (!this.isExtensionContextValid()) {
+        console.log('Quirkly Popup: Extension context lost during refresh, stopping...');
+        this.handleContextInvalidation();
+        return;
+      }
+      
+      this.refreshUserData();
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    console.log('🔄 Started periodic user data refresh');
+  }
+
+  stopDataRefresh() {
+    if (this.dataRefreshInterval) {
+      clearInterval(this.dataRefreshInterval);
+      this.dataRefreshInterval = null;
+      console.log('🔄 Stopped periodic user data refresh');
+    }
+  }
+
+  showLoadingState() {
+    const elements = ['apiCallsUsed', 'apiCallsLimit', 'subscriptionStatus', 'userCredits', 'userInitials', 'userEmail'];
+    elements.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = '...';
+        element.style.opacity = '0.6';
+      }
+    });
+  }
+
+  hideLoadingState() {
+    const elements = ['apiCallsUsed', 'apiCallsLimit', 'subscriptionStatus', 'userCredits', 'userInitials', 'userEmail'];
+    elements.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.style.opacity = '1';
+      }
+    });
+  }
+
+  // Check if extension context is still valid
+  isExtensionContextValid() {
+    return !!(chrome.runtime && chrome.runtime.id);
+  }
+
+  // Handle extension context invalidation
+  handleContextInvalidation() {
+    console.log('Quirkly Popup: Extension context invalidated, attempting to reconnect...');
+    
+    // Clear any existing intervals
+    this.stopDataRefresh();
+    
+    // Show message to user
+    this.showStatus('Extension disconnected. Please reload the extension.', 'error');
+    
+    // Try to reinitialize after a short delay
+    setTimeout(() => {
+      if (this.isExtensionContextValid()) {
+        console.log('Quirkly Popup: Extension context restored, reinitializing...');
+        this.init();
+      } else {
+        console.log('Quirkly Popup: Extension context still invalid');
+      }
+    }, 2000);
+  }
 }
 
 // Safe initialization with context validation
@@ -413,22 +612,21 @@ function initializeQuirklyPopup() {
   console.log('Quirkly Popup: Initializing...');
   
   try {
-    new QuirklyPopup();
+    // Create popup instance
+    window.quirklyPopup = new QuirklyPopup();
+    console.log('Quirkly Popup: Initialization complete');
   } catch (error) {
-    console.error('Quirkly Popup: Failed to initialize:', error);
+    if (error.message?.includes('Extension context invalidated')) {
+      console.log('Quirkly Popup: Extension context invalidated during initialization');
+      return;
+    }
+    console.error('Quirkly Popup: Initialization failed:', error);
   }
 }
 
 // Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Quirkly Popup: DOMContentLoaded fired');
-  initializeQuirklyPopup();
-});
-
-// Fallback initialization
 if (document.readyState === 'loading') {
-  console.log('Quirkly Popup: DOM still loading, waiting for DOMContentLoaded');
+  document.addEventListener('DOMContentLoaded', initializeQuirklyPopup);
 } else {
-  console.log('Quirkly Popup: DOM already ready, initializing immediately');
   initializeQuirklyPopup();
 }

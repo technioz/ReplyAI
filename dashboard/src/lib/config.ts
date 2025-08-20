@@ -20,8 +20,8 @@ const QuirklyDashboardConfig = {
   // Base URLs for different environments
   environments: {
     development: {
-      baseUrl: 'http://localhost:3001',
-      authEndpoint: '/api/auth',
+      baseUrl: 'http://localhost:3000',
+      authEndpoint: '/api/auth/login',
       replyEndpoint: '/api/reply/generate',
       subscriptionEndpoint: '/api/subscription',
       userEndpoint: '/api/user',
@@ -30,7 +30,7 @@ const QuirklyDashboardConfig = {
     },
     production: {
       baseUrl: 'https://api.quirkly.technioz.com',
-      authEndpoint: '/api/auth',
+      authEndpoint: '/api/auth/login',
       replyEndpoint: '/api/reply/generate',
       subscriptionEndpoint: '/api/subscription',
       userEndpoint: '/api/user',
@@ -56,6 +56,18 @@ const QuirklyDashboardConfig = {
   // Get specific URLs
   getAuthUrl: function(): string {
     return this.getConfig().authUrl;
+  },
+
+  getValidationUrl: function(): string {
+    const env = this.isDevelopment() ? 'development' : 'production';
+    const config = this.environments[env];
+    return config.baseUrl + '/api/auth/validate';
+  },
+
+  getTestUrl: function(): string {
+    const env = this.isDevelopment() ? 'development' : 'production';
+    const config = this.environments[env];
+    return config.baseUrl + '/api/test';
   },
 
   getReplyUrl: function(): string {

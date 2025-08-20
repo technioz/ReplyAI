@@ -12,8 +12,8 @@ const QuirklyConfig = {
   // Base URLs for different environments
   environments: {
     development: {
-      baseUrl: 'http://localhost:3001',
-      authEndpoint: '/api/auth',
+      baseUrl: 'http://localhost:3000',
+      authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
       dashboardUrl: 'http://localhost:3000'
     },
