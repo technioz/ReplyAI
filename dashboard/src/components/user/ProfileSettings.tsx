@@ -268,7 +268,8 @@ export function ProfileSettings() {
     { value: 'humorous', label: 'Humorous', description: 'Light-hearted and witty' },
     { value: 'empathetic', label: 'Empathetic', description: 'Understanding and supportive' },
     { value: 'analytical', label: 'Analytical', description: 'Thoughtful and data-driven' },
-    { value: 'enthusiastic', label: 'Enthusiastic', description: 'Energetic and positive' }
+    { value: 'enthusiastic', label: 'Enthusiastic', description: 'Energetic and positive' },
+    { value: 'controversial', label: 'Controversial', description: 'Provocative and challenging' }
   ];
 
   const tabs = [

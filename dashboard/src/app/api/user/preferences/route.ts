@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest) {
         updates['preferences.defaultTone'] = 'empathetic';
       } else {
         // Validate tone
-        const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic'];
+        const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic', 'controversial'];
         if (!validTones.includes(defaultTone)) {
           return NextResponse.json({ 
             success: false, 

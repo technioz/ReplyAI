@@ -714,6 +714,9 @@ class Quirkly {
       <button class="quirkly-btn" data-tone="enthusiastic" type="button" data-quirkly-btn="true">
         <span class="btn-icon">🔥</span> Enthusiastic
       </button>
+      <button class="quirkly-btn" data-tone="controversial" type="button" data-quirkly-btn="true">
+        <span class="btn-icon">⚡</span> Controversial
+      </button>
     `;
 
     // Insert buttons after the reply box with minimal DOM disruption
@@ -851,24 +854,22 @@ class Quirkly {
       if (replyData && typeof replyData === 'object' && replyData.reply) {
         console.log('Received reply:', replyData.reply);
         
-        // Use the correct method: inject directly into the reply box
-        const editableContent = this.findEditableContent(replyBox);
-        if (editableContent) {
-          try {
-            this.fillReplyBox(editableContent, replyData.reply);
+        // Use the simplified method: inject directly into the Twitter reply box
+        try {
+          const success = this.fillReplyBox(null, replyData.reply);
+          if (success) {
             this.showSuccess('Reply generated and inserted successfully! ✨');
             
             // Additional verification: check if the reply actually appeared
             setTimeout(() => {
               this.verifyReplyInjection(replyData.reply);
             }, 1000);
-          } catch (fillError) {
-            console.error('Error filling reply box:', fillError);
-            this.showError('Error inserting reply into text area');
+          } else {
+            this.showError('Could not find Twitter reply textarea');
           }
-        } else {
-          console.error('Could not find editable content in reply box');
-          this.showError('Could not find text area to insert reply');
+        } catch (fillError) {
+          console.error('Error filling reply box:', fillError);
+          this.showError('Error inserting reply into text area');
         }
         
       } else {
@@ -895,663 +896,59 @@ class Quirkly {
     }
   }
 
-  // Find the editable content area within the reply box
-  findEditableContent(replyBox) {
-    try {
-      console.log('Finding editable content in:', replyBox);
-      
-      if (!replyBox || typeof replyBox.querySelector !== 'function') {
-        console.error('Invalid replyBox provided:', replyBox);
-        return null;
-      }
-      
-      // Try multiple selectors to find the editable content area
-      const selectors = [
-        '.public-DraftEditor-content',
-        '[contenteditable="true"]',
-        '[data-testid="tweetTextarea_0"] .public-DraftEditor-content',
-        '[data-testid="tweetTextarea_0"] [contenteditable="true"]'
-      ];
-      
-      for (const selector of selectors) {
-        try {
-          const editableContent = replyBox.querySelector(selector);
-          if (editableContent) {
-            console.log('Found editable content with selector:', selector);
-            return editableContent;
-          }
-        } catch (selectorError) {
-          console.error('Error with selector:', selector, selectorError);
-        }
-      }
-      
-      // If not found in replyBox, try searching in the entire document
-      console.log('Not found in replyBox, searching document...');
-      for (const selector of selectors) {
-        try {
-          const editableContent = document.querySelector(selector);
-          if (editableContent) {
-            console.log('Found editable content in document with selector:', selector);
-            return editableContent;
-          }
-        } catch (selectorError) {
-          console.error('Error with document selector:', selector, selectorError);
-        }
-      }
-      
-      console.error('Could not find editable content area');
-      return null;
-    } catch (error) {
-      console.error('Error in findEditableContent:', error);
-      return null;
-    }
-  }
 
-  // Fill the reply box with the generated reply text
+
+  // Fill the reply box with the generated reply text using simple, effective injection
   fillReplyBox(editableContent, replyText) {
     try {
-      console.log('Filling editable content:', editableContent);
-      console.log('Reply text:', replyText);
-      
-      if (!editableContent || typeof editableContent.querySelector !== 'function') {
-        throw new Error('Invalid editable content element');
-      }
+      console.log('Filling reply box with text:', replyText);
       
       if (!replyText || typeof replyText !== 'string') {
         throw new Error('Invalid reply text');
       }
       
-      // Find the existing div with data-offset-key (Twitter's outer container)
-      const existingDiv = editableContent.querySelector('div[data-offset-key]');
-    
-      if (existingDiv) {
-        console.log('Found existing div:', existingDiv);
+      // Simple and effective approach: locate the Twitter reply textarea and inject text
+      const textarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
+      
+      if (textarea) {
+        console.log('Found Twitter reply textarea, injecting reply...');
         
-        // Get the existing offset key to maintain Twitter's structure
-        const offsetKey = existingDiv.getAttribute('data-offset-key');
-        console.log('Using existing offset key:', offsetKey);
+        // Focus the textarea first
+        textarea.focus();
         
-        // Find the actual Twitter editor ID from the existing structure
-        let actualEditorId = 'quirkly'; // fallback
-        const existingOuterDiv = editableContent.querySelector('div[data-editor]');
-        if (existingOuterDiv) {
-          actualEditorId = existingOuterDiv.getAttribute('data-editor') || 'quirkly';
-          console.log('Found actual Twitter editor ID:', actualEditorId);
-        } else {
-          console.log('No existing editor ID found, using fallback:', actualEditorId);
-        }
+        // Use execCommand to insert text (works for contentEditable elements)
+        document.execCommand('insertText', false, replyText);
         
-        console.log('Will use editor ID:', actualEditorId);
+        // Dispatch input event so Twitter registers the change
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
         
-        // Create the COMPLETE Twitter structure with ALL required divs:
-        // 1. Outer div: data-block="true", data-editor (Twitter's actual ID), data-offset-key
-        // 2. Middle div: data-offset-key + CSS classes
-        // 3. Inner span: data-offset-key
-        // 4. Text span: data-text="true"
+        // Additional events to ensure Twitter recognizes the input
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
         
-        const outerDiv = document.createElement('div');
-        outerDiv.className = '';
-        outerDiv.setAttribute('data-block', 'true');
-        outerDiv.setAttribute('data-editor', actualEditorId); // Use Twitter's actual editor ID
-        outerDiv.setAttribute('data-offset-key', offsetKey);
+        console.log('Reply successfully injected into Twitter textarea');
         
-        const middleDiv = document.createElement('div');
-        middleDiv.setAttribute('data-offset-key', offsetKey);
-        middleDiv.className = 'public-DraftStyleDefault-block public-DraftStyleDefault-ltr';
-        
-        // Create the inner span with data-offset-key (same as parent divs)
-        const innerSpan = document.createElement('span');
-        innerSpan.setAttribute('data-offset-key', offsetKey);
-        
-        // Create the innermost span with data-text="true" containing the reply
-        const textSpan = document.createElement('span');
-        textSpan.setAttribute('data-text', 'true');
-        textSpan.textContent = replyText;
-        
-        // Assemble the complete structure: outerDiv > middleDiv > innerSpan > textSpan
-        innerSpan.appendChild(textSpan);
-        middleDiv.appendChild(innerSpan);
-        // outerDiv.appendChild(middleDiv);
-        
-        // console.log('Created COMPLETE Twitter structure:', outerDiv.outerHTML);
-        console.log('Structure validation:', {
-          'outerDiv data-block': outerDiv.getAttribute('data-block'),
-          'outerDiv data-editor': outerDiv.getAttribute('data-editor'),
-          'outerDiv data-offset-key': outerDiv.getAttribute('data-offset-key'),
-          'middleDiv data-offset-key': middleDiv.getAttribute('data-offset-key'),
-          'middleDiv className': middleDiv.className,
-          'innerSpan data-offset-key': innerSpan.getAttribute('data-offset-key'),
-          'textSpan data-text': textSpan.getAttribute('data-text'),
-          'textContent': textSpan.textContent
-        });
-        
-        // Replace the existing div with the new complete structure
-        // Clear existing children and replace with middleDiv
-        existingDiv.innerHTML = '';
-        // existingDiv.appendChild(middleDiv);
-
-        // 1. Locate the reply textarea - may need to adjust selector if Twitter updates its UI
-        const textarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]'); // or similar selector
-
-        if (textarea) {
-            // 2. Set the value (for contentEditable elements, use innerText or textContent)
-            textarea.focus();
-            document.execCommand('insertText', false, replyText);  // works for contentEditable
-            
-            // 3. Optionally: dispatch input events so Twitter/X registers the change
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-
-        
-        console.log('Successfully replaced existing div with complete Twitter structure');
-        console.log('New structure in DOM:', editableContent.querySelector(`div[data-offset-key="${offsetKey}"]`));
-        console.log('New structure outerHTML:', editableContent.querySelector(`div[data-offset-key="${offsetKey}"]`)?.outerHTML);
-        
-        // Enhanced event triggering to make Twitter recognize this as real user input
-        console.log('Triggering enhanced events to simulate real user input...');
-        
-        // First, trigger input event on the text span to simulate typing
-        const replyTextSpan = outerDiv.querySelector('span[data-text="true"]');
-        if (replyTextSpan) {
-          replyTextSpan.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-          console.log('Triggered input event on text span');
-        }
-        
-        // Trigger events on the editable content with more realistic simulation
-        const events = [
-          new Event('input', { bubbles: true, cancelable: true }),
-          new Event('change', { bubbles: true, cancelable: true }),
-          new Event('keyup', { bubbles: true, cancelable: true }),
-          new Event('keydown', { bubbles: true, cancelable: true }),
-          new Event('compositionend', { bubbles: true, cancelable: true }),
-          new Event('paste', { bubbles: true, cancelable: true }),
-          new Event('focus', { bubbles: true, cancelable: true }),
-          new Event('blur', { bubbles: true, cancelable: true })
-        ];
-        
-        events.forEach((event, index) => {
-          setTimeout(() => {
-            editableContent.dispatchEvent(event);
-            console.log(`Triggered event ${index + 1}:`, event.type);
-          }, index * 50); // Stagger events to simulate real user interaction
-        });
-        
-        // Additional: Simulate typing by dispatching keydown/keyup events for each character
-        setTimeout(() => {
-          if (textSpan && textSpan.textContent) {
-            const text = textSpan.textContent;
-            console.log('Simulating character-by-character typing for:', text);
-            
-            for (let i = 0; i < text.length; i++) {
-              setTimeout(() => {
-                // Simulate keydown for each character
-                const keydownEvent = new KeyboardEvent('keydown', {
-                  key: text[i],
-                  code: `Key${text[i].toUpperCase()}`,
-                  bubbles: true,
-                  cancelable: true
-                });
-                editableContent.dispatchEvent(keydownEvent);
-                
-                // Simulate keyup for each character
-                const keyupEvent = new KeyboardEvent('keyup', {
-                  key: text[i],
-                  code: `Key${text[i].toUpperCase()}`,
-                  bubbles: true,
-                  cancelable: true
-                });
-                editableContent.dispatchEvent(keyupEvent);
-              }, i * 10); // Small delay between characters
-            }
-          }
-        }, 300);
-        
-        // Focus the editor and ensure it's active
-        setTimeout(() => {
-          editableContent.focus();
-          console.log('Focused editable content');
-          
-          // Force a re-render by triggering additional events
-          editableContent.dispatchEvent(new Event('focusin', { bubbles: true }));
-          editableContent.dispatchEvent(new Event('focus', { bubbles: true }));
-          
-          // Additional: Try to trigger Twitter's internal content change detection
-          const mutationEvent = new Event('DOMSubtreeModified', { bubbles: true });
-          editableContent.dispatchEvent(mutationEvent);
-          
-          // Set cursor at the end of the reply text
-          try {
-            const range = document.createRange();
-            const selection = window.getSelection();
-            if (replyTextSpan && replyTextSpan.firstChild) {
-              range.setStart(replyTextSpan.firstChild, replyTextSpan.firstChild.length);
-              range.setEnd(replyTextSpan.firstChild, replyTextSpan.firstChild.length);
-            } else {
-              range.selectNodeContents(editableContent);
-              range.collapse(false);
-            }
-            selection.removeAllRanges();
-            selection.addRange(range);
-            console.log('Cursor positioned at end of reply text');
-          } catch (e) {
-            console.log('Selection setting failed, but content should be set');
-          }
-          
-        }, 100);
-        
-        // Enhanced placeholder hiding - try multiple selectors
-        console.log('Attempting to hide placeholder text...');
-        const placeholderSelectors = [
-          '.public-DraftEditorPlaceholder-inner',
-          '.public-DraftEditorPlaceholder-root',
-          '[data-testid="placeholder"]',
-          '.placeholder'
-        ];
-        
-        let placeholderHidden = false;
-        placeholderSelectors.forEach(selector => {
-          const placeholder = editableContent.parentElement.querySelector(selector);
-          if (placeholder) {
-            placeholder.style.display = 'none';
-            placeholder.style.visibility = 'hidden';
-            placeholder.style.opacity = '0';
-            placeholder.style.position = 'absolute';
-            placeholder.style.pointerEvents = 'none';
-            console.log(`Hidden placeholder with selector: ${selector}`);
-            placeholderHidden = true;
-          }
-        });
-        
-        if (!placeholderHidden) {
-          console.log('No placeholder found to hide');
-        }
-        
-      } else {
-        console.error('Could not find existing div with data-offset-key in:', editableContent);
-        console.log('Available elements in editableContent:', editableContent.innerHTML);
-        
-        // Fallback: try to create a new structure from scratch
-        console.log('Attempting fallback: creating new Twitter structure from scratch');
-        
-        // Try to find Twitter's actual editor ID even in fallback mode
-        let actualEditorId = 'quirkly'; // fallback
-        const existingOuterDiv = editableContent.querySelector('div[data-editor]');
-        if (existingOuterDiv) {
-          actualEditorId = existingOuterDiv.getAttribute('data-editor') || 'quirkly';
-          console.log('Fallback: Found actual Twitter editor ID:', actualEditorId);
-        } else {
-          console.log('Fallback: No existing editor ID found, using fallback:', actualEditorId);
-        }
-        
-        console.log('Fallback: Will use editor ID:', actualEditorId);
-        
-        // Create the COMPLETE Twitter structure from scratch:
-        // 1. Outer div: data-block="true", data-editor (Twitter's actual ID), data-offset-key
-        // 2. Middle div: data-offset-key + CSS classes
-        // 3. Inner span: data-offset-key
-        // 4. Text span: data-text="true"
-        
-        const fallbackOffsetKey = `quirkly-${Date.now()}-0`;
-        
-        const outerDiv = document.createElement('div');
-        outerDiv.className = '';
-        outerDiv.setAttribute('data-block', 'true');
-        outerDiv.setAttribute('data-editor', actualEditorId); // Use Twitter's actual editor ID
-        outerDiv.setAttribute('data-offset-key', fallbackOffsetKey);
-        
-        const middleDiv = document.createElement('div');
-        middleDiv.setAttribute('data-offset-key', fallbackOffsetKey);
-        middleDiv.className = 'public-DraftStyleDefault-block public-DraftStyleDefault-ltr';
-        
-        // Create the inner span with same offset key
-        const innerSpan = document.createElement('span');
-        innerSpan.setAttribute('data-offset-key', fallbackOffsetKey);
-        
-        // Create the innermost span with data-text="true" containing the reply
-        const textSpan = document.createElement('span');
-        textSpan.setAttribute('data-text', 'true');
-        textSpan.textContent = replyText;
-        
-        // Assemble the complete structure: outerDiv > middleDiv > innerSpan > textSpan
-        innerSpan.appendChild(textSpan);
-        middleDiv.appendChild(innerSpan);
-        outerDiv.appendChild(middleDiv);
-        
-        // Append to the editable content
-        editableContent.appendChild(outerDiv);
-        
-        console.log('Fallback: Created and appended COMPLETE Twitter structure:', outerDiv.outerHTML);
-        
-        // Trigger events and focus
-        const events = ['input', 'change', 'keyup', 'keydown', 'compositionend', 'paste'];
-        events.forEach(eventType => {
-          editableContent.dispatchEvent(new Event(eventType, { bubbles: true }));
-        });
-        
-        editableContent.focus();
-        
-        // Hide placeholder
-        const placeholder = editableContent.parentElement.querySelector('.public-DraftEditorPlaceholder-inner');
+        // Hide placeholder text if present
+        const placeholder = textarea.parentElement?.querySelector('.public-DraftEditorPlaceholder-inner');
         if (placeholder) {
           placeholder.style.display = 'none';
         }
         
-        return; // Success with fallback method
+        return true;
+      } else {
+        console.error('Could not find Twitter reply textarea');
+        return false;
       }
+      
     } catch (error) {
       console.error('Error in fillReplyBox:', error);
-      throw error; // Re-throw to be caught by the calling function
-    }
-  }
-
-  // BULLETPROOF METHOD: Inject reply using script tag to bypass all context issues
-  injectReplyBulletproof(replyText) {
-    try {
-      console.log('Using bulletproof injection method...');
-      
-      // Store the reply in the page's window object (not extension context)
-      const script = document.createElement('script');
-      script.textContent = `
-        // Store reply in page context
-        window.quirklyReply = "${replyText.replace(/"/g, '\\"')}";
-        window.quirklyReplyTimestamp = ${Date.now()};
-        
-        // Function to inject reply
-        function injectQuirklyReply() {
-          try {
-            console.log('Quirkly: Injecting reply from page context...');
-            
-            const replyText = window.quirklyReply;
-            const timestamp = window.quirklyReplyTimestamp;
-            
-            if (!replyText || !timestamp) {
-              console.log('Quirkly: No reply found in page context');
-              return;
-            }
-            
-            // Check if reply is recent (within last 30 seconds)
-            if (Date.now() - timestamp > 30000) {
-              console.log('Quirkly: Reply too old, clearing');
-              delete window.quirklyReply;
-              delete window.quirklyReplyTimestamp;
-              return;
-            }
-            
-            console.log('Quirkly: Found reply:', replyText);
-            
-            // Try multiple injection methods
-            let success = false;
-            
-            // Method 1: Look for any contenteditable element
-            const contentEditable = document.querySelector('[contenteditable="true"]');
-            if (contentEditable) {
-              contentEditable.textContent = replyText;
-              contentEditable.dispatchEvent(new Event('input', { bubbles: true }));
-              contentEditable.focus();
-              success = true;
-              console.log('Quirkly: Injected into contenteditable element');
-            }
-            
-            // Method 2: Look for Draft.js content
-            if (!success) {
-              const draftContent = document.querySelector('.public-DraftEditor-content');
-              if (draftContent) {
-                draftContent.textContent = replyText;
-                draftContent.dispatchEvent(new Event('input', { bubbles: true }));
-                draftContent.focus();
-                success = true;
-                console.log('Quirkly: Injected into Draft.js content');
-              }
-            }
-            
-            // Method 3: Look for any textarea
-            if (!success) {
-              const textarea = document.querySelector('textarea');
-              if (textarea) {
-                textarea.value = replyText;
-                textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                textarea.focus();
-                success = true;
-                console.log('Quirkly: Injected into textarea');
-              }
-            }
-            
-            // Method 4: Create floating text area if nothing else works
-            if (!success) {
-              const floatingTextArea = document.createElement('textarea');
-              floatingTextArea.value = replyText;
-              floatingTextArea.style.position = 'fixed';
-              floatingTextArea.style.top = '50%';
-              floatingTextArea.style.left = '50%';
-              floatingTextArea.style.transform = 'translate(-50%, -50%)';
-              floatingTextArea.style.zIndex = '10000';
-              floatingTextArea.style.width = '500px';
-              floatingTextArea.style.height = '200px';
-              floatingTextArea.style.padding = '20px';
-              floatingTextArea.style.border = '3px solid #1DA1F2';
-              floatingTextArea.style.borderRadius = '12px';
-              floatingTextArea.style.fontSize = '16px';
-              floatingTextArea.style.background = 'white';
-              floatingTextArea.style.color = 'black';
-              floatingTextArea.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
-              floatingTextArea.placeholder = 'Generated Reply (copy and paste into Twitter)';
-              document.body.appendChild(floatingTextArea);
-              floatingTextArea.focus();
-              floatingTextArea.select();
-              
-              // Add close button
-              const closeBtn = document.createElement('button');
-              closeBtn.textContent = '×';
-              closeBtn.style.position = 'absolute';
-              closeBtn.style.top = '10px';
-              closeBtn.style.right = '10px';
-              closeBtn.style.background = '#1DA1F2';
-              closeBtn.style.color = 'white';
-              closeBtn.style.border = 'none';
-              closeBtn.style.borderRadius = '50%';
-              closeBtn.style.width = '30px';
-              closeBtn.style.height = '30px';
-              closeBtn.style.fontSize = '20px';
-              closeBtn.style.cursor = 'pointer';
-              closeBtn.onclick = () => floatingTextArea.remove();
-              floatingTextArea.parentNode.appendChild(closeBtn);
-              
-              // Auto-remove after 30 seconds
-              setTimeout(() => {
-                if (floatingTextArea.parentNode) {
-                  floatingTextArea.remove();
-                }
-              }, 30000);
-              
-              success = true;
-              console.log('Quirkly: Created floating text area');
-            }
-            
-            // Clear page context after successful injection
-            if (success) {
-              delete window.quirklyReply;
-              delete window.quirklyReplyTimestamp;
-              
-              // Show success message
-              const successDiv = document.createElement('div');
-              successDiv.textContent = 'Reply generated successfully! ✨';
-              successDiv.style.position = 'fixed';
-              successDiv.style.top = '20px';
-              successDiv.style.right = '20px';
-              successDiv.style.background = '#16A34A';
-              successDiv.style.color = 'white';
-              successDiv.style.padding = '12px 20px';
-              successDiv.style.borderRadius = '8px';
-              successDiv.style.zIndex = '10001';
-              successDiv.style.fontFamily = 'Arial, sans-serif';
-              successDiv.style.fontSize = '14px';
-              document.body.appendChild(successDiv);
-              setTimeout(() => successDiv.remove(), 3000);
-            }
-            
-          } catch (error) {
-            console.error('Quirkly: Error in page context injection:', error);
-          }
-        }
-        
-        // Execute immediately
-        injectQuirklyReply();
-      `;
-      
-      // Inject the script into the page
-      document.head.appendChild(script);
-      
-      // Remove the script tag after execution
-      setTimeout(() => {
-        if (script.parentNode) {
-          script.remove();
-        }
-      }, 1000);
-      
-      console.log('Bulletproof injection script executed');
-      
-    } catch (error) {
-      console.error('Error in bulletproof injection:', error);
-      
-      // Try the backup method
-      this.injectReplyBackup(replyText);
-    }
-  }
-
-  // BACKUP METHOD: Use data attributes and page-level event listeners
-  injectReplyBackup(replyText) {
-    try {
-      console.log('Using backup injection method...');
-      
-      // Create a hidden div with the reply data
-      const replyDiv = document.createElement('div');
-      replyDiv.id = 'quirkly-reply-data';
-      replyDiv.setAttribute('data-reply', replyText);
-      replyDiv.setAttribute('data-timestamp', Date.now().toString());
-      replyDiv.style.display = 'none';
-      document.body.appendChild(replyDiv);
-      
-      // Create a script that will run in page context and watch for this data
-      const script = document.createElement('script');
-      script.textContent = `
-        // Watch for reply data and inject it
-        function watchForQuirklyReply() {
-          const replyDiv = document.getElementById('quirkly-reply-data');
-          if (replyDiv) {
-            const replyText = replyDiv.getAttribute('data-reply');
-            const timestamp = parseInt(replyDiv.getAttribute('data-timestamp'));
-            
-            if (replyText && timestamp && (Date.now() - timestamp < 30000)) {
-              console.log('Quirkly: Found reply data, injecting...');
-              
-              // Try to inject into any available text area
-              const textArea = document.querySelector('[contenteditable="true"], .public-DraftEditor-content, textarea');
-              if (textArea) {
-                if (textArea.contentEditable === 'true') {
-                  textArea.textContent = replyText;
-                } else if (textArea.value !== undefined) {
-                  textArea.value = replyText;
-                }
-                textArea.dispatchEvent(new Event('input', { bubbles: true }));
-                textArea.focus();
-                
-                // Remove the data div
-                replyDiv.remove();
-                
-                // Show success message
-                alert('Reply generated and inserted successfully! ✨');
-                return;
-              }
-            }
-          }
-          
-          // Check again in 100ms
-          setTimeout(watchForQuirklyReply, 100);
-        }
-        
-        // Start watching
-        watchForQuirklyReply();
-      `;
-      
-      // Inject the script
-      document.head.appendChild(script);
-      
-      // Remove script after 5 seconds
-      setTimeout(() => {
-        if (script.parentNode) {
-          script.remove();
-        }
-        if (replyDiv.parentNode) {
-          replyDiv.remove();
-        }
-      }, 5000);
-      
-      console.log('Backup injection method executed');
-      
-    } catch (error) {
-      console.error('Error in backup injection:', error);
-      
-      // Ultimate fallback: show in alert
-      alert(`Generated Reply:\n\n${replyText}\n\nPlease copy and paste this into the reply box.`);
-    }
-  }
-
-  // Use web worker to handle reply generation in separate context
-  async generateReplyWithWorker(tone, replyBox) {
-    try {
-      console.log('Using web worker approach for reply generation...');
-      
-      // Create a simple web worker for reply generation
-      const workerCode = `
-        self.onmessage = function(e) {
-          const { tweetText, tone, userContext } = e.data;
-          
-          // Simulate AI processing (in real implementation, this would call the API)
-          setTimeout(() => {
-            const reply = \`This is a \${tone} reply to: "\${tweetText}"\`;
-            self.postMessage({ success: true, reply: reply });
-          }, 1000);
-        };
-      `;
-      
-      const blob = new Blob([workerCode], { type: 'application/javascript' });
-      const worker = new Worker(URL.createObjectURL(blob));
-      
-      // Get original post content
-      const originalPost = this.getOriginalPost();
-      
-      return new Promise((resolve, reject) => {
-        worker.onmessage = (e) => {
-          if (e.data.success) {
-            resolve(e.data);
-          } else {
-            reject(new Error('Worker failed to generate reply'));
-          }
-          worker.terminate();
-        };
-        
-        worker.onerror = (error) => {
-          reject(new Error('Worker error: ' + error.message));
-          worker.terminate();
-        };
-        
-        // Send data to worker
-        worker.postMessage({
-          tweetText: originalPost,
-          tone: tone,
-          userContext: {
-            userId: this.user?.id,
-            email: this.user?.email,
-            preferences: this.user?.preferences
-          }
-        });
-      });
-      
-    } catch (error) {
-      console.error('Web worker approach failed:', error);
       throw error;
     }
   }
+
+
+
+
 
   // Start monitoring for reply boxes with context validation
   startMonitoring() {
@@ -1781,105 +1178,23 @@ class Quirkly {
   verifyReplyInjection(replyText) {
     console.log('Quirkly: Verifying reply injection...');
     
-    // Look for the reply text in the specific Twitter textarea
-    const twitterTextarea = document.querySelector('[data-testid="tweetTextarea_0"]');
+    // Look for the reply text in the Twitter textarea
+    const twitterTextarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
     if (twitterTextarea) {
       const content = twitterTextarea.textContent || '';
       if (content.includes(replyText)) {
-        console.log('Quirkly: Reply successfully injected into Twitter textarea:', twitterTextarea);
-        this.showSuccess('Reply successfully injected into the reply box! ✨');
-        return;
+        console.log('Quirkly: Reply successfully injected into Twitter textarea');
+        return true;
       }
     }
     
-    // Fallback: look for the reply text in various possible locations
-    const possibleLocations = [
-      '[data-testid="tweetTextarea_0"]',
-      '[data-testid="replyTextarea"]',
-      '[data-testid="composeTextarea"]',
-      '[contenteditable="true"]',
-      '.public-DraftEditor-content'
-    ];
-    
-    let found = false;
-    let foundLocation = null;
-    
-    possibleLocations.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        const content = element.textContent || element.value || '';
-        if (content.includes(replyText)) {
-          found = true;
-          foundLocation = element;
-          console.log('Quirkly: Reply text found in:', selector, element);
-        }
-      });
-    });
-    
-    if (found) {
-      console.log('Quirkly: Reply successfully injected into:', foundLocation);
-      this.showSuccess('Reply successfully injected into the reply box! ✨');
-    } else {
-      console.warn('Quirkly: Reply text not found in any reply box. Injection may have failed.');
-      this.showError('Reply injection verification failed. Please check the reply box manually.');
-      
-      // Show the reply in a more prominent way
-      this.showReplyFallback(replyText);
-    }
+    console.warn('Quirkly: Reply text not found in Twitter textarea. Injection may have failed.');
+    return false;
   }
 
-  // Show reply in a fallback way if injection verification fails
-  showReplyFallback(replyText) {
-    try {
-      // Create a prominent notification with the reply
-      const fallbackDiv = document.createElement('div');
-      fallbackDiv.setAttribute('data-quirkly-extension', 'true');
-      fallbackDiv.innerHTML = `
-        <div style="background: #1DA1F2; color: white; padding: 20px; border-radius: 12px; margin: 20px; max-width: 500px;">
-          <h3 style="margin: 0 0 15px 0;">Generated Reply</h3>
-          <p style="margin: 0 0 15px 0; line-height: 1.5;">${replyText}</p>
-          <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #1DA1F2; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
-        </div>
-      `;
-      
-      fallbackDiv.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 10002;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-      `;
-      
-      document.body.appendChild(fallbackDiv);
-      
-      // Auto-remove after 30 seconds
-      setTimeout(() => {
-        if (fallbackDiv.parentNode) {
-          fallbackDiv.remove();
-        }
-      }, 30000);
-      
-    } catch (error) {
-      console.error('Quirkly: Error showing fallback:', error);
-      // Ultimate fallback: alert
-      alert(`Generated Reply:\n\n${replyText}\n\nPlease copy and paste this into the reply box.`);
-    }
-  }
 
-  // Helper to find the reply box containing the specific reply text
-  findReplyBoxContainingText(replyText) {
-    const replyBoxes = document.querySelectorAll('.quirkly-buttons'); // Assuming buttons are in a container
-    for (const replyBox of replyBoxes) {
-      const replyContent = replyBox.textContent.trim();
-      if (replyContent.includes(replyText)) {
-        return replyBox;
-      }
-    }
-    return null;
-  }
+
+
 
   // Stop all monitoring once we have buttons
   stopAllMonitoring() {

@@ -343,7 +343,7 @@ const userSchema = new Schema<IUser>({
   preferences: {
     defaultTone: {
       type: String,
-      enum: ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic'],
+      enum: ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic', 'controversial'],
       default: 'professional'
     },
     notifications: {

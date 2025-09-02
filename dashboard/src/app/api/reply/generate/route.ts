@@ -66,6 +66,7 @@ class GroqService {
     }
 
     const result = await response.json();
+    console.log(result.choices[0].message)
     
     if (!result.choices || !result.choices[0] || !result.choices[0].message) {
       throw new Error('Invalid response from Groq API');
@@ -240,7 +241,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate tone
-    const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic'];
+    const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic', 'controversial'];
     if (!validTones.includes(tone)) {
       throw new Error(`Invalid tone. Must be one of: ${validTones.join(', ')}`);
     }

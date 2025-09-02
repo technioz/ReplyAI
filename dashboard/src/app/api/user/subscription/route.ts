@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest) {
     switch (action) {
       case 'updatePreferences':
         if (data.defaultTone) {
-          const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic'];
+          const validTones = ['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic', 'controversial'];
           if (!validTones.includes(data.defaultTone)) {
             return NextResponse.json({ 
               error: `Invalid tone. Must be one of: ${validTones.join(', ')}` 

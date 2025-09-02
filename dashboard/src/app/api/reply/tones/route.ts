@@ -39,6 +39,12 @@ export async function GET(request: NextRequest) {
         name: 'Enthusiastic',
         description: 'Energetic, positive, and excited tone',
         example: 'This is absolutely fantastic! Love the energy!'
+      },
+      {
+        id: 'controversial',
+        name: 'Controversial',
+        description: 'Provocative, challenging, and thought-provoking tone',
+        example: 'This is a hot take that will definitely spark some debate.'
       }
     ];
 

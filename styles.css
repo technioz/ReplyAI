@@ -765,6 +765,7 @@ body.quirkly-popup .tone-color.humorous { background: var(--quirkly-warning); }
 body.quirkly-popup .tone-color.empathetic { background: #ec4899; }
 body.quirkly-popup .tone-color.analytical { background: var(--quirkly-ink-mute); }
 body.quirkly-popup .tone-color.enthusiastic { background: var(--quirkly-danger); }
+body.quirkly-popup .tone-color.controversial { background: #8b5cf6; }
 
 body.quirkly-popup .tone-item span {
   font-size: 12px;
