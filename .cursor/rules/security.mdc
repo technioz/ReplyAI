@@ -1,0 +1,419 @@
+---
+globs: *.ts,*.tsx,*.js,*.jsx
+description: Security best practices for authentication, authorization, and data protection
+---
+
+# Security & Authentication
+
+## Authentication Architecture
+
+### JWT-Based Authentication
+Follow the established pattern in [auth.ts](mdc:dashboard/src/lib/middleware/auth.ts):
+
+```typescript
+// ✅ Good: Use JWT for stateless authentication
+export const getUserFromJWT = (token: string): JWTPayload | null => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    return decoded;
+  } catch (error) {
+    console.error('JWT verification failed:', error);
+    return null;
+  }
+};
+
+// ✅ Good: Validate token structure
+if (!decoded.id || !decoded.email || !decoded.role) {
+  throw AppError.unauthorized('Invalid token payload');
+}
+```
+
+### API Key Management
+For extension authentication:
+
+```typescript
+// ✅ Good: Secure API key validation
+userSchema.statics.findByApiKey = function(apiKey: string) {
+  return this.findOne({
+    $or: [
+      { apiKey, status: 'active' },
+      { 'apiKeys.key': apiKey, status: 'active' }
+    ]
+  }).select('+password');
+};
+
+// ✅ Good: Track API key usage
+apiKey.lastUsedAt = new Date();
+await user.save();
+```
+
+## Authorization & Access Control
+
+### Role-Based Access Control
+```typescript
+// ✅ Good: Check user roles and status
+export const protect = async (req: NextRequest) => {
+  const user = await getUserFromRequest(req);
+  
+  if (!user) {
+    throw AppError.unauthorized('Authentication required');
+  }
+  
+  if (user.status !== 'active') {
+    throw AppError.forbidden('Account inactive');
+  }
+  
+  return user;
+};
+
+// ✅ Good: Admin-only endpoints
+export const requireAdmin = async (req: NextRequest) => {
+  const user = await protect(req);
+  
+  if (user.role !== 'admin') {
+    throw AppError.forbidden('Admin access required');
+  }
+  
+  return user;
+};
+```
+
+### Resource-Level Authorization
+```typescript
+// ✅ Good: Verify resource ownership
+export const requireResourceAccess = async (req: NextRequest, resourceId: string) => {
+  const user = await protect(req);
+  
+  if (user.role === 'admin') {
+    return user; // Admins can access all resources
+  }
+  
+  // Check if user owns the resource
+  const resource = await Resource.findById(resourceId);
+  if (!resource || resource.userId.toString() !== user.id) {
+    throw AppError.forbidden('Access denied to this resource');
+  }
+  
+  return user;
+};
+```
+
+## Input Validation & Sanitization
+
+### Request Validation
+```typescript
+// ✅ Good: Validate all inputs
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(8).max(128),
+  firstName: z.string().min(1).max(50).trim(),
+  lastName: z.string().max(50).trim().optional()
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const validatedData = createUserSchema.parse(body);
+    // Process validated data
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw AppError.validationError('Invalid input data', error.errors);
+    }
+    throw error;
+  }
+}
+```
+
+### SQL Injection Prevention
+```typescript
+// ✅ Good: Use parameterized queries (MongoDB)
+const user = await User.findOne({ 
+  email: validatedEmail, // Direct field matching
+  status: 'active' 
+});
+
+// ✅ Good: Use aggregation pipelines for complex queries
+const pipeline = [
+  { $match: { userId: new ObjectId(userId) } },
+  { $group: { _id: '$category', count: { $sum: 1 } } }
+];
+const results = await Usage.aggregate(pipeline);
+```
+
+### XSS Prevention
+```typescript
+// ✅ Good: Sanitize user content
+import DOMPurify from 'dompurify';
+
+const sanitizeContent = (content: string): string => {
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong'],
+    ALLOWED_ATTR: []
+  });
+};
+
+// ✅ Good: Escape HTML in responses
+const safeContent = content
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#x27;');
+```
+
+## Password Security
+
+### Password Hashing
+```typescript
+// ✅ Good: Use bcrypt for password hashing
+import bcrypt from 'bcryptjs';
+
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// ✅ Good: Password verification
+userSchema.methods.correctPassword = async function(candidatePassword: string) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+```
+
+### Password Policy
+```typescript
+// ✅ Good: Enforce password requirements
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password cannot exceed 128 characters')
+  .regex(/[A-Z]/, 'Password must contain uppercase letter')
+  .regex(/[a-z]/, 'Password must contain lowercase letter')
+  .regex(/[0-9]/, 'Password must contain number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain special character');
+```
+
+## Session & Token Security
+
+### JWT Security
+```typescript
+// ✅ Good: Secure JWT configuration
+const token = jwt.sign(
+  {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    status: user.status
+  },
+  process.env.JWT_SECRET!,
+  {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    issuer: 'quirkly-api',
+    audience: 'quirkly-client'
+  }
+);
+
+// ✅ Good: Set secure cookie options
+response.cookies.set('token', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+});
+```
+
+### Session Management
+```typescript
+// ✅ Good: Track login attempts
+userSchema.methods.incLoginAttempts = function() {
+  this.loginAttempts += 1;
+  
+  if (this.loginAttempts >= 5) {
+    this.lockedUntil = Date.now() + 2 * 60 * 60 * 1000; // 2 hours
+  }
+  
+  return this.save();
+};
+
+// ✅ Good: Account lockout
+if (user.isLocked) {
+  throw AppError.accountLocked('Account temporarily locked due to failed login attempts');
+}
+```
+
+## CORS & Headers Security
+
+### CORS Configuration
+```typescript
+// ✅ Good: Restrictive CORS policy
+const corsHeaders = {
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS?.split(',') || ['https://quirkly.technioz.com'],
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-ID, X-Extension-Version',
+  'Access-Control-Max-Age': '86400'
+};
+```
+
+### Security Headers
+```typescript
+// ✅ Good: Set security headers
+const securityHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'"
+};
+
+return NextResponse.json(data, { 
+  status: 200,
+  headers: { ...corsHeaders, ...securityHeaders }
+});
+```
+
+## Rate Limiting & Abuse Prevention
+
+### API Rate Limiting
+```typescript
+// ✅ Good: Implement rate limiting
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// ✅ Good: Different limits for different endpoints
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Stricter limit for sensitive operations
+  skipSuccessfulRequests: true
+});
+```
+
+### Credit-Based Rate Limiting
+```typescript
+// ✅ Good: Check user credits before processing
+export const requireCredits = async (request: NextRequest, creditsNeeded: number = 1) => {
+  const user = await protect(request);
+  
+  if (user.credits.available < creditsNeeded) {
+    throw AppError.insufficientCredits(`Insufficient credits. Need ${creditsNeeded}, have ${user.credits.available}`);
+  }
+  
+  return user;
+};
+```
+
+## Data Protection
+
+### Sensitive Data Handling
+```typescript
+// ✅ Good: Exclude sensitive fields from responses
+userSchema.methods.toJSON = function() {
+  const userObject = this.toObject();
+  delete userObject.password;
+  delete userObject.passwordResetToken;
+  delete userObject.emailVerificationToken;
+  return userObject;
+};
+
+// ✅ Good: Use select: false for sensitive fields
+password: {
+  type: String,
+  required: true,
+  select: false // Don't include in queries by default
+}
+```
+
+### Environment Variables Security
+```typescript
+// ✅ Good: Validate required environment variables
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'AI_PROVIDER',
+  'STRIPE_SECRET_KEY'
+];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+// ✅ Good: Use different secrets for different environments
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters long');
+}
+```
+
+## Chrome Extension Security
+
+### Content Security Policy
+```json
+// ✅ Good: Restrictive CSP in manifest.json
+{
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://quirkly.technioz.com https://api.quirkly.technioz.com"
+  }
+}
+```
+
+### Extension Permissions
+```json
+// ✅ Good: Minimal required permissions
+{
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://twitter.com/*",
+    "https://x.com/*",
+    "https://quirkly.technioz.com/*"
+  ]
+}
+```
+
+## Security Monitoring
+
+### Audit Logging
+```typescript
+// ✅ Good: Log security events
+const auditLog = {
+  event: 'user_login',
+  userId: user._id,
+  email: user.email,
+  ip: request.ip,
+  userAgent: request.headers.get('user-agent'),
+  timestamp: new Date().toISOString(),
+  success: true
+};
+
+console.log('🔐 Security Event:', auditLog);
+```
+
+### Suspicious Activity Detection
+```typescript
+// ✅ Good: Detect suspicious patterns
+const suspiciousPatterns = [
+  'Multiple failed login attempts',
+  'Unusual IP addresses',
+  'Rapid API calls',
+  'Invalid token usage'
+];
+
+if (detectSuspiciousActivity(user, request)) {
+  // Log and potentially block
+  await logSecurityEvent('suspicious_activity', { user, request });
+  throw AppError.securityViolation('Suspicious activity detected');
+}
+```

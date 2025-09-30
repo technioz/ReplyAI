@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get fresh user data
-    const currentUser = await User.findById(user._id).exec();
+    const currentUser = await User.findById(user.id).exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user with fresh data
-    const currentUser = await User.findById(user._id).exec();
+    // Get fresh user data
+    const currentUser = await User.findById(user.id).exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -145,8 +145,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'API key ID is required' }, { status: 400 });
     }
 
-    // Get user with fresh data
-    const currentUser = await User.findById(user._id).exec();
+    // Get fresh user data
+    const currentUser = await User.findById(user.id).exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

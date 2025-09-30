@@ -820,9 +820,10 @@ class Quirkly {
           tweetText: originalPost,
           tone: tone,
           userContext: {
-            userId: this.user?.id,
+            userId: this.user?.id || this.user?._id,
             email: this.user?.email,
-            preferences: this.user?.preferences
+            preferences: this.user?.preferences,
+            credits: this.user?.credits
           }
         }, (response) => {
           // Check if extension context is still valid when receiving response

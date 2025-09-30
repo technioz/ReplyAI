@@ -1,0 +1,104 @@
+---
+alwaysApply: true
+description: Core development principles for scalable, production-ready code
+---
+
+# Core Development Principles
+
+## Architecture & Design Patterns
+
+### Modular Development Approach
+- **Build small, working modules first** - Never generate large amounts of code at once
+- **Incremental development** - Complete one feature/module before moving to the next
+- **Single Responsibility Principle** - Each module/function should have one clear purpose
+- **Dependency Injection** - Use factory patterns like [AIServiceFactory.ts](mdc:dashboard/src/lib/ai/AIServiceFactory.ts) for service management
+
+### Code Organization
+- **Feature-based structure** - Organize by business capabilities, not technical layers
+- **Separation of concerns** - Keep API routes, business logic, and data access separate
+- **Consistent naming** - Use descriptive, self-documenting names
+- **Type safety** - Leverage TypeScript interfaces like [IUser](mdc:dashboard/src/lib/models/User.ts) for all data structures
+
+## Error Handling & Resilience
+
+### Production-Ready Error Management
+- **Use AppError class** - Follow the pattern in [errors.ts](mdc:dashboard/src/lib/errors.ts)
+- **Structured error responses** - Include error codes, timestamps, and context
+- **Graceful degradation** - Handle service failures without breaking user experience
+- **Logging strategy** - Log errors with sufficient context for debugging
+
+### Defensive Programming
+- **Input validation** - Validate all inputs at API boundaries
+- **Null checks** - Always check for null/undefined before property access
+- **Type guards** - Use TypeScript type guards for runtime type checking
+- **Circuit breakers** - Implement fallbacks for external service failures
+
+## Performance & Scalability
+
+### Database Optimization
+- **Indexing strategy** - Create indexes for frequently queried fields
+- **Query optimization** - Use projection to limit returned fields
+- **Connection pooling** - Leverage MongoDB connection pooling
+- **Aggregation pipelines** - Use for complex data transformations
+
+### API Performance
+- **Response caching** - Cache frequently accessed data
+- **Pagination** - Implement pagination for large datasets
+- **Rate limiting** - Protect against abuse and ensure fair usage
+- **Async operations** - Use async/await for non-blocking operations
+
+## Security Best Practices
+
+### Authentication & Authorization
+- **JWT-based auth** - Use stateless authentication as in [auth.ts](mdc:dashboard/src/lib/middleware/auth.ts)
+- **Role-based access** - Implement proper role checking
+- **API key validation** - Secure API key handling for extension requests
+- **Session management** - Proper token expiration and refresh
+
+### Data Protection
+- **Input sanitization** - Sanitize all user inputs
+- **SQL injection prevention** - Use parameterized queries
+- **XSS protection** - Validate and escape user content
+- **CORS configuration** - Proper cross-origin resource sharing setup
+
+## Code Quality Standards
+
+### Testing Strategy
+- **Unit tests** - Test individual functions and methods
+- **Integration tests** - Test API endpoints and database interactions
+- **Error scenario testing** - Test failure modes and edge cases
+- **Performance testing** - Validate response times and resource usage
+
+### Code Review Guidelines
+- **Security review** - Check for security vulnerabilities
+- **Performance impact** - Assess performance implications
+- **Maintainability** - Ensure code is readable and maintainable
+- **Documentation** - Verify adequate documentation and comments
+
+## Deployment & Production
+
+### Environment Management
+- **Environment variables** - Use proper environment configuration
+- **Secrets management** - Never commit secrets to version control
+- **Configuration validation** - Validate all required environment variables
+- **Feature flags** - Use feature flags for gradual rollouts
+
+### Monitoring & Observability
+- **Health checks** - Implement health check endpoints
+- **Metrics collection** - Track key performance indicators
+- **Error tracking** - Monitor and alert on errors
+- **Performance monitoring** - Track response times and resource usage
+
+## Development Workflow
+
+### Git & Version Control
+- **Atomic commits** - Each commit should represent a single logical change
+- **Conventional commits** - Use consistent commit message format
+- **Branch strategy** - Use feature branches for development
+- **Code review** - Require code review before merging
+
+### Continuous Integration
+- **Automated testing** - Run tests on every commit
+- **Code quality checks** - Linting, formatting, and type checking
+- **Security scanning** - Automated security vulnerability scanning
+- **Build validation** - Ensure code builds successfully

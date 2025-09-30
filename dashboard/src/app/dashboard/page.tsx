@@ -49,27 +49,43 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
+    console.log('🔍 Dashboard useEffect - loading:', loading, 'user:', !!user);
     if (!loading && !user) {
+      console.log('🔍 No user, redirecting to login');
       router.push('/login');
     } else if (user) {
+      console.log('🔍 User exists, calling fetchApiKeys');
       fetchApiKeys();
     }
   }, [user, loading, router]);
 
   const fetchApiKeys = async () => {
     try {
+      console.log('🔍 fetchApiKeys called');
       const token = localStorage.getItem('quirkly_token');
-      if (!token) return;
+      console.log('🔍 Token exists:', !!token);
+      console.log('🔍 Token length:', token ? token.length : 0);
+      if (!token) {
+        console.log('❌ No token found, returning');
+        return;
+      }
 
-      const response = await fetch(`${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`, {
+      const apiUrl = `${QuirklyDashboardConfig.getApiBaseUrl()}/api-keys`;
+      console.log('🔍 API URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 API Keys data:', data);
         setApiKeys(data.apiKeys || []);
         
         // Clean up newly generated keys that are no longer in the list
@@ -85,10 +101,11 @@ export default function DashboardPage() {
           });
         }
       } else {
-        console.error('Failed to fetch API keys');
+        const errorData = await response.json();
+        console.error('❌ Failed to fetch API keys:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching API keys:', error);
+      console.error('❌ Error fetching API keys:', error);
     } finally {
       setLoadingApiKeys(false);
     }

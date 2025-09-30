@@ -7,34 +7,7 @@ import crypto from 'crypto';
  * Handles user authentication, API keys, subscriptions, and credits
  */
 
-// Session schema
-const sessionSchema = new Schema({
-  token: {
-    type: String,
-    required: true
-    // Removed unique: true to prevent index issues with empty sessions
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  expiresAt: {
-    type: Date,
-    required: true
-  },
-  userAgent: {
-    type: String,
-    default: 'unknown'
-  },
-  ipAddress: {
-    type: String,
-    default: 'unknown'
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-});
+// Session schema removed - using JWT tokens instead
 
 // Subscription schema
 const subscriptionSchema = new Schema({
@@ -122,14 +95,7 @@ export interface IUser extends Document {
   }>;
   status: 'active' | 'inactive' | 'suspended';
   role: 'user' | 'admin';
-  sessions: Array<{
-    token: string;
-    createdAt: Date;
-    expiresAt: Date;
-    userAgent: string;
-    ipAddress: string;
-    isActive: boolean;
-  }>;
+  // sessions removed - using JWT tokens instead
   loginAttempts: number;
   lockedUntil?: Date;
   lastLoginAt?: Date;
@@ -195,7 +161,7 @@ export interface IUser extends Document {
 // User Model interface with static methods
 export interface IUserModel extends mongoose.Model<IUser> {
   findByApiKey(apiKey: string): Promise<IUser | null>;
-  findBySessionToken(token: string): Promise<IUser | null>;
+  // findBySessionToken removed - using JWT tokens instead
 }
 
 // User schema
@@ -267,11 +233,7 @@ const userSchema = new Schema<IUser>({
     default: 'user'
   },
   
-  // Authentication & Security
-  sessions: {
-    type: [sessionSchema],
-    default: []
-  },
+  // Authentication & Security (sessions removed - using JWT tokens)
   loginAttempts: {
     type: Number,
     default: 0
@@ -567,30 +529,7 @@ userSchema.statics.findByApiKey = function(apiKey: string) {
   }).select('+password');
 };
 
-// Static method to find user by session token
-userSchema.statics.findBySessionToken = function(token: string) {
-  console.log('🔍 findBySessionToken called with token:', token ? `${token.substring(0, 10)}...` : 'none');
-  
-  const query = { 
-    'sessions.token': token,
-    'sessions.isActive': true,
-    'sessions.expiresAt': { $gt: new Date() },
-    status: 'active'
-  };
-  
-  console.log('🔍 findBySessionToken query:', JSON.stringify(query, null, 2));
-  
-  return this.findOne(query).then(user => {
-    if (user) {
-      console.log('✅ findBySessionToken found user:', user.email);
-      console.log('🔍 User sessions count:', user.sessions.length);
-      console.log('🔍 Active sessions:', user.sessions.filter(s => s.isActive && s.expiresAt > new Date()).length);
-    } else {
-      console.log('❌ findBySessionToken no user found');
-    }
-    return user;
-  });
-};
+// findBySessionToken method removed - using JWT tokens instead
 
 // Create and export the model
 const User = mongoose.models.User || mongoose.model<IUser, IUserModel>('User', userSchema);

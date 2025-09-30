@@ -9,7 +9,15 @@ export async function GET(request: NextRequest) {
     await dbConnect();
     
     // Authenticate user
-    const user = await authenticateUser(request);
+    const userPayload = await authenticateUser(request);
+    
+    // Get full user data from database
+    const User = (await import('@/lib/models/User')).default;
+    const user = await User.findById(userPayload.id);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     
     return NextResponse.json({
       success: true,

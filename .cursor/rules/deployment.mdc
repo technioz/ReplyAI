@@ -1,0 +1,684 @@
+---
+alwaysApply: true
+description: Production deployment, monitoring, and maintenance best practices
+---
+
+# Deployment & Production
+
+## Environment Configuration
+
+### Environment Variables Management
+```typescript
+// ✅ Good: Environment validation
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'AI_PROVIDER',
+  'NEXT_PUBLIC_APP_URL'
+] as const;
+
+const optionalEnvVars = [
+  'STRIPE_SECRET_KEY',
+  'GROQ_API_KEY',
+  'XAI_API_KEY',
+  'SENTRY_DSN'
+] as const;
+
+// Validate required environment variables
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+// ✅ Good: Environment-specific configuration
+const config = {
+  development: {
+    mongodb: {
+      uri: process.env.MONGODB_URI!,
+      options: {
+        maxPoolSize: 5,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      }
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET!,
+      expiresIn: '7d'
+    },
+    cors: {
+      origin: ['http://localhost:3000', 'http://localhost:3001'],
+      credentials: true
+    }
+  },
+  production: {
+    mongodb: {
+      uri: process.env.MONGODB_URI!,
+      options: {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        retryWrites: true,
+        w: 'majority'
+      }
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET!,
+      expiresIn: '1d'
+    },
+    cors: {
+      origin: ['https://quirkly.technioz.com'],
+      credentials: true
+    }
+  }
+};
+
+export const appConfig = config[process.env.NODE_ENV as keyof typeof config] || config.development;
+```
+
+### Secrets Management
+```typescript
+// ✅ Good: Secure secrets handling
+import { createHash } from 'crypto';
+
+const validateJWTSecret = (secret: string): boolean => {
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long');
+  }
+  return true;
+};
+
+const hashSecret = (secret: string): string => {
+  return createHash('sha256').update(secret).digest('hex');
+};
+
+// ✅ Good: Environment-specific secrets
+const getSecrets = () => {
+  const secrets = {
+    jwt: process.env.JWT_SECRET!,
+    mongodb: process.env.MONGODB_URI!,
+    stripe: process.env.STRIPE_SECRET_KEY,
+    ai: {
+      groq: process.env.GROQ_API_KEY,
+      xai: process.env.XAI_API_KEY
+    }
+  };
+
+  // Validate secrets in production
+  if (process.env.NODE_ENV === 'production') {
+    validateJWTSecret(secrets.jwt);
+    
+    if (!secrets.mongodb.includes('mongodb.net')) {
+      throw new Error('Production MongoDB URI must use MongoDB Atlas');
+    }
+  }
+
+  return secrets;
+};
+```
+
+## Build & Deployment
+
+### Next.js Production Build
+```typescript
+// ✅ Good: Production build configuration
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['mongoose']
+  },
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/health',
+        destination: '/api/health/route.ts',
+      },
+    ];
+  }
+};
+
+module.exports = nextConfig;
+```
+
+### Docker Configuration
+```dockerfile
+# ✅ Good: Multi-stage Docker build
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
+```
+
+### Health Checks
+```typescript
+// ✅ Good: Comprehensive health check
+// app/api/health/route.ts
+export async function GET() {
+  const healthCheck = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV,
+    services: {
+      database: await checkDatabase(),
+      ai: await checkAIService(),
+      storage: await checkStorage()
+    }
+  };
+
+  const isHealthy = Object.values(healthCheck.services).every(service => 
+    service.status === 'healthy'
+  );
+
+  return NextResponse.json(healthCheck, {
+    status: isHealthy ? 200 : 503
+  });
+}
+
+async function checkDatabase() {
+  try {
+    await dbConnect();
+    const result = await User.countDocuments();
+    return {
+      status: 'healthy',
+      message: 'Database connection successful',
+      documentCount: result
+    };
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      message: 'Database connection failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+async function checkAIService() {
+  try {
+    const aiService = AIServiceFactory.getService();
+    await aiService.healthCheck();
+    return {
+      status: 'healthy',
+      message: 'AI service operational',
+      provider: AIServiceFactory.getCurrentProvider()
+    };
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      message: 'AI service unavailable',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+```
+
+## Monitoring & Observability
+
+### Application Monitoring
+```typescript
+// ✅ Good: Comprehensive logging
+import winston from 'winston';
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'quirkly-api' },
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple()
+  }));
+}
+
+// ✅ Good: Request logging middleware
+export const requestLogger = (req: NextRequest, res: NextResponse, next: () => void) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info('HTTP Request', {
+      method: req.method,
+      url: req.url,
+      status: res.status,
+      duration: `${duration}ms`,
+      userAgent: req.headers.get('user-agent'),
+      ip: req.ip
+    });
+  });
+  
+  next();
+};
+```
+
+### Error Tracking
+```typescript
+// ✅ Good: Error tracking with Sentry
+import * as Sentry from '@sentry/nextjs';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  beforeSend(event) {
+    // Filter out sensitive data
+    if (event.request?.cookies) {
+      delete event.request.cookies;
+    }
+    return event;
+  }
+});
+
+// ✅ Good: Custom error tracking
+export const trackError = (error: Error, context: any = {}) => {
+  logger.error('Application Error', {
+    error: error.message,
+    stack: error.stack,
+    ...context
+  });
+  
+  Sentry.captureException(error, {
+    tags: context.tags,
+    extra: context.extra
+  });
+};
+```
+
+### Performance Monitoring
+```typescript
+// ✅ Good: Performance metrics
+import { performance } from 'perf_hooks';
+
+export const performanceMonitor = {
+  startTimer: (name: string) => {
+    performance.mark(`${name}-start`);
+  },
+  
+  endTimer: (name: string) => {
+    performance.mark(`${name}-end`);
+    performance.measure(name, `${name}-start`, `${name}-end`);
+    
+    const measure = performance.getEntriesByName(name)[0];
+    logger.info('Performance Metric', {
+      name,
+      duration: measure.duration,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
+// ✅ Good: Database query monitoring
+export const monitorDatabaseQuery = async <T>(
+  queryName: string,
+  queryFn: () => Promise<T>
+): Promise<T> => {
+  performanceMonitor.startTimer(queryName);
+  
+  try {
+    const result = await queryFn();
+    performanceMonitor.endTimer(queryName);
+    return result;
+  } catch (error) {
+    performanceMonitor.endTimer(queryName);
+    throw error;
+  }
+};
+```
+
+## Security in Production
+
+### Security Headers
+```typescript
+// ✅ Good: Security headers middleware
+export const securityHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+};
+
+export const applySecurityHeaders = (response: NextResponse) => {
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+  return response;
+};
+```
+
+### Rate Limiting
+```typescript
+// ✅ Good: Production rate limiting
+import rateLimit from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
+import Redis from 'ioredis';
+
+const redis = new Redis(process.env.REDIS_URL!);
+
+const limiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => redis.call(...args),
+  }),
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many requests, please try again later.',
+      retryAfter: Math.round(limiter.windowMs / 1000)
+    });
+  }
+});
+```
+
+## Backup & Recovery
+
+### Database Backup
+```typescript
+// ✅ Good: Automated backup strategy
+export const backupDatabase = async () => {
+  const backupConfig = {
+    mongodb: {
+      uri: process.env.MONGODB_URI!,
+      backupPath: '/backups/mongodb',
+      retentionDays: 30
+    }
+  };
+
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = `${backupConfig.mongodb.backupPath}/backup-${timestamp}.gz`;
+    
+    // Create backup
+    const { exec } = require('child_process');
+    const command = `mongodump --uri="${backupConfig.mongodb.uri}" --gzip --archive="${backupFile}"`;
+    
+    await new Promise((resolve, reject) => {
+      exec(command, (error: any, stdout: string, stderr: string) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+    
+    logger.info('Database backup completed', { backupFile });
+    
+    // Cleanup old backups
+    await cleanupOldBackups(backupConfig.mongodb.backupPath, backupConfig.mongodb.retentionDays);
+    
+  } catch (error) {
+    logger.error('Database backup failed', { error: error.message });
+    throw error;
+  }
+};
+
+const cleanupOldBackups = async (backupPath: string, retentionDays: number) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const files = fs.readdirSync(backupPath);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  
+  files.forEach((file: string) => {
+    const filePath = path.join(backupPath, file);
+    const stats = fs.statSync(filePath);
+    
+    if (stats.mtime < cutoffDate) {
+      fs.unlinkSync(filePath);
+      logger.info('Deleted old backup', { file });
+    }
+  });
+};
+```
+
+## Deployment Strategies
+
+### Blue-Green Deployment
+```typescript
+// ✅ Good: Blue-green deployment configuration
+export const deploymentConfig = {
+  blue: {
+    port: 3000,
+    healthCheck: '/api/health',
+    environment: 'blue'
+  },
+  green: {
+    port: 3001,
+    healthCheck: '/api/health',
+    environment: 'green'
+  }
+};
+
+export const switchTraffic = async (target: 'blue' | 'green') => {
+  const config = deploymentConfig[target];
+  
+  // Health check
+  const healthResponse = await fetch(`http://localhost:${config.port}${config.healthCheck}`);
+  if (!healthResponse.ok) {
+    throw new Error(`Health check failed for ${target} environment`);
+  }
+  
+  // Switch traffic (implementation depends on load balancer)
+  logger.info(`Switching traffic to ${target} environment`);
+  
+  // Verify switch
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  const verifyResponse = await fetch(`http://localhost:${config.port}${config.healthCheck}`);
+  
+  if (!verifyResponse.ok) {
+    throw new Error(`Traffic switch verification failed for ${target}`);
+  }
+  
+  logger.info(`Successfully switched traffic to ${target} environment`);
+};
+```
+
+### Rollback Strategy
+```typescript
+// ✅ Good: Automated rollback
+export const rollback = async (reason: string) => {
+  logger.warn('Initiating rollback', { reason });
+  
+  try {
+    // Get current deployment
+    const currentDeployment = await getCurrentDeployment();
+    const targetDeployment = currentDeployment === 'blue' ? 'green' : 'blue';
+    
+    // Switch traffic back
+    await switchTraffic(targetDeployment);
+    
+    // Notify team
+    await notifyTeam('rollback', {
+      reason,
+      from: currentDeployment,
+      to: targetDeployment,
+      timestamp: new Date().toISOString()
+    });
+    
+    logger.info('Rollback completed successfully');
+    
+  } catch (error) {
+    logger.error('Rollback failed', { error: error.message });
+    
+    // Emergency notification
+    await notifyTeam('rollback_failed', {
+      reason,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+    
+    throw error;
+  }
+};
+```
+
+## Maintenance & Updates
+
+### Automated Updates
+```typescript
+// ✅ Good: Dependency update strategy
+export const updateDependencies = async () => {
+  const { exec } = require('child_process');
+  
+  try {
+    // Check for updates
+    const checkCommand = 'npm outdated --json';
+    const outdated = await new Promise((resolve, reject) => {
+      exec(checkCommand, (error: any, stdout: string) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(JSON.parse(stdout || '{}'));
+        }
+      });
+    });
+    
+    if (Object.keys(outdated).length === 0) {
+      logger.info('All dependencies are up to date');
+      return;
+    }
+    
+    // Update dependencies
+    const updateCommand = 'npm update';
+    await new Promise((resolve, reject) => {
+      exec(updateCommand, (error: any, stdout: string) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+    
+    logger.info('Dependencies updated successfully');
+    
+    // Run tests
+    await runTests();
+    
+    // Deploy if tests pass
+    await deploy();
+    
+  } catch (error) {
+    logger.error('Dependency update failed', { error: error.message });
+    throw error;
+  }
+};
+```
+
+### Health Monitoring
+```typescript
+// ✅ Good: Continuous health monitoring
+export const healthMonitor = {
+  start: () => {
+    setInterval(async () => {
+      try {
+        const health = await checkSystemHealth();
+        
+        if (!health.overall) {
+          await alertTeam('System health degraded', health);
+        }
+        
+        // Log metrics
+        logger.info('Health check completed', health);
+        
+      } catch (error) {
+        logger.error('Health check failed', { error: error.message });
+        await alertTeam('Health check failed', { error: error.message });
+      }
+    }, 60000); // Check every minute
+  }
+};
+
+const checkSystemHealth = async () => {
+  const checks = await Promise.allSettled([
+    checkDatabase(),
+    checkAIService(),
+    checkStorage(),
+    checkMemory(),
+    checkCPU()
+  ]);
+  
+  const results = checks.map((check, index) => ({
+    service: ['database', 'ai', 'storage', 'memory', 'cpu'][index],
+    status: check.status === 'fulfilled' ? 'healthy' : 'unhealthy',
+    details: check.status === 'fulfilled' ? check.value : check.reason
+  }));
+  
+  return {
+    overall: results.every(r => r.status === 'healthy'),
+    timestamp: new Date().toISOString(),
+    results
+  };
+};
+```

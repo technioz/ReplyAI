@@ -104,6 +104,7 @@ export default function SubscriptionPage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Subscription API response:', data); // Debug log
         setCurrentSubscription(data.subscription);
       } else {
         console.error('Failed to fetch current subscription');

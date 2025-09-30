@@ -299,8 +299,8 @@ class QuirklyPopup {
         if (typeof this.user.credits === 'number') {
           credits = this.user.credits;
         } else if (this.user.credits && typeof this.user.credits === 'object') {
-          // If credits is an object, try to get the available amount
-          credits = this.user.credits.available || this.user.credits.total || 0;
+          // If credits is an object, get the available amount
+          credits = this.user.credits.available || 0;
         } else {
           credits = 0;
         }

@@ -1,0 +1,503 @@
+---
+globs: **/api/**/*.ts,**/api/**/*.js
+description: API design patterns and implementation best practices
+---
+
+# API Design & Implementation
+
+## Next.js API Route Structure
+
+### Route Handler Pattern
+Follow the established pattern in [route.ts](mdc:dashboard/src/app/api/reply/generate/route.ts):
+
+```typescript
+// ✅ Good: Standard API route structure
+import { NextRequest, NextResponse } from 'next/server';
+import { handleApiError } from '@/lib/errors';
+import { protect } from '@/lib/middleware/auth';
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Connect to database
+    await dbConnect();
+    
+    // 2. Authenticate user (if required)
+    const user = await protect(request);
+    
+    // 3. Validate input
+    const body = await request.json();
+    const validatedData = validateInput(body);
+    
+    // 4. Business logic
+    const result = await processRequest(validatedData, user);
+    
+    // 5. Return response
+    return NextResponse.json(result);
+    
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+// ✅ Good: Handle OPTIONS for CORS
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-ID, X-Extension-Version'
+    }
+  });
+}
+```
+
+### HTTP Method Implementation
+```typescript
+// ✅ Good: Implement appropriate HTTP methods
+export async function GET(request: NextRequest) {
+  // Read operations
+}
+
+export async function POST(request: NextRequest) {
+  // Create operations
+}
+
+export async function PUT(request: NextRequest) {
+  // Update operations
+}
+
+export async function DELETE(request: NextRequest) {
+  // Delete operations
+}
+
+export async function PATCH(request: NextRequest) {
+  // Partial update operations
+}
+```
+
+## Request/Response Patterns
+
+### Request Validation
+```typescript
+// ✅ Good: Comprehensive input validation
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(8).max(128),
+  firstName: z.string().min(1).max(50).trim(),
+  lastName: z.string().max(50).trim().optional(),
+  preferences: z.object({
+    defaultTone: z.enum(['professional', 'casual', 'humorous', 'empathetic', 'analytical', 'enthusiastic']),
+    notifications: z.object({
+      email: z.boolean(),
+      marketing: z.boolean()
+    })
+  }).optional()
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const validatedData = createUserSchema.parse(body);
+    
+    // Process validated data
+    const user = await User.create(validatedData);
+    
+    return NextResponse.json({
+      success: true,
+      data: user,
+      message: 'User created successfully'
+    });
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Invalid input data',
+        details: error.errors
+      }, { status: 400 });
+    }
+    return handleApiError(error);
+  }
+}
+```
+
+### Response Standardization
+```typescript
+// ✅ Good: Consistent response format
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  details?: any;
+  metadata?: {
+    timestamp: string;
+    requestId: string;
+    version: string;
+  };
+}
+
+// ✅ Good: Success response
+const successResponse = (data: any, message?: string): ApiResponse => ({
+  success: true,
+  data,
+  message: message || 'Operation successful',
+  metadata: {
+    timestamp: new Date().toISOString(),
+    requestId: crypto.randomUUID(),
+    version: '1.0.0'
+  }
+});
+
+// ✅ Good: Error response
+const errorResponse = (error: string, message: string, details?: any): ApiResponse => ({
+  success: false,
+  error,
+  message,
+  details,
+  metadata: {
+    timestamp: new Date().toISOString(),
+    requestId: crypto.randomUUID(),
+    version: '1.0.0'
+  }
+});
+```
+
+## Authentication & Authorization
+
+### JWT Authentication
+```typescript
+// ✅ Good: Flexible authentication middleware
+export const authenticateUser = async (request: NextRequest): Promise<JWTPayload> => {
+  const user = await getUserFromRequest(request);
+  
+  if (!user) {
+    throw AppError.unauthorized('Authentication required', 'AUTHENTICATION_REQUIRED');
+  }
+  
+  return user;
+};
+
+// ✅ Good: Role-based authorization
+export const requireAdmin = async (request: NextRequest): Promise<JWTPayload> => {
+  const user = await authenticateUser(request);
+  
+  if (user.role !== 'admin') {
+    throw AppError.forbidden('Admin access required', 'INSUFFICIENT_PERMISSIONS');
+  }
+  
+  return user;
+};
+
+// ✅ Good: Resource ownership validation
+export const requireResourceAccess = async (request: NextRequest, resourceId: string) => {
+  const user = await authenticateUser(request);
+  
+  if (user.role === 'admin') {
+    return user; // Admins can access all resources
+  }
+  
+  const resource = await Resource.findById(resourceId);
+  if (!resource || resource.userId.toString() !== user.id) {
+    throw AppError.forbidden('Access denied to this resource', 'RESOURCE_ACCESS_DENIED');
+  }
+  
+  return user;
+};
+```
+
+### API Key Authentication
+```typescript
+// ✅ Good: API key validation for extension requests
+export const validateApiKey = async (request: NextRequest): Promise<IUser> => {
+  const apiKey = request.headers.get('x-api-key') || 
+                 request.headers.get('authorization')?.replace('Bearer ', '');
+  
+  if (!apiKey) {
+    throw AppError.unauthorized('API key required', 'API_KEY_REQUIRED');
+  }
+  
+  const user = await User.findByApiKey(apiKey);
+  if (!user) {
+    throw AppError.unauthorized('Invalid API key', 'INVALID_API_KEY');
+  }
+  
+  if (user.status !== 'active') {
+    throw AppError.forbidden('Account inactive', 'ACCOUNT_INACTIVE');
+  }
+  
+  // Update last used timestamp
+  user.apiKeys.find(key => key.key === apiKey)!.lastUsedAt = new Date();
+  await user.save();
+  
+  return user;
+};
+```
+
+## Business Logic Implementation
+
+### Credit Management
+```typescript
+// ✅ Good: Credit validation and usage
+export const requireCredits = async (request: NextRequest, creditsNeeded: number = 1) => {
+  const user = await authenticateUser(request);
+  
+  if (user.credits.available < creditsNeeded) {
+    throw AppError.insufficientCredits(
+      `Insufficient credits. Need ${creditsNeeded}, have ${user.credits.available}`,
+      'INSUFFICIENT_CREDITS'
+    );
+  }
+  
+  return user;
+};
+
+// ✅ Good: Atomic credit usage
+export const useCredits = async (userId: string, creditsUsed: number = 1) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      const user = await User.findById(userId).session(session);
+      if (!user) {
+        throw AppError.notFound('User not found');
+      }
+      
+      if (user.credits.available < creditsUsed) {
+        throw AppError.insufficientCredits('Insufficient credits');
+      }
+      
+      user.credits.available -= creditsUsed;
+      user.credits.used += creditsUsed;
+      
+      // Update usage tracking
+      const today = new Date();
+      const month = today.toISOString().slice(0, 7); // YYYY-MM
+      const year = today.getFullYear();
+      
+      let todayUsage = user.usage.find(u => 
+        u.date.toDateString() === today.toDateString()
+      );
+      
+      if (!todayUsage) {
+        todayUsage = {
+          date: today,
+          creditsUsed: 0,
+          repliesGenerated: 0,
+          month,
+          year
+        };
+        user.usage.push(todayUsage);
+      }
+      
+      todayUsage.creditsUsed += creditsUsed;
+      todayUsage.repliesGenerated += 1;
+      
+      await user.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+};
+```
+
+### AI Service Integration
+```typescript
+// ✅ Good: AI service abstraction
+export const generateReply = async (prompt: string, tone: string, user?: IUser) => {
+  try {
+    const aiService = AIServiceFactory.getService();
+    const response = await aiService.generateReply(prompt, tone);
+    
+    // Log usage if user is authenticated
+    if (user) {
+      await useCredits(user._id.toString(), 1);
+    }
+    
+    return {
+      success: true,
+      data: {
+        reply: response,
+        tone,
+        provider: AIServiceFactory.getCurrentProvider(),
+        timestamp: new Date().toISOString()
+      }
+    };
+    
+  } catch (error) {
+    console.error('AI service error:', error);
+    
+    if (error.message.includes('rate limit')) {
+      throw AppError.rateLimitExceeded('AI service rate limit exceeded');
+    }
+    
+    if (error.message.includes('API key')) {
+      throw AppError.aiServiceError('AI service configuration error');
+    }
+    
+    throw AppError.aiServiceError('AI service temporarily unavailable');
+  }
+};
+```
+
+## Error Handling & Logging
+
+### Comprehensive Error Handling
+```typescript
+// ✅ Good: Detailed error handling
+export async function POST(request: NextRequest) {
+  try {
+    // Business logic
+    const result = await processRequest(request);
+    return NextResponse.json(successResponse(result));
+    
+  } catch (error) {
+    // Log error with context
+    console.error('API Error:', {
+      error: error.message,
+      stack: error.stack,
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+      timestamp: new Date().toISOString()
+    });
+    
+    return handleApiError(error);
+  }
+}
+```
+
+### Request Logging
+```typescript
+// ✅ Good: Request/response logging
+const logRequest = (request: NextRequest, response: NextResponse, duration: number) => {
+  console.log('API Request:', {
+    method: request.method,
+    url: request.url,
+    status: response.status,
+    duration: `${duration}ms`,
+    userAgent: request.headers.get('user-agent'),
+    ip: request.ip || 'unknown',
+    timestamp: new Date().toISOString()
+  });
+};
+
+export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
+  try {
+    const result = await processRequest(request);
+    const response = NextResponse.json(result);
+    
+    logRequest(request, response, Date.now() - startTime);
+    return response;
+    
+  } catch (error) {
+    const errorResponse = handleApiError(error);
+    logRequest(request, errorResponse, Date.now() - startTime);
+    return errorResponse;
+  }
+}
+```
+
+## Rate Limiting & Throttling
+
+### Implementation
+```typescript
+// ✅ Good: Rate limiting implementation
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+export const rateLimit = (maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) => {
+  return (request: NextRequest) => {
+    const ip = request.ip || 'unknown';
+    const now = Date.now();
+    const windowStart = now - windowMs;
+    
+    const userLimit = rateLimitMap.get(ip);
+    
+    if (!userLimit || userLimit.resetTime < now) {
+      rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+      return;
+    }
+    
+    if (userLimit.count >= maxRequests) {
+      throw AppError.rateLimitExceeded('Too many requests');
+    }
+    
+    userLimit.count++;
+  };
+};
+
+// ✅ Good: Usage in API routes
+export async function POST(request: NextRequest) {
+  rateLimit(10, 60000)(request); // 10 requests per minute
+  
+  // Rest of the logic
+}
+```
+
+## API Documentation
+
+### OpenAPI/Swagger Integration
+```typescript
+// ✅ Good: API documentation with JSDoc
+/**
+ * @swagger
+ * /api/reply/generate:
+ *   post:
+ *     summary: Generate AI reply
+ *     description: Generate a contextual reply using AI with specified tone
+ *     tags: [Reply]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - prompt
+ *               - tone
+ *             properties:
+ *               prompt:
+ *                 type: string
+ *                 description: The original post content
+ *               tone:
+ *                 type: string
+ *                 enum: [professional, casual, humorous, empathetic, analytical, enthusiastic]
+ *                 description: The desired tone for the reply
+ *     responses:
+ *       200:
+ *         description: Reply generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     reply:
+ *                       type: string
+ *                     tone:
+ *                       type: string
+ *                     provider:
+ *                       type: string
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+export async function POST(request: NextRequest) {
+  // Implementation
+}
+```

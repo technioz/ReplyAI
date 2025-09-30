@@ -1,0 +1,409 @@
+---
+globs: *.ts,*.js
+description: Database design, modeling, and optimization best practices
+---
+
+# Database & Data Modeling
+
+## MongoDB Schema Design
+
+### Schema Structure
+Follow the established pattern in [User.ts](mdc:dashboard/src/lib/models/User.ts):
+
+```typescript
+// ✅ Good: Well-structured schema with validation
+const userSchema = new Schema<IUser>({
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [8, 'Password must be at least 8 characters long'],
+    select: false // Don't include password in queries by default
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+```
+
+### Nested Schemas
+```typescript
+// ✅ Good: Separate schemas for complex nested objects
+const subscriptionSchema = new Schema({
+  stripeSubscriptionId: { type: String, required: true },
+  stripePriceId: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['active', 'canceled', 'past_due', 'unpaid', 'trialing'],
+    required: true
+  },
+  currentPeriodStart: { type: Date, required: true },
+  currentPeriodEnd: { type: Date, required: true }
+});
+
+const usageSchema = new Schema({
+  date: { type: Date, required: true },
+  creditsUsed: { type: Number, default: 0 },
+  repliesGenerated: { type: Number, default: 0 },
+  month: { type: String, required: true }, // Format: YYYY-MM
+  year: { type: Number, required: true }
+});
+```
+
+## Data Modeling Best Practices
+
+### Interface Definitions
+```typescript
+// ✅ Good: Comprehensive TypeScript interfaces
+export interface IUser extends Document {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  apiKeys: Array<{
+    key: string;
+    name: string;
+    createdAt: Date;
+    lastUsedAt?: Date;
+    isActive: boolean;
+  }>;
+  status: 'active' | 'inactive' | 'suspended';
+  role: 'user' | 'admin';
+  credits: {
+    available: number;
+    used: number;
+    total: number;
+    lastResetAt: Date;
+  };
+  usage: Array<{
+    date: Date;
+    creditsUsed: number;
+    repliesGenerated: number;
+    month: string;
+    year: number;
+  }>;
+  
+  // Virtual properties
+  fullName: string;
+  isLocked: boolean;
+  hasActiveSubscription: boolean;
+  
+  // Instance methods
+  correctPassword(candidatePassword: string): Promise<boolean>;
+  generateApiKey(): string;
+  useCredits(amount?: number): Promise<any>;
+}
+```
+
+### Virtual Properties
+```typescript
+// ✅ Good: Computed virtual properties
+userSchema.virtual('fullName').get(function(this: IUser) {
+  return `${this.firstName} ${this.lastName}`.trim();
+});
+
+userSchema.virtual('isLocked').get(function(this: IUser) {
+  return !!(this.lockedUntil && this.lockedUntil > Date.now());
+});
+
+userSchema.virtual('hasActiveSubscription').get(function(this: IUser) {
+  return !!(this.subscription && 
+    this.subscription.status === 'active' && 
+    this.subscription.currentPeriodEnd > new Date());
+});
+```
+
+## Database Performance Optimization
+
+### Indexing Strategy
+```typescript
+// ✅ Good: Strategic indexing for performance
+userSchema.index({ email: 1 }); // Unique index for email
+userSchema.index({ apiKey: 1 }, { sparse: true }); // Sparse index for API keys
+userSchema.index({ 'apiKeys.key': 1 }, { sparse: true }); // Index for API key array
+userSchema.index({ createdAt: -1 }); // For sorting by creation date
+userSchema.index({ status: 1 }); // For filtering by status
+userSchema.index({ 'usage.date': -1 }); // For usage queries
+
+// ✅ Good: Compound indexes for complex queries
+userSchema.index({ status: 1, role: 1 }); // For admin queries
+userSchema.index({ 'subscription.status': 1, 'subscription.currentPeriodEnd': 1 });
+```
+
+### Query Optimization
+```typescript
+// ✅ Good: Use projection to limit returned fields
+const user = await User.findById(id)
+  .select('email firstName lastName credits')
+  .lean(); // Return plain objects for better performance
+
+// ✅ Good: Use aggregation for complex queries
+const usageStats = await User.aggregate([
+  { $match: { _id: new ObjectId(userId) } },
+  { $unwind: '$usage' },
+  { $match: { 'usage.month': currentMonth } },
+  { $group: {
+    _id: null,
+    totalCreditsUsed: { $sum: '$usage.creditsUsed' },
+    totalReplies: { $sum: '$usage.repliesGenerated' }
+  }}
+]);
+```
+
+### Connection Management
+```typescript
+// ✅ Good: Proper database connection handling
+import dbConnect from '@/lib/database';
+
+export async function POST(request: NextRequest) {
+  try {
+    await dbConnect(); // Ensure connection before operations
+    
+    const user = await User.findById(id);
+    // ... rest of the logic
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+// ✅ Good: Connection error handling
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI!, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ MongoDB connected');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+```
+
+## Data Validation & Constraints
+
+### Schema Validation
+```typescript
+// ✅ Good: Comprehensive field validation
+const userSchema = new Schema({
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
+  },
+  firstName: {
+    type: String,
+    required: [true, 'First name is required'],
+    trim: true,
+    maxlength: [50, 'First name cannot exceed 50 characters']
+  },
+  credits: {
+    available: {
+      type: Number,
+      min: [0, 'Credits cannot be negative'],
+      default: 50
+    },
+    used: {
+      type: Number,
+      min: [0, 'Used credits cannot be negative'],
+      default: 0
+    }
+  }
+});
+```
+
+### Custom Validation
+```typescript
+// ✅ Good: Custom validation functions
+userSchema.path('credits.available').validate(function(value: number) {
+  return value >= 0 && value <= 10000;
+}, 'Credits must be between 0 and 10000');
+
+// ✅ Good: Async validation
+userSchema.path('email').validate(async function(value: string) {
+  if (this.isNew || this.isModified('email')) {
+    const existingUser = await User.findOne({ email: value });
+    return !existingUser;
+  }
+  return true;
+}, 'Email already exists');
+```
+
+## Transaction Management
+
+### Atomic Operations
+```typescript
+// ✅ Good: Use transactions for critical operations
+const session = await mongoose.startSession();
+
+try {
+  await session.withTransaction(async () => {
+    // Update user credits
+    await User.findByIdAndUpdate(
+      userId,
+      { $inc: { 'credits.available': -creditsUsed, 'credits.used': creditsUsed } },
+      { session }
+    );
+    
+    // Record usage
+    await Usage.create([{
+      userId,
+      creditsUsed,
+      repliesGenerated: 1,
+      date: new Date(),
+      month: currentMonth,
+      year: currentYear
+    }], { session });
+  });
+} catch (error) {
+  throw AppError.databaseError('Transaction failed');
+} finally {
+  await session.endSession();
+}
+```
+
+### Bulk Operations
+```typescript
+// ✅ Good: Use bulk operations for efficiency
+const bulkOps = users.map(user => ({
+  updateOne: {
+    filter: { _id: user._id },
+    update: { $set: { 'credits.available': user.credits.available + 100 } }
+  }
+}));
+
+await User.bulkWrite(bulkOps);
+```
+
+## Data Migration & Versioning
+
+### Schema Versioning
+```typescript
+// ✅ Good: Handle schema migrations
+userSchema.pre('save', function(next) {
+  // Handle schema version migrations
+  if (this.isNew && !this.schemaVersion) {
+    this.schemaVersion = '1.0.0';
+  }
+  
+  // Migrate old data format
+  if (this.schemaVersion === '1.0.0' && !this.apiKeys) {
+    this.apiKeys = this.apiKey ? [{
+      key: this.apiKey,
+      name: 'Default',
+      createdAt: new Date(),
+      isActive: true
+    }] : [];
+  }
+  
+  next();
+});
+```
+
+### Data Cleanup
+```typescript
+// ✅ Good: Regular data cleanup
+userSchema.methods.cleanExpiredSessions = function() {
+  const now = new Date();
+  this.sessions = this.sessions.filter(session => 
+    session.expiresAt > now
+  );
+  return this.save();
+};
+
+// ✅ Good: Scheduled cleanup tasks
+const cleanupExpiredTokens = async () => {
+  await User.updateMany(
+    { passwordResetExpires: { $lt: new Date() } },
+    { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
+  );
+};
+```
+
+## Monitoring & Analytics
+
+### Query Performance
+```typescript
+// ✅ Good: Monitor slow queries
+mongoose.set('debug', (collectionName, method, query, doc) => {
+  console.log(`${collectionName}.${method}`, JSON.stringify(query));
+});
+
+// ✅ Good: Log query execution time
+const startTime = Date.now();
+const result = await User.find(query);
+const executionTime = Date.now() - startTime;
+
+if (executionTime > 1000) {
+  console.warn(`Slow query detected: ${executionTime}ms`, query);
+}
+```
+
+### Data Analytics
+```typescript
+// ✅ Good: Aggregate usage statistics
+const getUsageAnalytics = async (userId: string, period: string) => {
+  const pipeline = [
+    { $match: { _id: new ObjectId(userId) } },
+    { $unwind: '$usage' },
+    { $match: { 'usage.month': period } },
+    { $group: {
+      _id: '$usage.date',
+      creditsUsed: { $sum: '$usage.creditsUsed' },
+      repliesGenerated: { $sum: '$usage.repliesGenerated' }
+    }},
+    { $sort: { _id: 1 } }
+  ];
+  
+  return await User.aggregate(pipeline);
+};
+```
+
+## Error Handling
+
+### Database Error Handling
+```typescript
+// ✅ Good: Handle specific MongoDB errors
+try {
+  const user = await User.create(userData);
+  return user;
+} catch (error) {
+  if (error.code === 11000) {
+    throw AppError.conflict('Email already exists');
+  }
+  if (error.name === 'ValidationError') {
+    throw AppError.validationError('Invalid user data', error.errors);
+  }
+  throw AppError.databaseError('Failed to create user');
+}
+```
+
+### Connection Error Recovery
+```typescript
+// ✅ Good: Implement connection retry logic
+const connectWithRetry = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI!);
+      return;
+    } catch (error) {
+      console.error(`Connection attempt ${i + 1} failed:`, error);
+      if (i === retries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```

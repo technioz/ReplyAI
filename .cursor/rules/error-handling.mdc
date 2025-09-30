@@ -1,0 +1,301 @@
+---
+globs: *.ts,*.tsx,*.js,*.jsx
+description: Error handling and debugging best practices for production systems
+---
+
+# Error Handling & Debugging
+
+## Error Management Strategy
+
+### Use AppError Class Pattern
+Follow the established pattern in [errors.ts](mdc:dashboard/src/lib/errors.ts):
+
+```typescript
+// ✅ Good: Use AppError for all application errors
+throw AppError.invalidCredentials();
+throw AppError.rateLimitExceeded();
+throw AppError.aiServiceError('Service temporarily unavailable');
+
+// ❌ Bad: Generic Error objects
+throw new Error('Something went wrong');
+```
+
+### Error Response Structure
+Always return structured error responses with:
+- **Error code** - Machine-readable identifier
+- **Status code** - HTTP status code
+- **Message** - Human-readable description
+- **Timestamp** - When the error occurred
+- **Details** - Additional context for debugging
+
+### API Error Handling
+Use the `handleApiError` wrapper for all API routes:
+
+```typescript
+export async function POST(request: NextRequest) {
+  try {
+    // Your logic here
+    return NextResponse.json(response);
+  } catch (error) {
+    return handleApiError(error); // ✅ Always use this
+  }
+}
+```
+
+## Defensive Programming
+
+### Input Validation
+- **Validate at API boundaries** - Check all inputs before processing
+- **Use Zod schemas** - Leverage runtime validation
+- **Sanitize user inputs** - Prevent injection attacks
+- **Handle edge cases** - Empty strings, null values, malformed data
+
+### Null Safety
+```typescript
+// ✅ Good: Defensive null checking
+const user = await User.findById(id);
+if (!user) {
+  throw AppError.notFound('User not found');
+}
+
+// ✅ Good: Optional chaining
+const credits = user?.credits?.available ?? 0;
+
+// ❌ Bad: Unsafe property access
+const credits = user.credits.available; // Could throw if user is null
+```
+
+### Type Guards
+```typescript
+// ✅ Good: Runtime type checking
+function isValidUser(obj: any): obj is IUser {
+  return obj && typeof obj.email === 'string' && obj._id;
+}
+
+if (isValidUser(data)) {
+  // TypeScript knows data is IUser here
+  console.log(data.email);
+}
+```
+
+## Service Integration Errors
+
+### External Service Handling
+For AI services and external APIs:
+
+```typescript
+try {
+  const response = await aiService.generateReply(prompt);
+  return response;
+} catch (error) {
+  // ✅ Good: Handle specific error types
+  if (error.message.includes('rate limit')) {
+    throw AppError.rateLimitExceeded();
+  }
+  if (error.message.includes('API key')) {
+    throw AppError.aiServiceError('Service configuration error');
+  }
+  
+  // ✅ Good: Log for debugging
+  console.error('AI service error:', error);
+  throw AppError.aiServiceError();
+}
+```
+
+### Circuit Breaker Pattern
+Implement fallbacks for critical services:
+
+```typescript
+// ✅ Good: Service fallback
+try {
+  return await primaryService.call();
+} catch (error) {
+  console.warn('Primary service failed, using fallback');
+  return await fallbackService.call();
+}
+```
+
+## Database Error Handling
+
+### Connection Errors
+```typescript
+// ✅ Good: Handle database connection issues
+try {
+  await dbConnect();
+  const user = await User.findById(id);
+} catch (error) {
+  if (error.name === 'MongoNetworkError') {
+    throw AppError.databaseError('Database connection failed');
+  }
+  throw error;
+}
+```
+
+### Transaction Safety
+```typescript
+// ✅ Good: Use transactions for critical operations
+const session = await mongoose.startSession();
+try {
+  await session.withTransaction(async () => {
+    await User.findByIdAndUpdate(userId, { credits: newCredits });
+    await Usage.create({ userId, creditsUsed });
+  });
+} catch (error) {
+  throw AppError.databaseError('Transaction failed');
+} finally {
+  await session.endSession();
+}
+```
+
+## Logging & Monitoring
+
+### Structured Logging
+```typescript
+// ✅ Good: Structured logging with context
+console.log('✅ User logged in:', {
+  email: user.email,
+  source: 'extension',
+  timestamp: new Date().toISOString(),
+  ip: request.ip
+});
+
+// ✅ Good: Error logging with stack trace
+console.error('❌ API error:', {
+  error: error.message,
+  stack: error.stack,
+  userId: user?.id,
+  endpoint: request.url,
+  method: request.method
+});
+```
+
+### Error Tracking
+- **Log all errors** - Even handled errors for monitoring
+- **Include context** - User ID, request details, timestamps
+- **Categorize errors** - By type, severity, and impact
+- **Set up alerts** - For critical errors and error rate spikes
+
+## Testing Error Scenarios
+
+### Unit Test Error Cases
+```typescript
+// ✅ Good: Test error scenarios
+describe('User authentication', () => {
+  it('should throw AppError for invalid credentials', async () => {
+    await expect(authenticateUser('invalid', 'password'))
+      .rejects
+      .toThrow(AppError);
+  });
+  
+  it('should handle database connection errors', async () => {
+    // Mock database failure
+    jest.spyOn(User, 'findOne').mockRejectedValue(new Error('Connection failed'));
+    
+    await expect(loginUser(validCredentials))
+      .rejects
+      .toThrow(AppError);
+  });
+});
+```
+
+### Integration Test Error Handling
+```typescript
+// ✅ Good: Test API error responses
+it('should return 401 for invalid token', async () => {
+  const response = await request(app)
+    .get('/api/user/profile')
+    .set('Authorization', 'Bearer invalid-token');
+    
+  expect(response.status).toBe(401);
+  expect(response.body.errorCode).toBe('INVALID_TOKEN');
+});
+```
+
+## Performance Error Handling
+
+### Timeout Management
+```typescript
+// ✅ Good: Set timeouts for external calls
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+try {
+  const response = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  return response;
+} catch (error) {
+  if (error.name === 'AbortError') {
+    throw AppError.timeout('Request timed out');
+  }
+  throw error;
+}
+```
+
+### Resource Limits
+```typescript
+// ✅ Good: Handle resource constraints
+if (memoryUsage > MAX_MEMORY_THRESHOLD) {
+  throw AppError.resourceLimit('Memory limit exceeded');
+}
+
+if (responseSize > MAX_RESPONSE_SIZE) {
+  throw AppError.payloadTooLarge('Response too large');
+}
+```
+
+## Debugging Best Practices
+
+### Error Context
+Always include sufficient context for debugging:
+- **User information** - ID, email, role
+- **Request details** - URL, method, headers
+- **System state** - Timestamp, environment, version
+- **Business context** - What operation was being performed
+
+### Error Recovery
+```typescript
+// ✅ Good: Implement error recovery
+async function retryOperation(operation: Function, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Exponential backoff
+      await new Promise(resolve => 
+        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      );
+    }
+  }
+}
+```
+
+### Error Boundaries (React)
+```typescript
+// ✅ Good: React error boundaries
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('React Error Boundary:', error, errorInfo);
+    // Send to error tracking service
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+```

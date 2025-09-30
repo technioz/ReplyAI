@@ -1,130 +1,55 @@
-# Quirkly Chrome Extension
+# Quirkly Dashboard & API
 
-A Chrome extension that integrates with Quirkly AI to generate intelligent replies for X (Twitter).
+This folder hosts the Quirkly marketing site, user dashboard, and the API consumed by the Chrome extension.
 
-## Features
+## What It Includes
 
-- **API Key Validation**: Securely validate your Quirkly API key
-- **Reply Generation**: Generate AI-powered replies with different tones
-- **Twitter Integration**: Add Quirkly buttons directly to tweets
-- **Clipboard Integration**: Automatically copy generated replies
-- **Multiple Tones**: Professional, casual, humorous, empathetic, analytical, enthusiastic
+- **Next.js 14 app** with the App Router (`src/app`)
+- **API routes** for authentication, reply generation, credits, subscriptions, admin tooling, and health checks
+- **Reusable UI components** for marketing pages, dashboard widgets, subscription flows, and admin screens
+- **Utility scripts** like `create-admin.js` to bootstrap an admin account
 
-## Installation
+## Getting Started
 
-### 1. Load Extension in Chrome
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `dashboard` folder containing these files
-
-### 2. Get Your API Key
-
-1. Go to [Quirkly Dashboard](http://localhost:3000/dashboard)
-2. Generate a new API key
-3. Copy the API key (it will only be shown once!)
-
-### 3. Configure Extension
-
-1. Click the Quirkly extension icon in your toolbar
-2. Enter your API key
-3. Click "Validate"
-4. Start generating replies!
-
-## Usage
-
-### Popup Interface
-
-- **API Key**: Enter and validate your Quirkly API key
-- **Tone Selection**: Choose the tone for your reply
-- **Prompt Input**: Describe what you want to reply to
-- **Generate**: Create AI-powered replies
-
-### Twitter Integration
-
-- **Quirkly Button**: Appears on every tweet
-- **One-Click Reply**: Click to generate a reply to any tweet
-- **Auto-Copy**: Generated replies are automatically copied to clipboard
-- **Smart Integration**: Opens Twitter's reply compose box
-
-## File Structure
-
-```
-dashboard/
-├── manifest.json          # Extension configuration
-├── background.js          # Background script for API requests
-├── popup.html            # Extension popup interface
-├── popup.js              # Popup functionality
-├── popup.css             # Popup styling
-├── content.js            # Twitter page integration
-└── icons/                # Extension icons (create this folder)
-    ├── icon16.png        # 16x16 icon
-    ├── icon32.png        # 32x32 icon
-    ├── icon48.png        # 48x48 icon
-    └── icon128.png       # 128x128 icon
+```bash
+npm install
+cp .env.example .env.local
+# edit .env.local with MongoDB, JWT, AI provider, and Stripe values
+npm run dev
 ```
 
-## API Endpoints
+The site and API will run on `http://localhost:3000`.
 
-The extension communicates with your local Quirkly dashboard:
+## Key Environment Variables
 
-- **Validation**: `http://127.0.0.1:3000/api/auth/validate`
-- **Reply Generation**: `http://127.0.0.1:3000/api/reply/generate`
-- **Test**: `http://127.0.0.1:3000/api/test`
+- `MONGODB_URI` – MongoDB connection string
+- `JWT_SECRET` – signing key for JWT-based auth
+- `AI_PROVIDER` – `groq` or `xai`
+- `GROQ_API_KEY` / `XAI_API_KEY` – provider credentials
+- `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` – Stripe integration (optional for local testing)
 
-## Troubleshooting
+See `../ENVIRONMENT_SETUP.md` and `../docs/AI_SETUP.md` for details.
 
-### "Unable to connect to authentication server"
+## Helpful Commands
 
-1. **Check Dashboard**: Ensure your Quirkly dashboard is running on port 3000
-2. **API Key**: Verify your API key is correct
-3. **Network**: Check if localhost/127.0.0.1 is accessible
-4. **Extension**: Reload the extension after making changes
+- `npm run dev` – start Next.js in development
+- `npm run build` – production build
+- `npm run start` – run built app
+- `npm run lint` – lint the project
+- `npm run type-check` – TypeScript check
 
-### Extension Not Working on Twitter
+## Project Structure Highlights
 
-1. **Permissions**: Check if the extension has access to Twitter
-2. **Reload**: Refresh the Twitter page
-3. **Console**: Check browser console for errors
+```
+src/
+  app/                # App Router pages and API routes
+  components/         # Shared UI blocks
+  lib/                # Database, AI services, auth helpers, utilities
+  middleware.ts       # Next.js middleware for auth/gating
+```
 
-### API Key Validation Fails
+## Related Docs
 
-1. **Dashboard Status**: Ensure dashboard is running and accessible
-2. **API Key Format**: Verify the key starts with `qk_`
-3. **Database**: Check if MongoDB is running
-4. **Logs**: Check dashboard console for errors
-
-## Development
-
-### Making Changes
-
-1. **Edit Files**: Modify the JavaScript, HTML, or CSS files
-2. **Reload Extension**: Go to `chrome://extensions/` and click reload
-3. **Test**: Refresh Twitter page and test functionality
-
-### Debugging
-
-1. **Popup Console**: Right-click extension icon → Inspect
-2. **Content Script**: Check Twitter page console
-3. **Background Script**: Go to `chrome://extensions/` → Service Worker
-
-## Security
-
-- API keys are stored locally in Chrome storage
-- No data is sent to external servers (only your local dashboard)
-- All communication uses HTTPS when available
-- Background script handles all API requests securely
-
-## Support
-
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Verify your dashboard is running correctly
-3. Check browser console for error messages
-4. Ensure all files are in the correct locations
-
-## License
-
-This extension is part of the Quirkly project and follows the same licensing terms.
+- `../PROJECT_SUMMARY.md`
+- `../ENVIRONMENT_SETUP.md`
+- `../docs/AI_SETUP.md`
