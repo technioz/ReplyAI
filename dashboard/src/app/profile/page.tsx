@@ -82,6 +82,9 @@ export default function ProfilePage() {
         console.log('🔍 ProfilePage: API Response data:', data);
         if (data.success && data.hasProfileData) {
           console.log('🔍 ProfilePage: Profile data received:', data.profileData);
+          console.log('🔍 ProfilePage: Follower count:', data.profileData?.followerCount);
+          console.log('🔍 ProfilePage: Join date:', data.profileData?.joinDate);
+          console.log('🔍 ProfilePage: All profile data keys:', Object.keys(data.profileData || {}));
           setProfileData(data.profileData);
         } else {
           console.log('🔍 ProfilePage: No profile data available');
@@ -499,6 +502,16 @@ export default function ProfilePage() {
                     className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     Refresh Data
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log('🔍 DEBUG: Current profile data:', profileData);
+                      console.log('🔍 DEBUG: User object:', user);
+                      console.log('🔍 DEBUG: API Base URL:', QuirklyDashboardConfig.getApiBaseUrl());
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors ml-2"
+                  >
+                    Debug Info
                   </button>
                   <button
                     onClick={deleteProfileData}
