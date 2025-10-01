@@ -20,13 +20,15 @@ import {
   Shield,
   Settings,
   Users,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuirklyDashboardConfig from '@/lib/config';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { ProfileSettings } from '@/components/user/ProfileSettings';
 import { DetailedAnalytics } from '@/components/analytics/DetailedAnalytics';
+import ProfilePage from '../profile/page';
 
 interface ApiKey {
   id: string;
@@ -346,6 +348,18 @@ export default function DashboardPage() {
             </button>
             
             <button
+              onClick={() => setActiveSection('profile')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSection === 'profile'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-ink-mute hover:text-ink'
+              }`}
+            >
+              <User className="h-4 w-4" />
+              <span>Profile</span>
+            </button>
+
+            <button
               onClick={() => setActiveSection('settings')}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeSection === 'settings'
@@ -396,6 +410,8 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        {activeSection === 'profile' && <ProfilePage />}
 
         {activeSection === 'settings' && <ProfileSettings />}
         
@@ -647,6 +663,13 @@ export default function DashboardPage() {
           <div className="premium-card p-6">
             <h3 className="text-lg font-semibold text-ink mb-4">Quick Actions</h3>
             <div className="space-y-3">
+              <button 
+                className="btn-secondary w-full justify-start"
+                onClick={() => setActiveSection('profile')}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Profile Management
+              </button>
               <button 
                 className="btn-secondary w-full justify-start"
                 onClick={() => router.push('/subscription')}

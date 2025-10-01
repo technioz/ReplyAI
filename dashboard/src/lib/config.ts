@@ -26,6 +26,7 @@ const QuirklyDashboardConfig = {
       subscriptionEndpoint: '/api/subscription',
       userEndpoint: '/api/user',
       creditsEndpoint: '/api/credits',
+      profileEndpoint: '/api/profile',
       dashboardUrl: 'http://localhost:3000'
     },
     production: {
@@ -35,6 +36,7 @@ const QuirklyDashboardConfig = {
       subscriptionEndpoint: '/api/subscription',
       userEndpoint: '/api/user',
       creditsEndpoint: '/api/credits',
+      profileEndpoint: '/api/profile',
       dashboardUrl: 'https://quirkly.technioz.com'
     }
   },
@@ -100,6 +102,12 @@ const QuirklyDashboardConfig = {
     const env = this.isDevelopment() ? 'development' : 'production';
     const config = this.environments[env];
     return config.baseUrl + '/api';
+  },
+
+  getProfileUrl: function(): string {
+    const env = this.isDevelopment() ? 'development' : 'production';
+    const config = this.environments[env];
+    return config.baseUrl + config.profileEndpoint;
   },
 
   // Debug info
