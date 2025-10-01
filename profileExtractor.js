@@ -297,20 +297,40 @@ class XProfileExtractor {
    */
   extractFollowerCount() {
     try {
+      // Updated selectors based on the actual HTML structure
       const selectors = [
+        // Target the nested span structure from the provided HTML
+        'a[href*="/followers"] span span',
+        'a[href*="/followers"] span:first-child span',
+        // Original selectors as fallbacks
         'a[href*="/followers"] span',
         '[data-testid="UserProfileHeader_Items"] a[href*="/followers"] span',
-        'a[href*="/followers"] span[dir="ltr"]'
+        'a[href*="/followers"] span[dir="ltr"]',
+        // Additional selectors for different X layouts
+        'a[href*="/verified_followers"] span span',
+        'a[href*="/verified_followers"] span:first-child span'
       ];
 
       for (const selector of selectors) {
-        const element = document.querySelector(selector);
-        if (element && element.textContent?.trim()) {
-          const text = element.textContent.trim();
-          return this.parseCount(text);
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          if (element && element.textContent?.trim()) {
+            const text = element.textContent.trim();
+            // Skip if this is the "Followers" label text
+            if (text.toLowerCase() === 'followers' || text.toLowerCase() === 'following') {
+              continue;
+            }
+            // Try to parse as a number
+            const count = this.parseCount(text);
+            if (count > 0) {
+              console.log(`✅ Found follower count: ${count} using selector: ${selector}`);
+              return count;
+            }
+          }
         }
       }
 
+      console.log('⚠️ Could not extract follower count with any selector');
       return 0;
     } catch (error) {
       console.error('Error extracting follower count:', error);
@@ -323,20 +343,37 @@ class XProfileExtractor {
    */
   extractFollowingCount() {
     try {
+      // Updated selectors based on the actual HTML structure
       const selectors = [
+        // Target the nested span structure
+        'a[href*="/following"] span span',
+        'a[href*="/following"] span:first-child span',
+        // Original selectors as fallbacks
         'a[href*="/following"] span',
         '[data-testid="UserProfileHeader_Items"] a[href*="/following"] span',
         'a[href*="/following"] span[dir="ltr"]'
       ];
 
       for (const selector of selectors) {
-        const element = document.querySelector(selector);
-        if (element && element.textContent?.trim()) {
-          const text = element.textContent.trim();
-          return this.parseCount(text);
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          if (element && element.textContent?.trim()) {
+            const text = element.textContent.trim();
+            // Skip if this is the "Following" label text
+            if (text.toLowerCase() === 'followers' || text.toLowerCase() === 'following') {
+              continue;
+            }
+            // Try to parse as a number
+            const count = this.parseCount(text);
+            if (count > 0) {
+              console.log(`✅ Found following count: ${count} using selector: ${selector}`);
+              return count;
+            }
+          }
         }
       }
 
+      console.log('⚠️ Could not extract following count with any selector');
       return 0;
     } catch (error) {
       console.error('Error extracting following count:', error);
