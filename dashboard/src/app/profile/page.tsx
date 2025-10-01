@@ -79,9 +79,12 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 ProfilePage: API Response data:', data);
         if (data.success && data.hasProfileData) {
+          console.log('🔍 ProfilePage: Profile data received:', data.profileData);
           setProfileData(data.profileData);
         } else {
+          console.log('🔍 ProfilePage: No profile data available');
           setProfileData(null);
         }
       } else {
@@ -186,7 +189,15 @@ export default function ProfilePage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'Not available';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateString);
+      return 'Invalid date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -196,6 +207,10 @@ export default function ProfilePage() {
   };
 
   const formatNumber = (num: number) => {
+    if (num === null || num === undefined || isNaN(num)) {
+      return '0';
+    }
+    
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
     } else if (num >= 1000) {
@@ -240,6 +255,7 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {console.log('🔍 ProfilePage: Rendering with profileData:', profileData)}
           {!profileData ? (
             /* No Profile Data */
             <div className="bg-card rounded-lg border p-8 text-center">
