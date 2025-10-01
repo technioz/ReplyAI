@@ -7,6 +7,8 @@ class Quirkly {
     this.apiKey = null;
     this.user = null;
     this.isEnabled = false;
+    this.profileExtractor = null;
+    this.extractedProfile = null;
     
     try {
       this.config = QuirklyConfig.getConfig();
@@ -102,6 +104,9 @@ class Quirkly {
       
       // Add a test button to verify extension is working
       this.addTestButton();
+      
+      // Initialize profile extractor
+      this.initializeProfileExtractor();
       
       console.log('Quirkly: Content script initialized successfully');
     } catch (error) {
@@ -1225,6 +1230,248 @@ class Quirkly {
       
     } catch (error) {
       console.error('Quirkly: Error stopping monitoring:', error);
+    }
+  }
+
+  // Profile Extraction Methods
+  initializeProfileExtractor() {
+    try {
+      if (window.XProfileExtractor) {
+        this.profileExtractor = new window.XProfileExtractor();
+        console.log('✅ Profile extractor initialized');
+        
+        // Extract profile data if we're on a profile page
+        this.extractProfileDataIfNeeded();
+      } else {
+        console.log('⚠️ XProfileExtractor not available');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize profile extractor:', error);
+    }
+  }
+
+  async extractProfileDataIfNeeded() {
+    try {
+      if (!this.profileExtractor) {
+        console.log('⚠️ Profile extractor not initialized');
+        return;
+      }
+
+      // Check if we're on a profile page
+      const url = window.location.href;
+      const isProfilePage = /(twitter\.com|x\.com)\/[^\/]+\/?$/.test(url) && 
+                           !url.includes('/home') && 
+                           !url.includes('/explore') && 
+                           !url.includes('/notifications');
+
+      if (isProfilePage) {
+        console.log('🔍 Detected profile page, extracting profile data...');
+        
+        // Wait a bit for page to load
+        setTimeout(async () => {
+          const profileData = await this.profileExtractor.extractProfileData();
+          if (profileData) {
+            this.extractedProfile = profileData;
+            console.log('✅ Profile data extracted:', profileData);
+            
+            // Send profile data to background script for storage
+            await this.sendProfileDataToBackend(profileData);
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('❌ Error extracting profile data:', error);
+    }
+  }
+
+  async sendProfileDataToBackend(profileData) {
+    try {
+      if (!this.apiKey || !this.user) {
+        console.log('⚠️ No API key or user, cannot send profile data');
+        return;
+      }
+
+      console.log('📤 Sending profile data to backend...');
+      console.log('📤 User object:', this.user);
+      console.log('📤 User ID to send:', this.user.id || this.user._id);
+      
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'storeProfileData',
+          profileData: profileData,
+          userId: this.user.id || this.user._id
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      if (response && response.success) {
+        console.log('✅ Profile data stored successfully');
+      } else {
+        console.error('❌ Failed to store profile data:', response?.error);
+      }
+    } catch (error) {
+      console.error('❌ Error sending profile data to backend:', error);
+    }
+  }
+
+  getExtractedProfile() {
+    return this.extractedProfile;
+  }
+
+  // Enhanced reply generation with profile context
+  async generateReplyWithProfileContext(tone, replyBox) {
+    try {
+      console.log('🤖 Generating reply with profile context...');
+      
+      // Get the original post content
+      const originalPost = this.extractOriginalPost(replyBox);
+      if (!originalPost) {
+        throw new Error('Could not extract original post content');
+      }
+
+      // Get profile context if available
+      const profileContext = this.extractedProfile ? {
+        userProfile: {
+          handle: this.extractedProfile.xHandle,
+          displayName: this.extractedProfile.displayName,
+          bio: this.extractedProfile.bio,
+          expertise: this.extractExpertiseFromProfile(this.extractedProfile),
+          tone: this.extractToneFromProfile(this.extractedProfile)
+        }
+      } : {};
+
+      console.log('📝 Profile context for reply generation:', profileContext);
+
+      // Send message to background script with profile context
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'generateReply',
+          tweetText: originalPost,
+          tone: tone,
+          userContext: {
+            userId: this.user?.id || this.user?._id,
+            email: this.user?.email,
+            preferences: this.user?.preferences,
+            credits: this.user?.credits,
+            ...profileContext
+          }
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response && response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response?.error || 'Unknown error from background script'));
+          }
+        });
+      });
+
+      console.log('Background script response:', response);
+      
+      // Handle the response
+      let replyData = response.data;
+      
+      if (replyData && typeof replyData === 'object' && replyData.reply) {
+        this.insertReply(replyData.reply, replyBox);
+        console.log('✅ Reply inserted successfully with profile context');
+      } else {
+        throw new Error('Invalid response format from background script');
+      }
+
+    } catch (error) {
+      console.error('❌ Error generating reply with profile context:', error);
+      this.showError('Failed to generate reply: ' + error.message);
+    }
+  }
+
+  extractExpertiseFromProfile(profile) {
+    try {
+      const expertise = {
+        domains: [],
+        keywords: [],
+        topics: []
+      };
+
+      // Extract from bio
+      if (profile.bio) {
+        const bioText = profile.bio.toLowerCase();
+        
+        // Common expertise keywords
+        const expertiseKeywords = [
+          'developer', 'engineer', 'designer', 'marketer', 'entrepreneur', 'founder', 'ceo', 'cto',
+          'data scientist', 'analyst', 'consultant', 'advisor', 'expert', 'specialist',
+          'tech', 'ai', 'machine learning', 'blockchain', 'crypto', 'fintech', 'healthtech',
+          'marketing', 'sales', 'product', 'growth', 'startup', 'venture', 'investor'
+        ];
+
+        expertiseKeywords.forEach(keyword => {
+          if (bioText.includes(keyword)) {
+            expertise.keywords.push(keyword);
+          }
+        });
+      }
+
+      // Extract from recent tweets
+      if (profile.recentTweets && profile.recentTweets.length > 0) {
+        const tweetTexts = profile.recentTweets.map(tweet => tweet.content.toLowerCase()).join(' ');
+        
+        // Extract hashtags as topics
+        const hashtags = tweetTexts.match(/#\w+/g);
+        if (hashtags) {
+          expertise.topics = [...new Set(hashtags.map(tag => tag.substring(1)))];
+        }
+      }
+
+      return expertise;
+    } catch (error) {
+      console.error('Error extracting expertise from profile:', error);
+      return { domains: [], keywords: [], topics: [] };
+    }
+  }
+
+  extractToneFromProfile(profile) {
+    try {
+      const tone = {
+        primaryTone: 'professional',
+        secondaryTones: [],
+        characteristics: []
+      };
+
+      // Analyze bio tone
+      if (profile.bio) {
+        const bioText = profile.bio.toLowerCase();
+        
+        if (bioText.includes('fun') || bioText.includes('humor') || bioText.includes('joke')) {
+          tone.characteristics.push('humorous');
+        }
+        if (bioText.includes('passionate') || bioText.includes('love')) {
+          tone.characteristics.push('passionate');
+        }
+        if (bioText.includes('thoughtful') || bioText.includes('deep')) {
+          tone.characteristics.push('thoughtful');
+        }
+      }
+
+      // Analyze recent tweets
+      if (profile.recentTweets && profile.recentTweets.length > 0) {
+        const avgLength = profile.recentTweets.reduce((sum, tweet) => sum + tweet.content.length, 0) / profile.recentTweets.length;
+        
+        if (avgLength < 50) {
+          tone.characteristics.push('concise');
+        } else if (avgLength > 200) {
+          tone.characteristics.push('detailed');
+        }
+      }
+
+      return tone;
+    } catch (error) {
+      console.error('Error extracting tone from profile:', error);
+      return { primaryTone: 'professional', secondaryTones: [], characteristics: [] };
     }
   }
 }

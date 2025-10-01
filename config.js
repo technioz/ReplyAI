@@ -15,12 +15,14 @@ const QuirklyConfig = {
       baseUrl: 'http://localhost:3000',
       authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
+      profileEndpoint: '/api/profile/extract',
       dashboardUrl: 'http://localhost:3000'
     },
     production: {
       baseUrl: 'https://api.quirkly.technioz.com', 
       authEndpoint: '/api/auth',
       replyEndpoint: '/api/reply/generate',
+      profileEndpoint: '/api/profile/extract',
       dashboardUrl: 'https://quirkly.technioz.com'
     }
   },
@@ -32,8 +34,10 @@ const QuirklyConfig = {
     
     return {
       environment: env,
+      baseUrl: config.baseUrl,
       authUrl: config.baseUrl + config.authEndpoint,
       replyUrl: config.baseUrl + config.replyEndpoint,
+      profileUrl: config.baseUrl + config.profileEndpoint,
       dashboardUrl: config.dashboardUrl,
       isDev: env === 'development'
     };
@@ -50,6 +54,10 @@ const QuirklyConfig = {
 
   getDashboardUrl: function() {
     return this.getConfig().dashboardUrl;
+  },
+
+  getProfileUrl: function() {
+    return this.getConfig().profileUrl;
   },
 
   // Debug info

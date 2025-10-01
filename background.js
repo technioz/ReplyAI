@@ -75,6 +75,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep the message channel open for async response
   }
   
+  if (request.action === 'storeProfileData') {
+    handleProfileDataStorage(request, sendResponse);
+    return true; // Keep the message channel open for async response
+  }
+  
   if (request.action === 'generateReply') {
     handleReplyGeneration(request, sendResponse);
     return true; // Keep the message channel open for async response
@@ -719,6 +724,74 @@ async function refreshUserData(sendResponse) {
     }
   } catch (error) {
     console.error('Quirkly Background: Failed to refresh user data:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Handle profile data storage
+async function handleProfileDataStorage(request, sendResponse) {
+  try {
+    console.log('Quirkly Background: Handling profile data storage:', request);
+    
+    const { profileData, userId } = request;
+    
+    console.log('Quirkly Background: Profile data keys:', Object.keys(profileData || {}));
+    console.log('Quirkly Background: User ID:', userId, 'Type:', typeof userId);
+    
+    if (!profileData || !userId) {
+      throw new Error('Missing profile data or user ID');
+    }
+    
+    // Get stored API key
+    const result = await chrome.storage.sync.get(['apiKey']);
+    if (!result.apiKey) {
+      throw new Error('No API key found. Please authenticate first.');
+    }
+    
+    // Get config for profile endpoint
+    const config = QuirklyConfig.getConfig();
+    const profileEndpoint = config.profileUrl || config.baseUrl + '/api/profile/extract';
+    
+    console.log('Quirkly Background: Sending profile data to:', profileEndpoint);
+    
+    // Make the API request to store profile data
+    const response = await fetch(profileEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${result.apiKey}`,
+        'X-User-ID': userId,
+        'X-Extension-Version': '1.0.0'
+      },
+      body: JSON.stringify({
+        profileData: profileData,
+        userId: userId,
+        timestamp: new Date().toISOString(),
+        source: 'chrome-extension-background'
+      })
+    });
+    
+    console.log('Quirkly Background: Profile storage response status:', response.status);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please check your API key.');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      } else if (response.status === 403) {
+        throw new Error('Access denied. Please check your subscription.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Quirkly Background: Profile data stored successfully:', data);
+    
+    sendResponse({ success: true, data: data });
+    
+  } catch (error) {
+    console.error('Quirkly Background: Profile data storage failed:', error);
     sendResponse({ success: false, error: error.message });
   }
 }

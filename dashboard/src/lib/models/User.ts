@@ -285,6 +285,51 @@ const userSchema = new Schema<IUser>({
   // Usage tracking
   usage: [usageSchema],
   
+  // X Profile Data
+  profileData: {
+    xHandle: String,
+    displayName: String,
+    bio: String,
+    location: String,
+    website: String,
+    joinDate: Date,
+    followerCount: Number,
+    followingCount: Number,
+    verified: Boolean,
+    profileImageUrl: String,
+    pinnedTweet: {
+      content: String,
+      createdAt: Date
+    },
+    recentTweets: [{
+      content: String,
+      createdAt: Date,
+      engagement: Number
+    }],
+    toneAnalysis: {
+      primaryTone: String,
+      secondaryTones: [String],
+      vocabulary: [String],
+      avgTweetLength: Number
+    },
+    expertise: {
+      domains: [String],
+      keywords: [String],
+      topics: [String]
+    },
+    privacy: {
+      extractPublicData: Boolean,
+      includeTweets: Boolean,
+      includeEngagement: Boolean
+    },
+    extractedAt: Date,
+    lastUpdated: Date,
+    isActive: Boolean
+  },
+  profileExtractedAt: {
+    type: Date
+  },
+  
   // Stripe customer info
   stripeCustomerId: {
     type: String,

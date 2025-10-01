@@ -14,7 +14,7 @@ export class GroqService implements AIService {
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
     
-    const systemPrompt = this.buildSystemPrompt(tone);
+    const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
     
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -66,7 +66,7 @@ export class GroqService implements AIService {
     };
   }
 
-  private buildSystemPrompt(tone: string): string {
+  private buildSystemPrompt(tone: string, profileContext?: any): string {
     // Define tone-specific personas and examples
     const toneProfiles = {
       professional: {
@@ -108,15 +108,38 @@ export class GroqService implements AIService {
 
     const profile = toneProfiles[tone as keyof typeof toneProfiles] || toneProfiles.professional;
 
-    // Core system prompt emphasizing natural, human writing
-    return `You write engaging replies to X (Twitter) posts that build credibility and connection.
+    // Build profile-aware system prompt
+    let systemPrompt = `You write engaging replies to X (Twitter) posts that build credibility and connection.
 
 ${profile.persona}
 
 ${profile.style}
 
 Example of your style:
-${profile.example}
+${profile.example}`;
+
+    // Add profile context if available
+    if (profileContext?.userProfile) {
+      const userProfile = profileContext.userProfile;
+      systemPrompt += `
+
+ABOUT YOU:
+- Handle: ${userProfile.handle}
+- Display Name: ${userProfile.displayName}
+${userProfile.bio ? `- Bio: ${userProfile.bio}` : ''}
+${userProfile.expertise?.domains?.length > 0 ? `- Expertise Domains: ${userProfile.expertise.domains.join(', ')}` : ''}
+${userProfile.expertise?.keywords?.length > 0 ? `- Expertise Keywords: ${userProfile.expertise.keywords.slice(0, 5).join(', ')}` : ''}
+${userProfile.tone?.primaryTone ? `- Your Natural Tone: ${userProfile.tone.primaryTone}` : ''}
+${userProfile.tone?.characteristics?.length > 0 ? `- Your Style: ${userProfile.tone.characteristics.join(', ')}` : ''}
+
+WRITING GUIDANCE:
+- Match your natural tone and expertise when relevant
+- Reference your domain knowledge when it adds value
+- Stay true to your authentic voice and style
+- Use your expertise to provide unique insights`;
+    }
+
+    systemPrompt += `
 
 Core principles:
 - Write like a real person in natural conversation
@@ -127,6 +150,8 @@ Core principles:
 - Be direct and genuine
 
 Reply as if you're a real person with something worthwhile to contribute.`;
+
+    return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {

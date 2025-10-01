@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
       throw new Error('Tweet text is required');
     }
 
-    if (tweetText.length > 2000) {
-      throw new Error('Tweet text is too long (max 2000 characters)');
+    if (tweetText.length > 5000) {
+      throw new Error('Tweet text is too long (max 5000 characters)');
     }
 
     // Validate tone
@@ -71,9 +71,56 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Generate reply using AI service (Groq or XAI)
+      // Get profile context if user is authenticated
+      let profileContext = null;
+      if (user && !isFreeUser) {
+        try {
+          console.log(`🔍 Loading profile context for user: ${user.email}`);
+          
+          // Make internal API call to get profile context
+          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/profile/${user._id}/context`, {
+            headers: {
+              'Authorization': request.headers.get('Authorization') || '',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.success && profileData.hasContext) {
+              profileContext = profileData.context;
+              console.log(`✅ Profile context loaded:`, {
+                hasProfile: !!profileContext?.userProfile,
+                expertise: profileContext?.userProfile?.expertise?.domains?.length || 0,
+                tone: profileContext?.userProfile?.tone?.primaryTone,
+                handle: profileContext?.userProfile?.handle
+              });
+            } else {
+              console.log(`ℹ️ No profile context available for user: ${user.email}`);
+            }
+          } else {
+            console.log(`⚠️ Failed to load profile context: ${profileResponse.status}`);
+          }
+        } catch (error) {
+          console.log('❌ Error loading profile context:', error.message);
+          // Continue without profile context
+        }
+      }
+
+      // Generate reply using AI service with profile context
       const aiService = AIServiceFactory.createService();
-      const aiResult = await aiService.generateReply(tweetText.trim(), tone, userContext || {});
+      const enhancedUserContext = {
+        ...userContext,
+        profileContext
+      };
+      
+      console.log(`🤖 Generating reply with context:`, {
+        hasProfileContext: !!profileContext,
+        tone: tone,
+        originalContext: !!userContext
+      });
+      
+      const aiResult = await aiService.generateReply(tweetText.trim(), tone, enhancedUserContext);
 
       // Check credits if user is authenticated (from JWT payload)
       if (user && !isFreeUser) {

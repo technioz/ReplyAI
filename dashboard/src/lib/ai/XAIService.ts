@@ -18,7 +18,7 @@ export class XAIService implements AIService {
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     const model = process.env.XAI_MODEL || 'grok-3';
     
-    const systemPrompt = this.buildSystemPrompt(tone);
+    const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
     
     const requestBody = {
@@ -86,7 +86,7 @@ export class XAIService implements AIService {
     };
   }
 
-  private buildSystemPrompt(tone: string): string {
+  private buildSystemPrompt(tone: string, profileContext?: any): string {
     // OPTIMAL STRUCTURE: Examples → Role → Core Rules → Output Format
     
     const toneExamples = {
@@ -157,10 +157,33 @@ Reply: "The real issue isn't the location. It's whether companies are willing to
 
     const toneConfig = toneExamples[tone as keyof typeof toneExamples] || toneExamples.professional;
 
-    return `${toneConfig.role}
+    let systemPrompt = `${toneConfig.role}
 
 EXAMPLES OF ${tone.toUpperCase()} TONE:
-${toneConfig.examples}
+${toneConfig.examples}`;
+
+    // Add profile context if available
+    if (profileContext?.userProfile) {
+      const userProfile = profileContext.userProfile;
+      systemPrompt += `
+
+ABOUT YOU:
+- Handle: ${userProfile.handle}
+- Display Name: ${userProfile.displayName}
+${userProfile.bio ? `- Bio: ${userProfile.bio}` : ''}
+${userProfile.expertise?.domains?.length > 0 ? `- Expertise Domains: ${userProfile.expertise.domains.join(', ')}` : ''}
+${userProfile.expertise?.keywords?.length > 0 ? `- Expertise Keywords: ${userProfile.expertise.keywords.slice(0, 5).join(', ')}` : ''}
+${userProfile.tone?.primaryTone ? `- Your Natural Tone: ${userProfile.tone.primaryTone}` : ''}
+${userProfile.tone?.characteristics?.length > 0 ? `- Your Style: ${userProfile.tone.characteristics.join(', ')}` : ''}
+
+WRITING GUIDANCE:
+- Match your natural tone and expertise when relevant
+- Reference your domain knowledge when it adds value
+- Stay true to your authentic voice and style
+- Use your expertise to provide unique insights`;
+    }
+
+    systemPrompt += `
 
 CORE RULES:
 1. Write naturally like a human - avoid corporate speak, buzzwords, and AI phrases
@@ -177,6 +200,8 @@ STRICT CONSTRAINTS:
 
 OUTPUT:
 Write only the reply text, nothing else.`;
+
+    return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
@@ -211,7 +236,7 @@ Write only the reply text, nothing else.`;
       issues.push(`Length: ${reply.length} chars (max 280)`);
     }
     
-    if (reply.includes('😀') || /[\u{1F300}-\u{1F9FF}]/u.test(reply)) {
+    if (reply.includes('😀') || /[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(reply)) {
       issues.push('Contains emojis');
     }
     
