@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { QuirklyDashboardConfig } from '@/lib/config';
+import QuirklyDashboardConfig from '@/lib/config';
 
 interface ProfileData {
   xHandle: string;
@@ -62,6 +62,11 @@ export default function ProfilePage() {
       const token = localStorage.getItem('quirkly_token');
       if (!token) {
         setError('Authentication required');
+        return;
+      }
+
+      if (!user?.id) {
+        setError('User ID not available');
         return;
       }
 
