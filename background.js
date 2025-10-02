@@ -212,8 +212,6 @@ async function handleReplyGeneration(request, sendResponse) {
     // Deduct credits after successful reply generation
     if (data.success && result.user) {
       try {
-        console.log('Quirkly Background: Deducting credits for user:', result.user.email);
-        
         const creditResponse = await fetch(`${config.baseUrl}/api/credits/use`, {
           method: 'POST',
           headers: {
@@ -230,21 +228,17 @@ async function handleReplyGeneration(request, sendResponse) {
         
         if (creditResponse.ok) {
           const creditData = await creditResponse.json();
-          console.log('Quirkly Background: Credits deducted successfully:', creditData);
           
           // Update stored user data with new credit information
           if (creditData.credits) {
             result.user.credits = creditData.credits;
             await chrome.storage.sync.set({ user: result.user });
-            console.log('Quirkly Background: Updated user credits in storage');
           }
         } else {
           console.warn('Quirkly Background: Failed to deduct credits:', creditResponse.status);
-          // Don't fail the entire request if credit deduction fails
         }
       } catch (creditError) {
         console.error('Quirkly Background: Error deducting credits:', creditError);
-        // Don't fail the entire request if credit deduction fails
       }
     }
     
