@@ -133,8 +133,6 @@ export async function POST(request: NextRequest) {
           }, { status: 402 });
         }
         
-        // Note: Credit deduction will be handled by a separate endpoint
-        // since we can't modify JWT payload directly
         console.log(`✅ Credit check passed: ${user.email} (credits remaining: ${user.credits.available})`);
       }
 
