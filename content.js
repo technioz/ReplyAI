@@ -105,6 +105,9 @@ class Quirkly {
       // Add a test button to verify extension is working
       this.addTestButton();
       
+      // Add a profile extraction test button
+      this.addProfileExtractionTestButton();
+      
       // Initialize profile extractor
       this.initializeProfileExtractor();
       
