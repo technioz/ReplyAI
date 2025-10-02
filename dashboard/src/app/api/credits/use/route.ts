@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiKey } from '@/lib/middleware/auth';
 import { handleApiError } from '@/lib/errors';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
+
+// API key validation for Chrome extension requests
+async function validateApiKey(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    if (!apiKey || apiKey.length < 10) {
+      return null;
+    }
+
+    // Find user by API key
+    const user = await User.findByApiKey(apiKey);
+    if (!user || user.status !== 'active') {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('API key validation error:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
