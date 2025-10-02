@@ -1260,31 +1260,81 @@ class Quirkly {
         return;
       }
 
-      // Check if we're on a profile page
+      // Enhanced profile page detection
       const url = window.location.href;
-      const isProfilePage = /(twitter\.com|x\.com)\/[^\/]+\/?$/.test(url) && 
-                           !url.includes('/home') && 
-                           !url.includes('/explore') && 
-                           !url.includes('/notifications');
+      const pathname = window.location.pathname;
+      const isProfilePage = (
+        (url.includes('twitter.com') || url.includes('x.com')) &&
+        pathname && 
+        pathname.length > 1 && 
+        !pathname.includes('/home') && 
+        !pathname.includes('/explore') && 
+        !pathname.includes('/notifications') &&
+        !pathname.includes('/messages') &&
+        !pathname.includes('/settings') &&
+        !pathname.includes('/compose') &&
+        !pathname.includes('/search') &&
+        !pathname.includes('/i/') &&
+        !pathname.includes('/status/') &&
+        !pathname.includes('/hashtag/')
+      );
 
       if (isProfilePage) {
         console.log('🔍 Detected profile page, extracting profile data...');
         
-        // Wait a bit for page to load
-        setTimeout(async () => {
-          const profileData = await this.profileExtractor.extractProfileData();
-          if (profileData) {
-            this.extractedProfile = profileData;
-            console.log('✅ Profile data extracted:', profileData);
-            
-            // Send profile data to background script for storage
-            await this.sendProfileDataToBackend(profileData);
-          }
-        }, 2000);
+        // Wait for critical elements to load
+        await this.waitForProfileElements();
+        
+        // Extract profile data
+        const profileData = await this.profileExtractor.extractProfileData();
+        if (profileData) {
+          this.extractedProfile = profileData;
+          console.log('✅ Profile data extracted:', profileData);
+          
+          // Send profile data to background script for storage
+          await this.sendProfileDataToBackend(profileData);
+        } else {
+          console.warn('⚠️ Profile extraction returned null - may need manual trigger');
+        }
       }
     } catch (error) {
       console.error('❌ Error extracting profile data:', error);
     }
+  }
+
+  // Wait for critical profile elements to load
+  async waitForProfileElements() {
+    return new Promise((resolve) => {
+      const maxWaitTime = 10000; // 10 seconds
+      const checkInterval = 500; // 500ms
+      let elapsedTime = 0;
+      
+      const checkElements = () => {
+        const criticalSelectors = [
+          '[data-testid="UserName"]',
+          '[data-testid="UserProfileHeader_Items"]',
+          'h1[data-testid="UserName"]',
+          'a[href*="/followers"]',
+          'a[href*="/following"]'
+        ];
+        
+        const foundElements = criticalSelectors.filter(selector => 
+          document.querySelector(selector) !== null
+        );
+        
+        console.log(`🔍 Found ${foundElements.length}/${criticalSelectors.length} critical elements`);
+        
+        if (foundElements.length >= 2 || elapsedTime >= maxWaitTime) {
+          console.log('✅ Critical elements loaded or timeout reached');
+          resolve(foundElements.length >= 2);
+        } else {
+          elapsedTime += checkInterval;
+          setTimeout(checkElements, checkInterval);
+        }
+      };
+      
+      checkElements();
+    });
   }
 
   async sendProfileDataToBackend(profileData) {
