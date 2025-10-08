@@ -7,25 +7,34 @@ import User from '@/lib/models/User';
 async function validateApiKey(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
+    console.log('🔍 Credit Use - Auth header:', authHeader?.substring(0, 30) + '...');
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ Credit Use - No Bearer token found');
       return null;
     }
 
     const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log('🔍 Credit Use - API key extracted:', apiKey?.substring(0, 20) + '...');
     
     if (!apiKey || apiKey.length < 10) {
+      console.log('❌ Credit Use - API key too short or missing');
       return null;
     }
 
     // Find user by API key
     const user = await User.findByApiKey(apiKey);
+    console.log('🔍 Credit Use - User found:', user ? `${user.email} (${user.id})` : 'null');
+    
     if (!user || user.status !== 'active') {
+      console.log('❌ Credit Use - User not found or inactive');
       return null;
     }
 
+    console.log('✅ Credit Use - Validation successful');
     return user;
   } catch (error) {
-    console.error('API key validation error:', error);
+    console.error('❌ Credit Use - Validation error:', error);
     return null;
   }
 }
@@ -33,11 +42,19 @@ async function validateApiKey(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+    console.log('🔍 Credit Use - Request received');
     
     const user = await validateApiKey(request);
     if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      console.log('❌ Credit Use - Authentication failed, returning 401');
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        message: 'Valid API key is required',
+        hint: 'Make sure you are sending the API key in Authorization: Bearer <key> header'
+      }, { status: 401 });
     }
+    
+    console.log('✅ Credit Use - User authenticated:', user.email);
 
     const body = await request.json();
     const { amount = 1 } = body;
@@ -62,6 +79,12 @@ export async function POST(request: NextRequest) {
           total: user.credits.total
         },
         timestamp: new Date().toISOString()
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'Insufficient credits') {
@@ -77,4 +100,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-ID, X-Extension-Version',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }

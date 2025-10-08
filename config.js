@@ -20,11 +20,11 @@ const QuirklyConfig = {
     },
     production: {
       // Using Vercel deployment URL (update with custom domain when available)
-      baseUrl: 'https://quirkly.vercel.app', 
+      baseUrl: 'https://quirkly.technioz.com', 
       authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
       profileEndpoint: '/api/profile/extract',
-      dashboardUrl: 'https://quirkly.vercel.app'
+      dashboardUrl: 'https://quirkly.technioz.com'
     }
   },
 
