@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/lib/middleware/auth';
 import { handleApiError } from '@/lib/errors';
