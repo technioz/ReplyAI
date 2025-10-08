@@ -1,39 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkDatabaseHealth } from '@/lib/database';
 import dbConnect from '@/lib/database';
-import { connectWithFallback } from '@/lib/database';
 import User from '@/lib/models/User';
 
 // Simple test endpoint for extensions
 export async function GET(request: NextRequest) {
   try {
-    const dbHealthy = await checkDatabaseHealth();
-    
     // Test database operations
     let dbTestResult = 'not tested';
     let userCount = 0;
-    let connectionMethod = 'none';
+    let dbHealthy = false;
     
-    if (dbHealthy) {
-      try {
-        await dbConnect();
-        userCount = await User.countDocuments();
-        dbTestResult = `connected - ${userCount} users found`;
-        connectionMethod = 'primary';
-      } catch (error) {
-        dbTestResult = `error: ${error instanceof Error ? error.message : 'unknown'}`;
-      }
-    } else {
-      // Try to connect even if health check failed
-      try {
-        console.log('🔄 Primary connection failed, trying fallback...');
-        await connectWithFallback();
-        userCount = await User.countDocuments();
-        dbTestResult = `connected after fallback - ${userCount} users found`;
-        connectionMethod = 'fallback';
-      } catch (error) {
-        dbTestResult = `connection failed: ${error instanceof Error ? error.message : 'unknown'}`;
-      }
+    try {
+      await dbConnect();
+      userCount = await User.countDocuments();
+      dbTestResult = `connected - ${userCount} users found`;
+      dbHealthy = true;
+    } catch (error) {
+      dbTestResult = `connection failed: ${error instanceof Error ? error.message : 'unknown'}`;
+      dbHealthy = false;
     }
     
     return NextResponse.json({
@@ -44,7 +28,6 @@ export async function GET(request: NextRequest) {
         status: dbHealthy ? 'connected' : 'disconnected',
         testResult: dbTestResult,
         userCount: userCount,
-        connectionMethod: connectionMethod,
         timestamp: new Date().toISOString()
       },
       server: {
