@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
 import { AppError, handleApiError } from '@/lib/errors';
-import { createSendToken } from '@/lib/middleware/auth';
+import { signToken } from '@/lib/middleware/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ New user registered: ${email} (${firstName} ${lastName || ''})`);
 
     // Create JWT token for auto-login after signup
-    const token = await createSendToken(newUser);
+    const token = signToken(newUser);
 
     return NextResponse.json({
       success: true,
