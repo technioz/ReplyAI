@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user with fresh data
-    const currentUser = await User.findById(user._id).select('-password -sessions').exec();
+    const currentUser = await User.findById(user.id).select('-password -sessions').exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if user has legacy 'empathic' value and migrate it
     if (user.preferences?.defaultTone === 'empathic') {
-      await User.findByIdAndUpdate(user._id, {
+      await User.findByIdAndUpdate(user.id, {
         'preferences.defaultTone': 'empathetic'
       });
     }
@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedUser = await User.findByIdAndUpdate(
-      user._id,
+      user.id,
       updates,
       { new: true, runValidators: true }
     ).select('-password -sessions').exec();
