@@ -4,8 +4,15 @@
 importScripts('config.js');
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    // Get environment-specific URLs
-    const config = QuirklyConfig.getConfig();
+    // Use production config directly
+    const config = {
+      environment: 'production',
+      authUrl: 'https://quirkly.technioz.com/api/auth/validate',
+      replyUrl: 'https://quirkly.technioz.com/api/reply/generate',
+      profileUrl: 'https://quirkly.technioz.com/api/profile/extract',
+      dashboardUrl: 'https://quirkly.technioz.com',
+      isDev: false
+    };
     console.log('Quirkly Background: Installing with config:', config);
     
     // Set default settings on first install
@@ -29,8 +36,15 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'update') {
     console.log('Quirkly updated to version:', chrome.runtime.getManifest().version);
     
-    // Migrate old settings if needed
-    const config = QuirklyConfig.getConfig();
+    // Use production config directly
+    const config = {
+      environment: 'production',
+      authUrl: 'https://quirkly.technioz.com/api/auth/validate',
+      replyUrl: 'https://quirkly.technioz.com/api/reply/generate',
+      profileUrl: 'https://quirkly.technioz.com/api/profile/extract',
+      dashboardUrl: 'https://quirkly.technioz.com',
+      isDev: false
+    };
     chrome.storage.sync.get(['replyEndpoint']).then((result) => {
       if (result.replyEndpoint && result.replyEndpoint !== config.replyUrl) {
         // Update to environment-specific webhook URL
@@ -107,7 +121,7 @@ async function handleAuthentication(apiKey, sendResponse) {
     }
     
     // Validate API key with real authentication server
-    const authEndpoint = QuirklyConfig.getAuthUrl();
+    const authEndpoint = 'https://quirkly.technioz.com/api/auth/validate';
     
     const response = await fetch(authEndpoint, {
       method: 'POST',
@@ -168,9 +182,8 @@ async function handleReplyGeneration(request, sendResponse) {
       throw new Error('Missing required parameters: tweetText and tone');
     }
     
-    // Get config for reply endpoint
-    const config = QuirklyConfig.getConfig();
-    const replyEndpoint = config.replyUrl;
+    // Use production reply endpoint
+    const replyEndpoint = 'https://quirkly.technioz.com/api/reply/generate';
     
     console.log('Quirkly Background: Sending request to:', replyEndpoint);
     
@@ -724,7 +737,7 @@ async function refreshUserData(sendResponse) {
       throw new Error('No API key found');
     }
 
-    const authEndpoint = QuirklyConfig.getAuthUrl();
+    const authEndpoint = 'https://quirkly.technioz.com/api/auth/validate';
     
     const response = await fetch(authEndpoint, {
       method: 'POST',
@@ -781,9 +794,8 @@ async function handleProfileDataStorage(request, sendResponse) {
       throw new Error('No API key found. Please authenticate first.');
     }
     
-    // Get config for profile endpoint
-    const config = QuirklyConfig.getConfig();
-    const profileEndpoint = config.profileUrl || config.baseUrl + '/api/profile/extract';
+    // Use production profile endpoint
+    const profileEndpoint = 'https://quirkly.technioz.com/api/profile/extract';
     
     console.log('Quirkly Background: Sending profile data to:', profileEndpoint);
     

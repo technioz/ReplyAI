@@ -11,21 +11,16 @@ class Quirkly {
     this.profileExtractor = null;
     this.extractedProfile = null;
     
-    try {
-      this.config = QuirklyConfig.getConfig();
-      console.log('🚀 Quirkly: Config loaded successfully:', this.config);
-    } catch (error) {
-      console.error('🚀 Quirkly: Failed to load config:', error);
-      // Use fallback config
-      this.config = {
-        environment: 'development',
-        authUrl: 'http://localhost:3000/api/auth/validate',
-        replyUrl: 'http://localhost:3000/api/reply/generate',
-        dashboardUrl: 'http://localhost:3000',
-        isDev: true
-      };
-      console.log('🚀 Quirkly: Using fallback config:', this.config);
-    }
+    // Use production config directly
+    this.config = {
+      environment: 'production',
+      authUrl: 'https://quirkly.technioz.com/api/auth/validate',
+      replyUrl: 'https://quirkly.technioz.com/api/reply/generate',
+      profileUrl: 'https://quirkly.technioz.com/api/profile/extract',
+      dashboardUrl: 'https://quirkly.technioz.com',
+      isDev: false
+    };
+    console.log('🚀 Quirkly: Using production config:', this.config);
     
     this.observer = null;
     this.initialized = false;
