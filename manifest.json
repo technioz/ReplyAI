@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Quirkly",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Premium AI-powered reply generator for X (Twitter) with multiple tones and styles",
   "permissions": [
     "activeTab",
