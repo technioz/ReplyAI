@@ -1,5 +1,5 @@
 // Quirkly Content Script - Premium Authentication & AI Integration
-// Version: 2.0.0 - Profile Extraction Fix
+// Version: 12.0.0 - Profile Extraction Fix
 console.log('🚀 Quirkly Content Script v2.0.0: Script loaded and starting...');
 
 class Quirkly {
