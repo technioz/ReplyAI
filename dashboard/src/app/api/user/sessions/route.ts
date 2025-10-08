@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user with fresh data
-    const currentUser = await User.findById(user._id);
+    const currentUser = await User.findById(user.id);
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -56,7 +56,7 @@ export async function DELETE(request: NextRequest) {
     const { sessionId, action } = body;
 
     // Get user with fresh data
-    const currentUser = await User.findById(user._id);
+    const currentUser = await User.findById(user.id);
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

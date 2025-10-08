@@ -242,7 +242,7 @@ export const signToken = (user: any) => {
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
   
   const payload: JWTPayload = {
-    id: user._id.toString(),
+    id: user.id.toString(),
     email: user.email,
     role: user.role,
     status: user.status,
@@ -274,7 +274,7 @@ export const createSendToken = (user: any, statusCode: number, message: string =
   
   // Remove password from output
   const userResponse = {
-    id: user._id,
+    id: user.id,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,

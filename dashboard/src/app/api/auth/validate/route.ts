@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'API key is valid',
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,

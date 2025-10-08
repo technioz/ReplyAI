@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the user can only update their own profile
-    if (user._id.toString() !== userId) {
+    if (user.id.toString() !== userId) {
       return NextResponse.json({ 
         success: false, 
         error: 'Unauthorized: Can only update your own profile' 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Store or update profile data in user document
     const updatedUser = await User.findByIdAndUpdate(
-      user._id,
+      user.id,
       {
         $set: {
           'profileData': enhancedProfile,

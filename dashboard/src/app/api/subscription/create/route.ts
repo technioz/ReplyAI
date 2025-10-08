@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         default_payment_method: paymentMethodId,
         expand: ['latest_invoice.payment_intent'],
         metadata: {
-          userId: user._id.toString(),
+          userId: user.id.toString(),
           planId: planId
         }
       });

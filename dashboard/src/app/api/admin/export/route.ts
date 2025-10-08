@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       ];
 
       const csvRows = users.map(user => [
-        user._id.toString(),
+        user.id.toString(),
         user.email,
         user.firstName || '',
         user.lastName || '',

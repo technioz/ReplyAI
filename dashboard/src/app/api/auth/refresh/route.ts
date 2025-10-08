@@ -38,14 +38,14 @@ export async function POST(request: NextRequest) {
 
       // Generate new access token
       const newAccessToken = jwt.sign(
-        { id: user._id },
+        { id: user.id },
         process.env.JWT_SECRET!,
         { expiresIn: '15m' }
       );
 
       // Generate new refresh token
       const newRefreshToken = jwt.sign(
-        { id: user._id },
+        { id: user.id },
         process.env.JWT_SECRET!,
         { expiresIn: '7d' }
       );
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
         user: {
-          id: user._id,
+          id: user.id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Email verified successfully',
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         emailVerified: user.emailVerified
       },

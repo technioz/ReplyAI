@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user with password using the working approach
-    const currentUser = await User.findById(user._id).select('+password').exec();
+    const currentUser = await User.findById(user.id).select('+password').exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete user account
-    await User.findByIdAndDelete(user._id);
+    await User.findByIdAndDelete(user.id);
 
     console.log(`🗑️ User account deleted: ${user.email}`);
 

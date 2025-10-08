@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get user with password
-    const currentUser = await User.findById(user._id).select('+password');
+    const currentUser = await User.findById(user.id).select('+password');
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

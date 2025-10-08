@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
 
     // Get user with fresh data
-    const currentUser = await User.findById(user._id);
+    const currentUser = await User.findById(user.id);
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

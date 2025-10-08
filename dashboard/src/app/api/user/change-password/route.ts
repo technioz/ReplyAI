@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get user with password using the working approach
-    const currentUser = await User.findById(user._id).select('+password').exec();
+    const currentUser = await User.findById(user.id).select('+password').exec();
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+    await User.findByIdAndUpdate(user.id, { password: hashedPassword });
 
     return NextResponse.json({
       success: true,

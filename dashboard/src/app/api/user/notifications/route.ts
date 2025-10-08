@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user with fresh data
-    const currentUser = await User.findById(user._id).select('-password -sessions');
+    const currentUser = await User.findById(user.id).select('-password -sessions');
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
-      user._id,
+      user.id,
       updates,
       { new: true, runValidators: true }
     ).select('-password -sessions');

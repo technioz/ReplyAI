@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get fresh user data
-    const currentUser = await User.findById(user._id).select('-password -sessions');
+    const currentUser = await User.findById(user.id).select('-password -sessions');
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
-      user._id,
+      user.id,
       { $set: updateData },
       { new: true, runValidators: true }
     ).select('-password -sessions');
@@ -88,7 +88,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get user with password
-    const currentUser = await User.findById(user._id).select('+password');
+    const currentUser = await User.findById(user.id).select('+password');
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(newPassword, parseInt(process.env.BCRYPT_SALT_ROUNDS || '12'));
 
     // Update password
-    await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+    await User.findByIdAndUpdate(user.id, { password: hashedPassword });
 
     return NextResponse.json({
       message: 'Password changed successfully',

@@ -64,7 +64,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   if (!user) return;
 
   // Update user subscription status
-  await User.findByIdAndUpdate(user._id, {
+  await User.findByIdAndUpdate(user.id, {
     hasActiveSubscription: status === 'active',
     subscriptionStatus: status,
     subscriptionId: subscription.id,
@@ -79,7 +79,7 @@ async function handleSubscriptionCancellation(subscription: Stripe.Subscription)
   if (!user) return;
 
   // Update user subscription status
-  await User.findByIdAndUpdate(user._id, {
+  await User.findByIdAndUpdate(user.id, {
     hasActiveSubscription: false,
     subscriptionStatus: 'canceled',
   });

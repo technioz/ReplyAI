@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           console.log(`🔍 Loading profile context for user: ${user.email}`);
           
           // Make internal API call to get profile context
-          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/profile/${user._id}/context`, {
+          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/profile/${user.id}/context`, {
             headers: {
               'Authorization': request.headers.get('Authorization') || '',
               'Content-Type': 'application/json'
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       // Add user-specific info if authenticated
       if (user) {
         response.user = {
-          id: user._id,
+          id: user.id,
           email: user.email,
           credits: {
             available: user.credits.available,
