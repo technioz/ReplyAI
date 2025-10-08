@@ -105,10 +105,7 @@ class Quirkly {
       // Add a test button to verify extension is working
       this.addTestButton();
       
-      // Add a profile extraction test button
-      this.addProfileExtractionTestButton();
-      
-      // Initialize profile extractor
+      // Initialize profile extractor (includes manual extraction button)
       this.initializeProfileExtractor();
       
       console.log('Quirkly: Content script initialized successfully');
