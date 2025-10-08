@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
 import { AppError, handleApiError } from '@/lib/errors';
+import { createSendToken } from '@/lib/middleware/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,42 +10,33 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     
     const body = await request.json();
-    const { email, password, fullName, action, timestamp, source } = body;
+    const { email, password, firstName, lastName } = body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      throw AppError.conflict('An account with this email already exists');
+    // Validate required fields
+    if (!email || !password || !firstName) {
+      throw AppError.badRequest('Email, password, and first name are required');
     }
 
-    // Split fullName into firstName and lastName
-    const nameParts = fullName.trim().split(/\s+/);
-    let firstName, lastName;
-    
-    if (nameParts.length === 1) {
-      // Only one name provided, use it as firstName
-      firstName = nameParts[0];
-      lastName = '';
-    } else {
-      // Multiple names provided, use first as firstName and rest as lastName
-      firstName = nameParts[0];
-      lastName = nameParts.slice(1).join(' ');
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      throw AppError.conflict('An account with this email already exists');
     }
 
     // Validate name lengths
     if (firstName.length > 50) {
       throw AppError.badRequest('First name is too long (max 50 characters)');
     }
-    if (lastName.length > 50) {
+    if (lastName && lastName.length > 50) {
       throw AppError.badRequest('Last name is too long (max 50 characters)');
     }
 
     // Create new user
     const newUser = await User.create({
-      email,
+      email: email.toLowerCase(),
       password,
-      firstName,
-      lastName,
+      firstName: firstName.trim(),
+      lastName: lastName?.trim() || '',
       credits: {
         available: 50,
         used: 0,
@@ -57,36 +49,47 @@ export async function POST(request: NextRequest) {
     newUser.generateApiKey();
     await newUser.save();
 
-    // Create session token for dashboard
-    const userAgent = request.headers.get('User-Agent') || 'unknown';
-    const ipAddress = request.ip || 'unknown';
-    const sessionToken = newUser.createSessionToken(userAgent, ipAddress);
-    await newUser.save();
-
     // Log successful signup
-    console.log(`✅ New user registered: ${email} (${firstName} ${lastName}) from ${source || 'unknown'}`);
+    console.log(`✅ New user registered: ${email} (${firstName} ${lastName || ''})`);
+
+    // Create JWT token for auto-login after signup
+    const token = await createSendToken(newUser);
 
     return NextResponse.json({
       success: true,
       message: 'Account created successfully',
       user: {
-        id: newUser._id,
+        id: newUser._id.toString(),
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         fullName: newUser.fullName,
         apiKey: newUser.apiKey,
         status: newUser.status,
+        role: newUser.role,
         credits: newUser.credits,
         hasActiveSubscription: newUser.hasActiveSubscription,
         preferences: newUser.preferences,
         createdAt: newUser.createdAt
       },
-      sessionToken,
+      token,
       timestamp: new Date().toISOString()
     }, { status: 201 });
 
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }
