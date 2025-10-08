@@ -1245,12 +1245,96 @@ class Quirkly {
         
         // Extract profile data if we're on a profile page
         this.extractProfileDataIfNeeded();
+        
+        // Add manual extraction button for debugging
+        this.addManualExtractionButton();
       } else {
         console.log('⚠️ XProfileExtractor not available');
       }
     } catch (error) {
       console.error('❌ Failed to initialize profile extractor:', error);
     }
+  }
+
+  addManualExtractionButton() {
+    // Only add button on profile pages
+    if (!this.profileExtractor?.isProfilePage()) {
+      return;
+    }
+
+    // Check if button already exists
+    if (document.querySelector('#quirkly-extract-profile-btn')) {
+      return;
+    }
+
+    const button = document.createElement('button');
+    button.id = 'quirkly-extract-profile-btn';
+    button.textContent = '🔄 Extract Profile';
+    button.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      z-index: 999999;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    `;
+
+    button.onmouseover = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
+    };
+
+    button.onmouseout = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    };
+
+    button.onclick = async () => {
+      button.textContent = '⏳ Extracting...';
+      button.disabled = true;
+      
+      try {
+        console.log('🔄 Manual profile extraction triggered');
+        const profileData = await this.profileExtractor.extractProfileData();
+        
+        if (profileData) {
+          console.log('✅ Manual extraction successful:', profileData);
+          await this.sendProfileDataToBackend(profileData);
+          button.textContent = '✅ Extracted!';
+          button.style.background = 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)';
+          
+          setTimeout(() => {
+            button.textContent = '🔄 Extract Profile';
+            button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            button.disabled = false;
+          }, 3000);
+        } else {
+          throw new Error('Extraction returned null');
+        }
+      } catch (error) {
+        console.error('❌ Manual extraction failed:', error);
+        button.textContent = '❌ Failed';
+        button.style.background = 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
+        
+        setTimeout(() => {
+          button.textContent = '🔄 Extract Profile';
+          button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          button.disabled = false;
+        }, 3000);
+      }
+    };
+
+    document.body.appendChild(button);
+    console.log('✅ Manual extraction button added');
   }
 
   async extractProfileDataIfNeeded() {
