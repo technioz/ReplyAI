@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Quirkly",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Premium AI-powered reply generator for X (Twitter) with multiple tones and styles",
   "permissions": [
     "activeTab",
@@ -12,6 +12,7 @@
   "host_permissions": [
     "https://twitter.com/*",
     "https://x.com/*",
+    "https://quirkly.vercel.app/*",
     "https://quirkly.technioz.com/*",
     "http://localhost:3001/*",
     "http://localhost:3000/*"
@@ -44,7 +45,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "homepage_url": "https://quirkly.technioz.com",
+  "homepage_url": "https://quirkly.vercel.app",
   "author": "Technioz",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*"

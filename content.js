@@ -1,6 +1,6 @@
 // Quirkly Content Script - Premium Authentication & AI Integration
-// Version: 2.0.1 - Profile Extraction Fix (Cache Bypass)
-console.log('🚀 Quirkly Content Script v2.0.1: Script loaded and starting...');
+// Version: 2.1.0 - Production URLs Enabled
+console.log('🚀 Quirkly Content Script v2.1.0: Script loaded and starting...');
 
 class Quirkly {
   constructor() {

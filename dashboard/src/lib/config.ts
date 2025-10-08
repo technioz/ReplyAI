@@ -30,14 +30,15 @@ const QuirklyDashboardConfig = {
       dashboardUrl: 'http://localhost:3000'
     },
     production: {
-      baseUrl: 'https://quirkly.technioz.com',
+      // Using Vercel deployment URL (update with custom domain when available)
+      baseUrl: 'https://quirkly.vercel.app',
       authEndpoint: '/api/auth/login',
       replyEndpoint: '/api/reply/generate',
       subscriptionEndpoint: '/api/subscription',
       userEndpoint: '/api/user',
       creditsEndpoint: '/api/credits',
       profileEndpoint: '/api/profile',
-      dashboardUrl: 'https://quirkly.technioz.com'
+      dashboardUrl: 'https://quirkly.vercel.app'
     }
   },
 

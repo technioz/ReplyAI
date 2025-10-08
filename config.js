@@ -4,9 +4,9 @@
 const QuirklyConfig = {
   // Environment detection
   isDevelopment: () => {
-    // Check if we're in development mode
-    // You can also check for chrome.runtime.getManifest().version_name or other indicators
-    return !('update_url' in chrome.runtime.getManifest());
+    // Force production mode to use live URLs
+    // Set to true manually if you need to test with localhost
+    return false; // Always use production URLs
   },
 
   // Base URLs for different environments
@@ -19,11 +19,12 @@ const QuirklyConfig = {
       dashboardUrl: 'http://localhost:3000'
     },
     production: {
-      baseUrl: 'https://quirkly.technioz.com', 
-      authEndpoint: '/api/auth',
+      // Using Vercel deployment URL (update with custom domain when available)
+      baseUrl: 'https://quirkly.vercel.app', 
+      authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
       profileEndpoint: '/api/profile/extract',
-      dashboardUrl: 'https://quirkly.technioz.com'
+      dashboardUrl: 'https://quirkly.vercel.app'
     }
   },
 
