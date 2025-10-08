@@ -5,23 +5,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "MONGODB_URI": "@mongodb_uri",
-      "MONGODB_DB_NAME": "@mongodb_db_name",
-      "JWT_SECRET": "@jwt_secret",
-      "AI_PROVIDER": "@ai_provider",
-      "GROQ_API_KEY": "@groq_api_key",
-      "XAI_API_KEY": "@xai_api_key",
-      "STRIPE_SECRET_KEY": "@stripe_secret_key",
-      "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
-      "NEXT_PUBLIC_APP_URL": "@next_public_app_url",
-      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@next_public_stripe_publishable_key"
-    }
-  },
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
