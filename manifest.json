@@ -12,8 +12,6 @@
   "host_permissions": [
     "https://twitter.com/*",
     "https://x.com/*",
-    "https://ai.technioz.com/*",
-    "https://api.quirkly.technioz.com/*",
     "https://quirkly.technioz.com/*",
     "http://localhost:3001/*",
     "http://localhost:3000/*"

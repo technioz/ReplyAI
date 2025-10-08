@@ -30,7 +30,7 @@ const QuirklyDashboardConfig = {
       dashboardUrl: 'http://localhost:3000'
     },
     production: {
-      baseUrl: 'https://api.quirkly.technioz.com',
+      baseUrl: 'https://quirkly.technioz.com',
       authEndpoint: '/api/auth/login',
       replyEndpoint: '/api/reply/generate',
       subscriptionEndpoint: '/api/subscription',
