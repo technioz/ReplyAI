@@ -45,3 +45,7 @@ RELOAD_EXTENSION.md
 *.tmp
 *.temp
 *.bak
+
+# Chrome Store Packages
+quirkly-extension-*.zip
+*.zip
