@@ -266,25 +266,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Password must be at least 8 characters long');
       }
 
-      // Call authentication API
-      const authUrl = QuirklyDashboardConfig.getAuthUrl();
+      // Split full name into first and last name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Call SIGNUP API (not login API)
+      const signupUrl = QuirklyDashboardConfig.getApiBaseUrl() + '/auth/signup';
       
-      const response = await fetch(authUrl, {
+      const response = await fetch(signupUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          action: 'signup',
           email: email.toLowerCase().trim(),
           password: password,
-          fullName: fullName.trim(),
-          timestamp: new Date().toISOString(),
-          source: 'dashboard',
-          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-          ipAddress: 'client-side', // Will be detected server-side
-          subscriptionTier: 'free' // Default to free tier
+          firstName: firstName,
+          lastName: lastName
         })
       });
 
