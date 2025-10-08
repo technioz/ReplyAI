@@ -2,15 +2,15 @@
 
 Complete guide to publish your extension to the Chrome Web Store.
 
-
+---
 
 ## 📋 Prerequisites
 
 ### 1. Chrome Developer Account
-- Cost: One-time fee of $5 USD
-- URL: https://chrome.google.com/webstore/devconsole/
-- Payment: Credit card required
-- Processing: Usually instant after payment
+- **Cost:** One-time fee of **$5 USD**
+- **URL:** https://chrome.google.com/webstore/devconsole/
+- **Payment:** Credit card required
+- **Processing:** Usually instant after payment
 
 ### 2. Required Assets
 Before publishing, you need:
@@ -20,26 +20,26 @@ Before publishing, you need:
 - 🎨 Promotional images (need to create)
 - 📝 Store listing content (description, etc.)
 
-
+---
 
 ## 🎨 Step 1: Prepare Required Assets
 
 ### A. Screenshots (Required)
-Requirements:
-- Minimum: 1 screenshot
-- Recommended: 3-5 screenshots
-- Size: 1280x800 or 640x400 pixels
-- Format: PNG or JPEG
-- Content: Show your extension in action
+**Requirements:**
+- **Minimum:** 1 screenshot
+- **Recommended:** 3-5 screenshots
+- **Size:** 1280x800 or 640x400 pixels
+- **Format:** PNG or JPEG
+- **Content:** Show your extension in action
 
-What to Screenshot:
+**What to Screenshot:**
 1. Extension popup with login/signup
 2. Reply generation buttons on X/Twitter
 3. Different tone options
 4. Generated reply example
 5. Dashboard view (optional)
 
-How to Create:
+**How to Create:**
 ```bash
 # Use macOS Screenshot tool
 # Cmd + Shift + 4 → Select area
@@ -48,15 +48,15 @@ How to Create:
 
 ### B. Promotional Images (Optional but Recommended)
 
-Small Promo Tile:
+**Small Promo Tile:**
 - Size: 440x280 pixels
 - Shows in Chrome Web Store search results
 
-Large Promo Tile:
+**Large Promo Tile:**
 - Size: 920x680 pixels  
 - Shows on extension detail page
 
-Marquee Promo Tile:
+**Marquee Promo Tile:**
 - Size: 1400x560 pixels
 - Featured placement (if selected by Google)
 
@@ -66,7 +66,7 @@ You already have:
 - ✅ 48x48 px
 - ✅ 128x128 px
 
-
+---
 
 ## 📦 Step 2: Package Your Extension
 
@@ -90,23 +90,23 @@ zip -r quirkly-extension-v2.0.1.zip \
   icons/ \
   LICENSE \
   README.md \
-  -x ".DS_Store" \
-  -x "dashboard/" \
-  -x "docs/" \
-  -x ".md" \
-  -x ".git"
+  -x "*.DS_Store" \
+  -x "dashboard/*" \
+  -x "docs/*" \
+  -x "*.md" \
+  -x ".git*"
 
 echo "✅ Package created: quirkly-extension-v2.0.1.zip"
 ```
 
-Important: Do NOT include:
+**Important:** Do NOT include:
 - ❌ `dashboard/` folder (Next.js app - not part of extension)
 - ❌ `node_modules/`
 - ❌ `.git/` folder
 - ❌ `.env` files
 - ❌ Documentation files (optional)
 
-
+---
 
 ## 🌐 Step 3: Chrome Web Store Developer Console
 
@@ -128,19 +128,19 @@ Important: Do NOT include:
 
 ### 3. Fill Out Store Listing
 
-#### Product Details:
+#### **Product Details:**
 
-Extension Name:
+**Extension Name:**
 ```
 Quirkly - AI Reply Generator for X (Twitter)
 ```
 
-Summary (132 characters max):
+**Summary (132 characters max):**
 ```
 Generate perfect replies on X with AI. Multiple tones, instant results. Premium authentication required.
 ```
 
-Description (Detailed):
+**Description (Detailed):**
 ```markdown
 # Quirkly - AI-Powered Reply Generator
 
@@ -148,7 +148,7 @@ Transform your X (Twitter) engagement with AI-generated replies that match your 
 
 ## ✨ Key Features
 
-🎯 Multiple Tone Options
+🎯 **Multiple Tone Options**
 - Professional
 - Casual
 - Humorous
@@ -156,17 +156,17 @@ Transform your X (Twitter) engagement with AI-generated replies that match your 
 - Analytical
 - Enthusiastic
 
-🤖 AI-Powered
+🤖 **AI-Powered**
 - Context-aware replies
 - Uses your profile data for personalization
 - Natural, engaging responses
 
-🔐 Premium Authentication
+🔐 **Premium Authentication**
 - Secure API key system
 - Dashboard access
 - Credit management
 
-⚡ Instant Results
+⚡ **Instant Results**
 - One-click reply generation
 - Seamless X/Twitter integration
 - Fast and reliable
@@ -199,63 +199,63 @@ Transform your X (Twitter) engagement with AI-generated replies that match your 
 Visit: https://quirkly.technioz.com
 Email: support@technioz.com
 
+---
 
-
-Note: Requires active subscription from quirkly.technioz.com
+**Note:** Requires active subscription from quirkly.technioz.com
 ```
 
-Category:
+**Category:**
 ```
 Productivity or Social & Communication
 ```
 
-Language:
+**Language:**
 ```
 English (United States)
 ```
 
-#### Visual Assets:
+#### **Visual Assets:**
 
-Icon:
+**Icon:**
 - Upload: `icons/icon128.png` ✅
 
-Screenshots:
+**Screenshots:**
 - Upload 3-5 screenshots showing extension features
 
-Promotional Images:
+**Promotional Images:**
 - Small tile (440x280) - Optional
 - Large tile (920x680) - Optional
 
-#### Additional Fields:
+#### **Additional Fields:**
 
-Official URL:
+**Official URL:**
 ```
 https://quirkly.technioz.com
 ```
 
-Homepage URL:
+**Homepage URL:**
 ```
 https://quirkly.technioz.com
 ```
 
-Support URL:
+**Support URL:**
 ```
 https://quirkly.technioz.com/support
 ```
 
-Privacy Policy URL: (REQUIRED)
+**Privacy Policy URL:** (REQUIRED)
 ```
 https://quirkly.technioz.com/privacy
 ```
-⚠️ Important: You MUST have a privacy policy page live at this URL before publishing!
+⚠️ **Important:** You MUST have a privacy policy page live at this URL before publishing!
 
-
+---
 
 ## 🔐 Step 4: Privacy & Permissions
 
 ### Privacy Practices Disclosure
 
-Data Collection:
+**Data Collection:**
 ```
 ✓ User authentication data (email, password - hashed)
 ✓ API usage statistics
@@ -265,7 +265,7 @@ Data Collection:
 ✗ NOT collected: Personal messages, DMs, private data
 ```
 
-Data Usage:
+**Data Usage:**
 ```
 - Improve AI reply generation
 - Personalize responses
@@ -273,7 +273,7 @@ Data Usage:
 - Service analytics
 ```
 
-Third-Party Sharing:
+**Third-Party Sharing:**
 ```
 None - Your data is never sold or shared
 ```
@@ -282,34 +282,34 @@ None - Your data is never sold or shared
 
 Explain each permission in `manifest.json`:
 
-`activeTab`:
+**`activeTab`:**
 ```
 Required to detect reply boxes on X/Twitter and inject reply buttons
 ```
 
-`storage`:
+**`storage`:**
 ```
 Store user API key and preferences securely in browser
 ```
 
-`tabs`:
+**`tabs`:**
 ```
 Detect when user navigates to X/Twitter to activate extension
 ```
 
-`scripting`:
+**`scripting`:**
 ```
 Inject reply generation interface into X/Twitter pages
 ```
 
-`host_permissions`:
+**`host_permissions`:**
 ```
-- twitter.com/ - Access X/Twitter to add reply features
-- x.com/ - Access X/Twitter to add reply features
-- quirkly.technioz.com/ - Communicate with backend API
+- twitter.com/* - Access X/Twitter to add reply features
+- x.com/* - Access X/Twitter to add reply features
+- quirkly.technioz.com/* - Communicate with backend API
 ```
 
-
+---
 
 ## 📝 Step 5: Single Purpose & Functionality
 
@@ -327,23 +327,23 @@ replies using AI technology. It requires authentication with our
 premium service at quirkly.technioz.com.
 ```
 
-
+---
 
 ## ⚖️ Step 6: Distribution & Visibility
 
 ### Distribution Options:
 
-Public:
+**Public:**
 - ✅ Recommended
 - Anyone can find and install
 - Appears in search results
 
-Unlisted:
+**Unlisted:**
 - Only people with direct link can install
 - Not searchable
 - Good for beta testing
 
-Private:
+**Private:**
 - Only specific users/groups
 - Requires Google Workspace
 - For internal use only
@@ -353,26 +353,26 @@ Private:
 ✓ Select all countries (or specific ones)
 ```
 
-
+---
 
 ## 🎯 Step 7: Pricing & Monetization
 
-Free or Paid:
+**Free or Paid:**
 ```
 FREE (extension is free, but requires paid subscription to service)
 ```
 
-In-app Purchases:
+**In-app Purchases:**
 ```
 ✓ Yes - Users purchase credits/subscription on quirkly.technioz.com
 ```
 
-Subscription Required:
+**Subscription Required:**
 ```
 ✓ Yes - Requires active subscription from quirkly.technioz.com
 ```
 
-
+---
 
 ## 🚨 Step 8: Review & Submit
 
@@ -400,14 +400,14 @@ Subscription Required:
 4. Wait for review (usually 1-5 business days)
 ```
 
-
+---
 
 ## ⏱️ Step 9: Review Process
 
 ### Timeline:
-- Initial Review: 1-5 business days
-- Fast Track: Sometimes 24 hours
-- Complex Reviews: Up to 1 week
+- **Initial Review:** 1-5 business days
+- **Fast Track:** Sometimes 24 hours
+- **Complex Reviews:** Up to 1 week
 
 ### Common Rejection Reasons:
 1. ❌ Missing or invalid privacy policy
@@ -427,7 +427,7 @@ Subscription Required:
 5. Respond to reviewer if needed
 ```
 
-
+---
 
 ## 🎉 Step 10: After Approval
 
@@ -439,31 +439,31 @@ https://chrome.google.com/webstore/detail/[your-extension-id]
 
 ### Post-Launch Tasks:
 
-1. Add Store Badge to Website:
+1. **Add Store Badge to Website:**
 ```html
 <a href="YOUR_CHROME_STORE_URL">
   <img src="chrome-web-store-badge.png" alt="Available in Chrome Web Store">
 </a>
 ```
 
-2. Share on Social Media:
+2. **Share on Social Media:**
 - Twitter/X
 - LinkedIn
 - Product Hunt
 - Reddit (r/SideProject, r/Chrome)
 
-3. Monitor Reviews:
+3. **Monitor Reviews:**
 - Respond to user feedback
 - Address issues quickly
 - Update based on suggestions
 
-4. Track Analytics:
+4. **Track Analytics:**
 - Install/uninstall rates
 - User ratings
 - Reviews
 - Weekly users
 
-
+---
 
 ## 🔄 Updating Your Extension
 
@@ -489,19 +489,19 @@ Minor update (new features): 2.1.0
 Patch (bug fixes): 2.0.2
 ```
 
-
+---
 
 ## 💰 Expected Costs
 
 ### One-Time Costs:
-- Developer Registration: $5 USD
-- Icon Design (if hired): $50-200 (you already have icons)
-- Promotional Images (if hired): $100-300 (optional)
+- Developer Registration: **$5 USD**
+- Icon Design (if hired): **$50-200** (you already have icons)
+- Promotional Images (if hired): **$100-300** (optional)
 
 ### Ongoing Costs:
-- $0 - Chrome Web Store has no recurring fees!
+- **$0** - Chrome Web Store has no recurring fees!
 
-
+---
 
 ## 📊 Success Metrics
 
@@ -513,28 +513,28 @@ Patch (bug fixes): 2.0.2
 - Install → Active user conversion
 - Dashboard signup rate
 
-
+---
 
 ## 🆘 Troubleshooting
 
 ### Common Issues:
 
-"Privacy Policy Required"
+**"Privacy Policy Required"**
 ```
 Solution: Create and publish privacy policy at quirkly.technioz.com/privacy
 ```
 
-"Host Permissions Too Broad"
+**"Host Permissions Too Broad"**
 ```
 Solution: Your permissions are specific - should be fine
 ```
 
-"Extension Not Working After Install"
+**"Extension Not Working After Install"**
 ```
 Solution: Include setup instructions in description and first-run popup
 ```
 
-"Low Install Rate"
+**"Low Install Rate"**
 ```
 Solution: 
 - Better screenshots
@@ -543,48 +543,48 @@ Solution:
 - Social media marketing
 ```
 
-
+---
 
 ## 🎯 Marketing Tips
 
 ### Increase Downloads:
 
-1. Optimize Store Listing:
+1. **Optimize Store Listing:**
    - Use keywords in title and description
    - High-quality screenshots
    - Compelling description
    - Regular updates
 
-2. External Marketing:
+2. **External Marketing:**
    - Blog posts
    - Video demo on YouTube
    - Product Hunt launch
    - Twitter/X promotion
    - Reddit communities
 
-3. User Acquisition:
+3. **User Acquisition:**
    - Referral program
    - Free trial period
    - Content marketing
    - Partnerships
 
-
+---
 
 ## 📚 Additional Resources
 
-Chrome Web Store Documentation:
+**Chrome Web Store Documentation:**
 - https://developer.chrome.com/docs/webstore/
 
-Chrome Extension Documentation:
+**Chrome Extension Documentation:**
 - https://developer.chrome.com/docs/extensions/
 
-Chrome Web Store Policies:
+**Chrome Web Store Policies:**
 - https://developer.chrome.com/docs/webstore/program-policies/
 
-Chrome Web Store Branding:
+**Chrome Web Store Branding:**
 - https://developer.chrome.com/docs/webstore/branding/
 
-
+---
 
 ## ✅ Quick Checklist Summary
 
@@ -607,13 +607,13 @@ After approval:
 - [ ] Respond to users
 - [ ] Track analytics
 
-
+---
 
 ## 🚀 Ready to Publish?
 
 Follow the steps above and your extension will be live on the Chrome Web Store!
 
-Estimated Time to Publish: 2-3 hours (setup) + 1-5 days (review)
+**Estimated Time to Publish:** 2-3 hours (setup) + 1-5 days (review)
 
 Good luck! 🎉
 

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user with password
-    const currentUser = await User.findById(user._id.toString()).select('+password');
+    const currentUser = await User.findById(user.id).select('+password');
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete user account
-    await User.findByIdAndDelete(user._id);
+    await User.findByIdAndDelete(user.id);
 
     return NextResponse.json({
       message: 'Account deleted successfully',

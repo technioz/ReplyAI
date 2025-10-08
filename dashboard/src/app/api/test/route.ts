@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       dbTestResult = `connected - ${userCount} users found`;
       dbHealthy = true;
     } catch (error) {
-      dbTestResult = `connection failed: ${error instanceof Error ? error.message : 'unknown'}`;
+      dbTestResult = `error: ${error instanceof Error ? error.message : 'unknown'}`;
       dbHealthy = false;
     }
     
