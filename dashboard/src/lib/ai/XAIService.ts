@@ -36,8 +36,7 @@ export class XAIService implements AIService {
       max_tokens: 120,
       temperature: 0.85,
       top_p: 0.95,
-      frequency_penalty: 0.3,
-      presence_penalty: 0.4,
+      // Note: grok-4-fast-reasoning doesn't support frequency_penalty or presence_penalty
       stream: false
     };
     
