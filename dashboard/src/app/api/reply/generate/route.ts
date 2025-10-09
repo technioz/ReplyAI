@@ -235,6 +235,17 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error name:', error.name);
+      
+      // Return detailed error for debugging
+      return NextResponse.json({
+        success: false,
+        error: 'REPLY_GENERATION_ERROR',
+        message: error.message,
+        errorName: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        statusCode: 500,
+        timestamp: new Date().toISOString()
+      }, { status: 500 });
     }
     
     return handleApiError(error);
