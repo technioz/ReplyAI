@@ -132,32 +132,39 @@ BRAND ALIGNMENT:
 
     systemPrompt += `
 
-OUTPUT FORMAT: Return only the reply text, nothing else. Write as if you're a real person with something worthwhile to contribute.`;
+CRITICAL - NO EMOJIS RULE:
+- NEVER use any emoji characters: 😊 🔥 ✨ 🚀 💡 👍 ❤️ 🎯 etc.
+- NEVER use special symbols: → • ✓ ✗ ★ ♥ ※ etc.
+- Use only standard text and punctuation: . , ! ? - ' "
+- Express emotion through WORDS ONLY, not symbols
+
+OUTPUT FORMAT: 
+- Return only the reply text, nothing else
+- Pure text only - no emojis, no special characters
+- Write as if you're a real person texting on a basic phone
+- One-liner preferred, two sentences maximum`;
 
     return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
-    let prompt = `Create a creative, human-like ${tone} reply to this X post. Be authentic, engaging, and avoid generic responses:\n\n`;
+    let prompt = `Reply to this X post in ${tone} tone. Get straight to the value:\n\n`;
     prompt += `"${tweetText}"\n\n`;
     
     // Add context about the post if it would help
     if (userContext.postMetadata) {
       const { hasLinks, hasMedia, isThread } = userContext.postMetadata;
-      if (isThread) prompt += `(This is part of a thread)\n`;
-      if (hasLinks) prompt += `(Post includes links)\n`;
-      if (hasMedia) prompt += `(Post includes media)\n`;
+      if (isThread) prompt += `(Thread)\n`;
+      if (hasLinks) prompt += `(Has links)\n`;
+      if (hasMedia) prompt += `(Has media)\n`;
     }
     
-    prompt += `\nREQUIREMENTS:
-- Sound genuinely human and conversational
-- Vary your response pattern (don't start with "I love this" or similar)
-- Make it engaging and authentic
-- Keep under 280 characters
-- Use natural language with contractions
-- Avoid repetitive phrases
-- Be creative but relevant
-- Show genuine interest in the topic`;
+    prompt += `\nREMEMBER:
+- NO emojis or special characters
+- NO generic starters (I love this, Great point, etc)
+- Simple language only
+- One-liner preferred
+- Direct value, no fluff`;
     
     return prompt;
   }
