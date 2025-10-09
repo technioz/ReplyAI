@@ -6,9 +6,9 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
 ## 🏗️ Architecture Components
 
 ### 1. Chrome Extension Profile Extractor
-- **Location**: `content.js` + new `profileExtractor.js`
-- **Purpose**: Extract profile data from X/Twitter DOM
-- **Data Points**:
+- Location: `content.js` + new `profileExtractor.js`
+- Purpose: Extract profile data from X/Twitter DOM
+- Data Points:
   - Username/handle
   - Display name
   - Bio/description
@@ -22,17 +22,17 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
   - Pinned tweet content
 
 ### 2. Profile Data Processor
-- **Location**: `background.js`
-- **Purpose**: Process and validate extracted profile data
-- **Functions**:
+- Location: `background.js`
+- Purpose: Process and validate extracted profile data
+- Functions:
   - Data validation and sanitization
   - Tone analysis from recent tweets
   - Content categorization
   - Privacy filtering
 
 ### 3. Backend API Endpoints
-- **Location**: `dashboard/src/app/api/profile/`
-- **Endpoints**:
+- Location: `dashboard/src/app/api/profile/`
+- Endpoints:
   - `POST /api/profile/extract` - Store extracted profile data
   - `GET /api/profile/:userId` - Retrieve user profile data
   - `PUT /api/profile/:userId` - Update profile data
@@ -40,8 +40,8 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
   - `GET /api/profile/:userId/context` - Get LLM context data
 
 ### 4. Database Schema
-- **Collection**: `userProfiles`
-- **Fields**:
+- Collection: `userProfiles`
+- Fields:
   ```typescript
   interface UserProfile {
     userId: string; // Reference to User._id
@@ -87,9 +87,9 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
   ```
 
 ### 5. LLM Context Integration
-- **Location**: `dashboard/src/lib/ai/ContextService.ts`
-- **Purpose**: Generate contextual prompts using profile data
-- **Functions**:
+- Location: `dashboard/src/lib/ai/ContextService.ts`
+- Purpose: Generate contextual prompts using profile data
+- Functions:
   - Build personality-aware prompts
   - Include domain expertise
   - Match tone and style
@@ -97,12 +97,12 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
 
 ## 🔄 Data Flow
 
-1. **User visits X/Twitter** → Extension detects logged-in user
-2. **Profile Extraction** → Extract public profile data from DOM
-3. **Data Processing** → Validate, analyze, and structure data
-4. **Storage** → Store in backend database with user association
-5. **Context Generation** → Create LLM context for reply generation
-6. **Reply Generation** → Use profile context to generate personalized replies
+1. User visits X/Twitter → Extension detects logged-in user
+2. Profile Extraction → Extract public profile data from DOM
+3. Data Processing → Validate, analyze, and structure data
+4. Storage → Store in backend database with user association
+5. Context Generation → Create LLM context for reply generation
+6. Reply Generation → Use profile context to generate personalized replies
 
 ## 🔒 Privacy & Security
 

@@ -1,6 +1,6 @@
 # AI Provider Setup
 
-Quirkly supports two AI backends for reply generation: **Groq** and **XAI**. Configure one provider at a time; the Next.js API picks the implementation based on the `AI_PROVIDER` environment variable.
+Quirkly supports two AI backends for reply generation: Groq and XAI. Configure one provider at a time; the Next.js API picks the implementation based on the `AI_PROVIDER` environment variable.
 
 ## 1. Choose a Provider
 
@@ -48,8 +48,8 @@ curl -X POST http://localhost:3000/api/reply/generate \
 
 ## 5. Troubleshooting
 
-- **Missing API key** – ensure `GROQ_API_KEY` or `XAI_API_KEY` is defined before starting Next.js
-- **Invalid tone** – allowed values are `professional`, `casual`, `humorous`, `empathetic`, `analytical`, `enthusiastic`, `controversial`
-- **Rate limits** – Groq/XAI errors propagate as `RATE_LIMIT_EXCEEDED`; wait before retrying
+- Missing API key – ensure `GROQ_API_KEY` or `XAI_API_KEY` is defined before starting Next.js
+- Invalid tone – allowed values are `professional`, `casual`, `humorous`, `empathetic`, `analytical`, `enthusiastic`, `controversial`
+- Rate limits – Groq/XAI errors propagate as `RATE_LIMIT_EXCEEDED`; wait before retrying
 
 Keep secrets out of version control—`.env.local` is gitignored.

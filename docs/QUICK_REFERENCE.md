@@ -4,10 +4,10 @@
 
 | Parameter | Value | Reason |
 |-----------|-------|--------|
-| **Model** | `grok-4` | Most advanced, best for creative content |
-| **Temperature** | `0.9` | High creativity (X.AI recommends 0.7-1.0) |
-| **Max Tokens** | `150` | Complete thoughts, Twitter-optimized |
-| **Top P** | `0.95` | Optimal nucleus sampling |
+| Model | `grok-4` | Most advanced, best for creative content |
+| Temperature | `0.9` | High creativity (X.AI recommends 0.7-1.0) |
+| Max Tokens | `150` | Complete thoughts, Twitter-optimized |
+| Top P | `0.95` | Optimal nucleus sampling |
 
 ## 📊 Model Selection Guide
 
@@ -99,32 +99,32 @@ const model = requestCount < 1000
 | Temp | Use Case | Example Output |
 |------|----------|----------------|
 | 0.7 | Conservative, consistent | More predictable responses |
-| 0.9 | **Optimal for social** | Creative, varied, human-like |
+| 0.9 | Optimal for social | Creative, varied, human-like |
 | 1.0 | Maximum creativity | Very diverse, experimental |
 
 ## ⚠️ Common Issues
 
 ### Issue: Repetitive responses
-**Solution**: ✅ Already fixed with temp=0.9
+Solution: ✅ Already fixed with temp=0.9
 
 ### Issue: Responses too long
-**Solution**: ✅ Limited to 150 tokens
+Solution: ✅ Limited to 150 tokens
 
 ### Issue: Not human-like enough
-**Solution**: ✅ Using grok-4 with optimized prompts
+Solution: ✅ Using grok-4 with optimized prompts
 
 ### Issue: Cost too high
-**Solution**: Switch to grok-4-fast-reasoning
+Solution: Switch to grok-4-fast-reasoning
 
 ## 📚 Documentation Links
 
-- **Full Config Guide**: [AI_MODEL_CONFIGURATION.md](./AI_MODEL_CONFIGURATION.md)
-- **X.AI Docs**: https://docs.x.ai/docs/overview
-- **Pricing**: https://x.ai/api
+- Full Config Guide: [AI_MODEL_CONFIGURATION.md](./AI_MODEL_CONFIGURATION.md)
+- X.AI Docs: https://docs.x.ai/docs/overview
+- Pricing: https://x.ai/api
 
 ## 🔄 Version Info
 
-- **Current**: v2.0.0 (grok-4, temp=0.9, optimized)
-- **Previous**: v1.0.0 (grok-4-fast, temp=0.85)
-- **Last Updated**: October 9, 2025
+- Current: v2.0.0 (grok-4, temp=0.9, optimized)
+- Previous: v1.0.0 (grok-4-fast, temp=0.85)
+- Last Updated: October 9, 2025
 

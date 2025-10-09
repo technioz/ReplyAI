@@ -1,52 +1,52 @@
 # AI Model Configuration Guide
 
-## 🎯 Recommended Model: **grok-4**
+## 🎯 Recommended Model: grok-4
 
-Based on comprehensive analysis of X.AI documentation (https://docs.x.ai/docs/overview), **grok-4** is the optimal choice for this project.
+Based on comprehensive analysis of X.AI documentation (https://docs.x.ai/docs/overview), grok-4 is the optimal choice for this project.
 
 ## 📊 Model Comparison
 
 ### grok-4 (RECOMMENDED)
-- **Type**: Most advanced model
-- **Context Window**: 256,000 tokens
-- **Capabilities**: 
+- Type: Most advanced model
+- Context Window: 256,000 tokens
+- Capabilities: 
   - Advanced reasoning
   - Function calling
   - Structured outputs
   - Best for human-like conversations
-- **Use Case**: Social media reply generation requiring nuanced, creative responses
-- **Performance**: Highest quality output, best for brand-building content
+- Use Case: Social media reply generation requiring nuanced, creative responses
+- Performance: Highest quality output, best for brand-building content
 
 ### grok-4-fast-reasoning (ALTERNATIVE)
-- **Type**: Cost-efficient intelligence
-- **Context Window**: 2,000,000 tokens (massive!)
-- **Capabilities**: 
+- Type: Cost-efficient intelligence
+- Context Window: 2,000,000 tokens (massive!)
+- Capabilities: 
   - Fast reasoning
   - Cost-effective
   - High throughput
-- **Use Case**: High-volume applications where cost is a priority
-- **Performance**: Good quality, faster response times
+- Use Case: High-volume applications where cost is a priority
+- Performance: Good quality, faster response times
 
 ### grok-3
-- **Type**: Enterprise-focused
-- **Context Window**: 132,000 tokens
-- **Capabilities**: 
+- Type: Enterprise-focused
+- Context Window: 132,000 tokens
+- Capabilities: 
   - Data extraction
   - Programming
   - Text summarization
-- **Use Case**: Enterprise applications, not optimized for creative social content
+- Use Case: Enterprise applications, not optimized for creative social content
 
 ### grok-3-mini
-- **Type**: Lightweight
-- **Context Window**: 132,000 tokens
-- **Capabilities**: Quantitative tasks, math, reasoning
-- **Use Case**: Not suitable for creative text generation
+- Type: Lightweight
+- Context Window: 132,000 tokens
+- Capabilities: Quantitative tasks, math, reasoning
+- Use Case: Not suitable for creative text generation
 
 ### grok-code-fast-1
-- **Type**: Specialized coding model
-- **Context Window**: 256,000 tokens
-- **Capabilities**: Agentic coding tasks
-- **Use Case**: Code generation only, not for social media
+- Type: Specialized coding model
+- Context Window: 256,000 tokens
+- Capabilities: Agentic coding tasks
+- Use Case: Code generation only, not for social media
 
 ---
 
@@ -68,28 +68,28 @@ Based on X.AI documentation and best practices for creative content generation:
 
 ### Parameter Explanations
 
-#### **max_tokens: 150**
-- **Why**: Allows for complete, coherent thoughts
-- **Twitter context**: Most replies will be <150 tokens (~280 characters)
-- **Benefit**: Prevents cutoff mid-sentence while staying concise
+#### max_tokens: 150
+- Why: Allows for complete, coherent thoughts
+- Twitter context: Most replies will be <150 tokens (~280 characters)
+- Benefit: Prevents cutoff mid-sentence while staying concise
 
-#### **temperature: 0.9**
-- **Why**: Higher temperature (0.9) generates more creative, varied responses
-- **Range**: 0.0 (deterministic) to 2.0 (highly random)
-- **Optimal**: 0.7-1.0 for social media content
-- **Benefit**: Prevents repetitive responses, sounds more human
+#### temperature: 0.9
+- Why: Higher temperature (0.9) generates more creative, varied responses
+- Range: 0.0 (deterministic) to 2.0 (highly random)
+- Optimal: 0.7-1.0 for social media content
+- Benefit: Prevents repetitive responses, sounds more human
 
-#### **top_p: 0.95**
-- **Why**: Nucleus sampling considers top 95% probability mass
-- **Alternative to**: Using top_k
-- **Benefit**: Balances creativity with coherence
-- **X.AI recommendation**: 0.9-1.0 for creative tasks
+#### top_p: 0.95
+- Why: Nucleus sampling considers top 95% probability mass
+- Alternative to: Using top_k
+- Benefit: Balances creativity with coherence
+- X.AI recommendation: 0.9-1.0 for creative tasks
 
-#### **frequency_penalty: NOT SUPPORTED**
+#### frequency_penalty: NOT SUPPORTED
 - grok models don't support this parameter
 - Would reduce word repetition if available
 
-#### **presence_penalty: NOT SUPPORTED**
+#### presence_penalty: NOT SUPPORTED
 - grok models don't support this parameter
 - Would encourage topic diversity if available
 
@@ -111,7 +111,7 @@ For the Groq service using `llama-3.1-8b-instant`:
 }
 ```
 
-**Key Difference**: Groq supports frequency_penalty and presence_penalty, which further improve response diversity.
+Key Difference: Groq supports frequency_penalty and presence_penalty, which further improve response diversity.
 
 ---
 
@@ -156,34 +156,34 @@ const requestBody = {
 
 ### With grok-4:
 
-1. **Creativity**: +15% more varied response patterns
-2. **Human-like**: Better understanding of tone and context
-3. **Engagement**: More natural, conversation-starter replies
-4. **Brand alignment**: Better at matching user's profile voice
+1. Creativity: +15% more varied response patterns
+2. Human-like: Better understanding of tone and context
+3. Engagement: More natural, conversation-starter replies
+4. Brand alignment: Better at matching user's profile voice
 
 ### Response Examples:
 
-**Before (grok-4-fast-reasoning, temp=0.85)**:
+Before (grok-4-fast-reasoning, temp=0.85):
 > "Congrats on the launch! I've been wrestling with tool overload..."
 
-**After (grok-4, temp=0.9)**:
+After (grok-4, temp=0.9):
 > "This is exactly what teams need right now—how does your AI handle the chaos of switching between 10 different tools? Asking for a friend (my overwhelmed team 😅)"
 
-**Improvement**: More personality, better engagement hook, more human-like
+Improvement: More personality, better engagement hook, more human-like
 
 ---
 
 ## 💰 Cost Considerations
 
 ### grok-4
-- **Cost**: Premium pricing (exact rates: https://x.ai/api)
-- **Value**: Highest quality, best for brand-building
-- **Recommendation**: Use for authenticated users, important replies
+- Cost: Premium pricing (exact rates: https://x.ai/api)
+- Value: Highest quality, best for brand-building
+- Recommendation: Use for authenticated users, important replies
 
 ### grok-4-fast-reasoning
-- **Cost**: Cost-efficient
-- **Value**: Good quality, fast
-- **Recommendation**: Use for free tier, high-volume scenarios
+- Cost: Cost-efficient
+- Value: Good quality, fast
+- Recommendation: Use for free tier, high-volume scenarios
 
 ### Cost Optimization Strategy
 
@@ -215,45 +215,45 @@ curl -X POST https://quirkly.technioz.com/api/reply/generate \
 
 ### Quality Metrics to Monitor
 
-1. **Response Length**: Average 80-150 characters
-2. **Engagement Rate**: Track likes/replies to AI-generated content
-3. **Repetition Score**: Measure unique word usage
-4. **Human-like Score**: A/B test with human-written replies
+1. Response Length: Average 80-150 characters
+2. Engagement Rate: Track likes/replies to AI-generated content
+3. Repetition Score: Measure unique word usage
+4. Human-like Score: A/B test with human-written replies
 
 ---
 
 ## 📚 References
 
-- **X.AI Documentation**: https://docs.x.ai/docs/overview
-- **Model Comparison**: https://x.ai/api
-- **API Reference**: https://docs.x.ai/api
-- **Pricing**: https://x.ai/api (Models & Pricing section)
+- X.AI Documentation: https://docs.x.ai/docs/overview
+- Model Comparison: https://x.ai/api
+- API Reference: https://docs.x.ai/api
+- Pricing: https://x.ai/api (Models & Pricing section)
 
 ---
 
 ## 🔄 Version History
 
 ### v2.0.0 (Current)
-- **Model**: grok-4
-- **Temperature**: 0.9 (increased from 0.85)
-- **Max Tokens**: 150 (increased from 120)
-- **Status**: ✅ Optimized for best performance
+- Model: grok-4
+- Temperature: 0.9 (increased from 0.85)
+- Max Tokens: 150 (increased from 120)
+- Status: ✅ Optimized for best performance
 
 ### v1.0.0 (Previous)
-- **Model**: grok-4-fast-reasoning
-- **Temperature**: 0.85
-- **Max Tokens**: 120
-- **Status**: ⚠️ Fixed parameter compatibility issues
+- Model: grok-4-fast-reasoning
+- Temperature: 0.85
+- Max Tokens: 120
+- Status: ⚠️ Fixed parameter compatibility issues
 
 ---
 
 ## 💡 Recommendations
 
-1. **Use grok-4** for all authenticated users
-2. **Monitor costs** - track token usage per user
-3. **A/B test** - compare grok-4 vs grok-4-fast-reasoning
-4. **Adjust temperature** - can go up to 1.0 for even more creativity
-5. **Profile integration** - leverage user profile data for personalization
+1. Use grok-4 for all authenticated users
+2. Monitor costs - track token usage per user
+3. A/B test - compare grok-4 vs grok-4-fast-reasoning
+4. Adjust temperature - can go up to 1.0 for even more creativity
+5. Profile integration - leverage user profile data for personalization
 
 ---
 
