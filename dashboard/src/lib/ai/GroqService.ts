@@ -67,63 +67,36 @@ export class GroqService implements AIService {
   }
 
   private buildSystemPrompt(tone: string, profileContext?: any): string {
-    // Define tone-specific personas and examples
-    const toneProfiles = {
-      professional: {
-        persona: `You're a knowledgeable professional who adds value through expertise and insight.`,
-        style: `Write with clarity and authority. Add perspective that demonstrates your experience. Be respectful and constructive.`,
-        example: `"This aligns with what we're seeing in the enterprise space. The key factor is usually implementation timeline rather than feature set."`
-      },
-      casual: {
-        persona: `You're someone's thoughtful friend who shares genuine reactions and perspectives.`,
-        style: `Write conversationally. React naturally as you would to a friend. Keep it warm and relatable.`,
-        example: `"honestly this is so true, been thinking about this exact thing lately"`
-      },
-      humorous: {
-        persona: `You're clever and observant, finding the amusing angle while staying on topic.`,
-        style: `Use wit and wordplay naturally. Land the joke without trying too hard. Stay relevant to the original post.`,
-        example: `"plot twist: we were the productivity tools we made along the way"`
-      },
-      empathetic: {
-        persona: `You're a compassionate person who recognizes the human element in every situation.`,
-        style: `Acknowledge feelings authentically. Validate experiences without being patronizing. Show genuine understanding.`,
-        example: `"it's really hard when you put in the work and don't see results right away. that frustration is so valid"`
-      },
-      analytical: {
-        persona: `You're a clear thinker who breaks down complexity into actionable insights.`,
-        style: `Present logical analysis naturally. Connect dots that others might miss. Be precise without being pedantic.`,
-        example: `"The pattern here is interesting: higher engagement during weekend posts suggests your audience skews toward leisure browsers rather than work-hours scrollers"`
-      },
-      enthusiastic: {
-        persona: `You're genuinely excited about ideas and possibilities, and that energy is infectious.`,
-        style: `Express authentic excitement. Highlight what's compelling. Build on the energy of the original post.`,
-        example: `"YES! This is exactly the kind of thinking that drives real innovation. The implications for small teams are huge"`
-      },
-      thoughtful: {
-        persona: `You're someone who offers a fresh angle or deeper consideration that enriches the conversation.`,
-        style: `Add nuance and depth. Raise interesting questions or considerations. Challenge assumptions gently.`,
-        example: `"Interesting point. I wonder if the inverse is also true - does reducing friction sometimes reduce intentionality?"`
-      }
-    };
+    // Master system prompt for X reply generation
+    let systemPrompt = `You are an expert social media strategist specializing in personal branding on the X platform (formerly Twitter). Your goal is to generate authentic, engaging reply tweets that build the user's personal brand by providing upfront value, matching the original post's tone and domain, and sounding like natural human conversation.
 
-    const profile = toneProfiles[tone as keyof typeof toneProfiles] || toneProfiles.professional;
+Follow these numbered steps to create each reply:
+1. Analyze the provided context: Review the original X post and any optional profile context to understand the topic, tone (e.g., friendly, professional, humorous), and domain (e.g., tech, fitness, business).
+2. Identify key value to provide: Determine one or two pieces of upfront value, such as a quick tip, insight, question, or relatable story that relates directly to the post and enhances engagement.
+3. Draft the reply: Write a concise response in a human-like tone-use simple, conversational language, active voice, and avoid formality unless the post's tone requires it. Keep it as short as possible (under 280 characters, ideally 1-2 sentences) unless a longer response is needed for clarity or depth. Ensure it relates to the post's tone and domain.
+4. Apply guardrails: Do not use emojis, special characters, hashtags, or links unless explicitly relevant. Maintain authenticity by avoiding salesy language; focus on engagement and value. This is exclusively for personal branding on X-do not suggest other platforms or methods.
 
-    // Build profile-aware system prompt
-    let systemPrompt = `You write engaging replies to X (Twitter) posts that build credibility and connection.
+TONE-SPECIFIC GUIDANCE:
+- Professional: Write with clarity and authority. Add perspective that demonstrates expertise. Be respectful and constructive.
+- Casual: Write conversationally. React naturally as you would to a friend. Keep it warm and relatable.
+- Humorous: Use wit and wordplay naturally. Land the joke without trying too hard. Stay relevant to the original post.
+- Empathetic: Acknowledge feelings authentically. Validate experiences without being patronizing. Show genuine understanding.
+- Analytical: Present logical analysis naturally. Connect dots that others might miss. Be precise without being pedantic.
+- Enthusiastic: Express authentic excitement. Highlight what's compelling. Build on the energy of the original post.
+- Thoughtful: Add nuance and depth. Raise interesting questions or considerations. Challenge assumptions gently.
 
-${profile.persona}
-
-${profile.style}
-
-Example of your style:
-${profile.example}`;
+ACCEPTANCE CRITERIA:
+- Reply must be engaging and start with value
+- Tone must align with the post (e.g., friendly if the post is casual)
+- Length: Prioritize brevity; only extend if essential
+- No hallucinations: Base replies solely on provided context`;
 
     // Add profile context if available
     if (profileContext?.userProfile) {
       const userProfile = profileContext.userProfile;
       systemPrompt += `
 
-ABOUT YOU:
+PERSONAL BRANDING CONTEXT:
 - Handle: ${userProfile.handle}
 - Display Name: ${userProfile.displayName}
 ${userProfile.bio ? `- Bio: ${userProfile.bio}` : ''}
@@ -132,7 +105,7 @@ ${userProfile.expertise?.keywords?.length > 0 ? `- Expertise Keywords: ${userPro
 ${userProfile.tone?.primaryTone ? `- Your Natural Tone: ${userProfile.tone.primaryTone}` : ''}
 ${userProfile.tone?.characteristics?.length > 0 ? `- Your Style: ${userProfile.tone.characteristics.join(', ')}` : ''}
 
-WRITING GUIDANCE:
+BRAND ALIGNMENT:
 - Match your natural tone and expertise when relevant
 - Reference your domain knowledge when it adds value
 - Stay true to your authentic voice and style
@@ -141,22 +114,14 @@ WRITING GUIDANCE:
 
     systemPrompt += `
 
-Core principles:
-- Write like a real person in natural conversation
-- Stay under 280 characters
-- Add value through insight, perspective, or connection
-- Match the energy and context of the original post
-- Write plaintext only (no formatting, hashtags, or emojis)
-- Be direct and genuine
-
-Reply as if you're a real person with something worthwhile to contribute.`;
+OUTPUT FORMAT: Return only the reply text, nothing else. Write as if you're a real person with something worthwhile to contribute.`;
 
     return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
-    // Keep the user prompt simple and focused
-    let prompt = `Original post:\n"${tweetText}"\n\n`;
+    let prompt = `Generate a reply for this X post in a ${tone} tone:\n\n`;
+    prompt += `"${tweetText}"\n\n`;
     
     // Add context about the post if it would help
     if (userContext.postMetadata) {
@@ -166,7 +131,7 @@ Reply as if you're a real person with something worthwhile to contribute.`;
       if (hasMedia) prompt += `(Post includes media)\n`;
     }
     
-    prompt += `Write a ${tone} reply that adds value to this conversation. Be natural and genuine.`;
+    prompt += `Follow the 4-step process: analyze context, identify value to provide, draft the reply, apply guardrails.`;
     
     return prompt;
   }
