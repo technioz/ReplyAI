@@ -108,7 +108,17 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate reply using AI service with profile context
-      const aiService = AIServiceFactory.createService();
+      console.log(`🔧 Creating AI service with provider: ${AIServiceFactory.getCurrentProvider()}`);
+      
+      let aiService;
+      try {
+        aiService = AIServiceFactory.createService();
+        console.log(`✅ AI service created successfully`);
+      } catch (serviceError) {
+        console.error(`❌ Failed to create AI service:`, serviceError);
+        throw new Error(`AI service initialization failed: ${serviceError.message}`);
+      }
+      
       const enhancedUserContext = {
         ...userContext,
         profileContext
@@ -117,7 +127,8 @@ export async function POST(request: NextRequest) {
       console.log(`🤖 Generating reply with context:`, {
         hasProfileContext: !!profileContext,
         tone: tone,
-        originalContext: !!userContext
+        originalContext: !!userContext,
+        provider: AIServiceFactory.getCurrentProvider()
       });
       
       const aiResult = await aiService.generateReply(tweetText.trim(), tone, enhancedUserContext);
@@ -181,14 +192,16 @@ export async function POST(request: NextRequest) {
 
     } catch (aiError) {
       console.error('AI service error:', aiError);
+      console.error('AI service error stack:', aiError.stack);
       
       // Handle specific AI service errors
       if (aiError instanceof Error) {
-        if (aiError.message.includes('API key')) {
+        if (aiError.message.includes('API key') || aiError.message.includes('XAI_API_KEY')) {
           return NextResponse.json({ 
             success: false, 
             error: 'AI_SERVICE_ERROR',
-            message: 'AI service configuration error. Please contact support.' 
+            message: 'AI service configuration error. Please contact support.',
+            details: aiError.message
           }, { status: 500 });
         }
         
@@ -196,8 +209,18 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ 
             success: false, 
             error: 'RATE_LIMIT_EXCEEDED',
-            message: 'AI service rate limit exceeded. Please try again later.' 
+            message: 'AI service rate limit exceeded. Please try again later.',
+            details: aiError.message
           }, { status: 429 });
+        }
+        
+        if (aiError.message.includes('AI service initialization failed')) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'AI_SERVICE_INIT_ERROR',
+            message: 'AI service initialization failed. Please contact support.',
+            details: aiError.message
+          }, { status: 500 });
         }
       }
       
@@ -206,6 +229,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Reply generation error:', error);
+    console.error('Reply generation error stack:', error.stack);
+    
+    // Provide more specific error information
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error name:', error.name);
+    }
+    
     return handleApiError(error);
   }
 }
