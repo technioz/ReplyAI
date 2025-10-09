@@ -16,7 +16,9 @@ export class XAIService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    const model = process.env.XAI_MODEL || 'grok-3';
+    // Use grok-4 as default for best performance and human-like responses
+    // Fallback to grok-4-fast-reasoning for cost efficiency if needed
+    const model = process.env.XAI_MODEL || 'grok-4';
     
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
@@ -33,10 +35,11 @@ export class XAIService implements AIService {
           content: userPrompt
         }
       ],
-      max_tokens: 120,
-      temperature: 0.85,
-      top_p: 0.95,
-      // Note: grok-4-fast-reasoning doesn't support frequency_penalty or presence_penalty
+      // Optimal parameters for creative, human-like social media responses
+      max_tokens: 150, // Increased for more complete thoughts while staying under 280 chars
+      temperature: 0.9, // Higher for more creative, varied responses (0.7-1.0 range)
+      top_p: 0.95, // Nucleus sampling for diverse token selection
+      // Note: frequency_penalty and presence_penalty not supported by grok models
       stream: false
     };
     

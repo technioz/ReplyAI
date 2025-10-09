@@ -36,11 +36,12 @@ export class GroqService implements AIService {
             content: userPrompt
           }
         ],
-        max_tokens: 120,
-        temperature: 0.85,
-        top_p: 0.95,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.4,
+        // Optimal parameters for creative, human-like social media responses
+        max_tokens: 150, // Increased for more complete thoughts
+        temperature: 0.9, // Higher for more creative, varied responses (0.7-1.0 range)
+        top_p: 0.95, // Nucleus sampling for diverse token selection
+        frequency_penalty: 0.3, // Reduces repetitive phrases (Groq supports this)
+        presence_penalty: 0.4, // Encourages new topics and ideas (Groq supports this)
         stream: false
       })
     });
