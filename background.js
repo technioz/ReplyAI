@@ -165,6 +165,21 @@ async function handleAuthentication(apiKey, sendResponse) {
   }
 }
 
+// Get base URL based on environment
+function getBaseUrl() {
+  // Check if we're in development mode by looking at the manifest
+  const manifest = chrome.runtime.getManifest();
+  const isDev = manifest.name.includes('DEV') || manifest.name.includes('localhost');
+  
+  if (isDev) {
+    console.log('Quirkly Background: Running in DEVELOPMENT mode');
+    return 'http://localhost:3000';
+  } else {
+    console.log('Quirkly Background: Running in PRODUCTION mode');
+    return 'https://quirkly.technioz.com';
+  }
+}
+
 // Handle AI reply generation requests
 async function handleReplyGeneration(request, sendResponse) {
   try {
@@ -182,8 +197,9 @@ async function handleReplyGeneration(request, sendResponse) {
       throw new Error('Missing required parameters: tweetText and tone');
     }
     
-    // Use production reply endpoint
-    const replyEndpoint = 'https://quirkly.technioz.com/api/reply/generate';
+    // Get environment-specific base URL
+    const baseUrl = getBaseUrl();
+    const replyEndpoint = `${baseUrl}/api/reply/generate`;
     
     console.log('Quirkly Background: Sending request to:', replyEndpoint);
     
@@ -225,8 +241,9 @@ async function handleReplyGeneration(request, sendResponse) {
     // Deduct credits after successful reply generation
     if (data.success && result.user) {
       try {
-        // Use production credit endpoint
-        const creditEndpoint = 'https://quirkly.technioz.com/api/credits/use';
+        // Use environment-specific credit endpoint
+        const baseUrl = getBaseUrl();
+        const creditEndpoint = `${baseUrl}/api/credits/use`;
         console.log('Quirkly Background: Deducting credits from:', creditEndpoint);
         
         const creditResponse = await fetch(creditEndpoint, {
