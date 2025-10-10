@@ -225,7 +225,11 @@ async function handleReplyGeneration(request, sendResponse) {
     // Deduct credits after successful reply generation
     if (data.success && result.user) {
       try {
-        const creditResponse = await fetch(`${config.baseUrl}/api/credits/use`, {
+        // Use production credit endpoint
+        const creditEndpoint = 'https://quirkly.technioz.com/api/credits/use';
+        console.log('Quirkly Background: Deducting credits from:', creditEndpoint);
+        
+        const creditResponse = await fetch(creditEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -239,19 +243,33 @@ async function handleReplyGeneration(request, sendResponse) {
           })
         });
         
+        console.log('Quirkly Background: Credit deduction response status:', creditResponse.status);
+        
         if (creditResponse.ok) {
           const creditData = await creditResponse.json();
+          console.log('Quirkly Background: Credits deducted successfully:', creditData);
           
           // Update stored user data with new credit information
           if (creditData.credits) {
             result.user.credits = creditData.credits;
             await chrome.storage.sync.set({ user: result.user });
+            console.log('Quirkly Background: Updated user credits in storage');
           }
         } else {
-          console.warn('Quirkly Background: Failed to deduct credits:', creditResponse.status);
+          const errorText = await creditResponse.text();
+          console.warn('Quirkly Background: Failed to deduct credits:', {
+            status: creditResponse.status,
+            statusText: creditResponse.statusText,
+            error: errorText
+          });
         }
       } catch (creditError) {
-        console.error('Quirkly Background: Error deducting credits:', creditError);
+        console.error('Quirkly Background: Error deducting credits:', {
+          message: creditError.message,
+          stack: creditError.stack,
+          apiKey: result.apiKey ? `${result.apiKey.substring(0, 10)}...` : 'none',
+          userId: result.user?.id || 'none'
+        });
       }
     }
     
