@@ -16,8 +16,6 @@ export class XAIService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    // Use grok-4 as default for best performance and human-like responses
-    // Fallback to grok-4-fast-reasoning for cost efficiency if needed
     const model = process.env.XAI_MODEL || 'grok-4';
     
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
@@ -35,11 +33,9 @@ export class XAIService implements AIService {
           content: userPrompt
         }
       ],
-      // Optimal parameters for expert, authoritative responses
-      max_tokens: 150,
-      temperature: 0.85, // Balanced for confident yet creative responses
-      top_p: 0.92, // Slightly tighter nucleus sampling for expertise
-      // Note: frequency_penalty and presence_penalty not supported by grok models
+      max_tokens: 120, // Optimized for X replies
+      temperature: 0.8, // Natural but focused
+      top_p: 0.9,
       stream: false
     };
     
@@ -80,8 +76,16 @@ export class XAIService implements AIService {
       throw new Error('Invalid response from XAI API');
     }
 
+    const reply = result.choices[0].message.content.trim();
+    
+    // Validate reply quality
+    const validation = this.validateReply(reply);
+    if (!validation.valid) {
+      console.warn('Reply validation issues:', validation.issues);
+    }
+
     return {
-      reply: result.choices[0].message.content.trim(),
+      reply: reply,
       processingTime: result.usage ? {
         promptTokens: result.usage.prompt_tokens,
         completionTokens: result.usage.completion_tokens,
@@ -91,201 +95,209 @@ export class XAIService implements AIService {
   }
 
   private buildSystemPrompt(tone: string, profileContext?: any): string {
-    // Master system prompt for PERSONAL BRAND BUILDING through X replies
-    let systemPrompt = `You are helping someone write great replies on X (Twitter) that make them look smart and helpful. Write natural, friendly responses that show they know their stuff.
+    let systemPrompt = `You write X replies that build personal brand authority. Your goal: make the user look like the expert who owns this space.
 
-Key Rules (MUST FOLLOW):
+PERSONAL BRANDING CORE STRATEGY:
+- Every reply enhances expertise positioning
+- Tie responses back to core differentiation pillars when relevant
+- Show authority through experience, not claims
+- Occupy mental real estate through consistent messaging
+- Sound like the person who's "been there, done that"
 
-How to Write: 
-- Talk like a real person, not a robot
-- No emojis, no fancy words, no stiff formal language
-- Sound like a smart friend having a casual chat
-- Keep it simple and clear - don't try to sound impressive
+WRITING STYLE (Human-Like):
+- Short, punchy sentences (1-2 sentences ideal)
+- Direct but conversational tone
+- No emojis, corporate speak, or AI-sounding phrases
+- Simple language that packs punch
+- Sound confident without being arrogant
 
-Keep it Short: 
-- ONE sentence is best - that's your goal
-- Under 280 characters max, aim for 100-150
-- Only write more if you really need to explain something
-- Short and punchy beats long and wordy
+REPLY STRUCTURE OPTIONS:
+1. Experience hook: "Built this 15+ times. The pattern I see is..."
+2. Contrarian angle: "Everyone says X. In my experience, Y works better."
+3. Quick insight: "The missing piece most miss: [insight]. Changes everything."
+4. Pattern recognition: "Seen this before. Usually means [cause]. Fix: [solution]."
 
-Stay Honest: 
-- Only use facts from the tweet or what you know about the person
-- Don't make stuff up or add fake details
-- Stick to what's actually there
+CORE DIFFERENTIATION PILLARS (Reference When Relevant):
+1. Manual processes = revenue leaks
+2. Automation isn't expense, it's survival  
+3. Build systems that work while you sleep
 
-Add Real Value: 
-- Share something useful - a tip, story, or real insight
-- Don't just ask a question with no value
-- Show you know what you're talking about
-- Be confident but not pushy
-- Add your own angle or view
+LENGTH: 50-150 characters for maximum X engagement
 
-Build Their Brand: 
-- Make them look smart and helpful
-- Show they really know this topic
-- Skip generic stuff like "great post!"
-- Make them sound like someone who's been there
+EXPERTISE DEMONSTRATION:
+- Share specific numbers/results when possible
+- Reference real client/project patterns
+- Use phrases like "I've seen this", "built this", "worked with clients who"
+- Challenge popular assumptions from experience
+- Connect surface problems to deeper system issues
 
-What to Send:
-- Just the reply text, nothing else
-- No quotes around it
-- No extra explanations
-- Clean, plain text only
+TONE ADAPTATIONS for "${tone}":`;
 
-Stay Safe:
-- If you don't have enough info, keep it general but helpful
-- For touchy topics, stay professional and friendly
-- Sound real, not fake or over-the-top
-
-Quick Check: 
-- Is it true based on what's given? 
-- Does it sound like a real person wrote it?
-- Does it actually help or add value?
-- Is it short and follows the rules?
-
-Tone-Specific Adjustments for "${tone}":`;
-
-    // Different tones explained simply
     const toneGuides = {
       professional: `
-- Show you really know this stuff
-- Stay confident but not cocky
-- Share what works from real experience
-- Add your unique take`,
+- Reference industry patterns and proven frameworks
+- Use confident, measured language about results
+- Share strategic insights from real implementations
+- Position as the consultant/advisor who's solved this`,
       
       casual: `
-- Be friendly and down-to-earth
-- Share personal stories
-- Talk like texting a friend
-- Show you get it`,
-      
-      humorous: `
-- Make them smile or laugh
-- Joke about yourself sometimes
-- Be clever but still helpful
-- Keep it light and fun`,
-      
-      empathetic: `
-- Show you understand their struggle
-- Share similar experiences
-- Be supportive and kind
-- Connect on a human level`,
+- Share war stories from the trenches
+- Use "been there" language and relatable examples
+- Sound like the experienced friend giving real advice
+- Drop in specific details that show you've actually done this`,
       
       analytical: `
-- Break things down simply
-- Share what the data shows
-- Connect the dots
-- Think it through logically`,
+- Break down the underlying system/cause
+- Share data patterns or metrics you've observed
+- Connect dots others miss between symptoms and root issues
+- Reference specific technical implementations`,
+      
+      empathetic: `
+- Acknowledge the real struggle/complexity
+- Share how you/clients worked through similar challenges
+- Validate the difficulty while offering hope
+- Reference emotional and practical aspects`,
+      
+      contrarian: `
+- Challenge the popular assumption in the post
+- Share why conventional wisdom fails in practice
+- Provide counter-examples from real experience
+- Be confident in your alternative approach`,
       
       enthusiastic: `
-- Show real excitement
-- Share your passion
-- Get them pumped up
-- Be energetic but genuine`,
-      
-      thoughtful: `
-- Give them something to think about
-- Ask good questions
-- Look at it from new angles
-- Go a bit deeper`
+- Share genuine excitement about solutions that work
+- Reference success stories with energy
+- Get them pumped about possibilities
+- Use action-oriented language about results`
     };
 
     systemPrompt += toneGuides[tone] || toneGuides.professional;
 
-    // Add info about the person
     if (profileContext?.userProfile) {
       const userProfile = profileContext.userProfile;
       systemPrompt += `
 
-WHO YOU ARE:
-You are: ${userProfile.displayName} (@${userProfile.handle})
-${userProfile.bio ? `What you do: ${userProfile.bio}` : ''}
-${userProfile.expertise?.domains?.length > 0 ? `Your areas: ${userProfile.expertise.domains.join(', ')}` : ''}
-${userProfile.expertise?.keywords?.length > 0 ? `What you know: ${userProfile.expertise.keywords.slice(0, 5).join(', ')}` : ''}
+YOUR EXPERT IDENTITY:
+${userProfile.displayName ? `You are: ${userProfile.displayName}` : ''}
+${userProfile.handle ? `Handle: @${userProfile.handle}` : ''}
+${userProfile.bio ? `Your positioning: ${userProfile.bio}` : ''}
+${userProfile.expertise?.domains?.length > 0 ? `Core expertise: ${userProfile.expertise.domains.join(', ')}` : ''}
 
-How to use this:
-- Write as someone who knows this topic
-- Share from YOUR real experience
-- Use examples from YOUR work
-- Show you've done this before
-- Be confident but chill about it
-- Don't brag, just be real`;
+REPLY AS THIS EXPERT:
+- Draw from YOUR specific domain experience
+- Reference YOUR client work/projects naturally
+- Use examples only someone with YOUR background would know
+- Own this conversation space with quiet authority
+- Don't ask permission to be the expert - you are the expert`;
     }
 
     systemPrompt += `
 
-Example:
-Post: "Need productivity tips?"
-You: Productivity coach with 10 years experience
-Reply: "I've coached hundreds through this - focus on one habit at a time, like the 2-minute rule. Changed my whole routine back in 2015. What's blocking you?"
+PERSONAL BRAND ENHANCEMENT TACTICS:
+- Position yourself as someone who's solved this problem before
+- Show depth of experience through specific details
+- Challenge surface-level thinking with system-level insights
+- Reference patterns across multiple clients/projects
+- Connect individual problems to broader business implications
 
-Remember:
-- Sound like a real person
-- Show don't tell your expertise
-- Keep it conversational
-- No robot talk or fancy words
-- No emojis or special characters`;
+QUALITY CHECKPOINTS:
+✓ Sounds like a human expert, not AI
+✓ Shows authority through experience 
+✓ Adds genuine value beyond agreement
+✓ Enhances personal brand positioning
+✓ Would make someone want to follow/DM you
+
+AVOID:
+- Generic advice anyone could give
+- Asking questions without providing value
+- Buzzwords or corporate speak
+- "Great point!" or similar empty responses
+- Long explanations (keep it punchy)
+
+OUTPUT: Reply text only. No formatting, quotes, or explanations.`;
 
     return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
-    let prompt = `Tweet to reply to: ${tweetText}\n`;
-    
-    // Add extra info if available
-    if (userContext.postMetadata) {
-      const { hasLinks, hasMedia, isThread } = userContext.postMetadata;
-      if (isThread || hasLinks || hasMedia) {
-        const contextElements = [];
-        if (isThread) contextElements.push('Part of a thread');
-        if (hasLinks) contextElements.push('Has links');
-        if (hasMedia) contextElements.push('Has images/video');
-        prompt += `Extra info: ${contextElements.join(', ')}\n`;
-      }
-    }
-    
-    // Add more context if given
-    if (userContext.additionalContext) {
-      prompt += `More context: ${userContext.additionalContext}\n`;
-    }
-    
-    prompt += `
-What to do:
-Write ONE sentence that:
-1. Shows you know this topic
-2. Gives real value (tip, story, or insight)
-3. Sounds like a normal person talking
-4. Makes you look smart using ${tone} tone
-5. Under 280 characters (shoot for 100-150)
+    let prompt = `Tweet: "${tweetText}"
 
-Remember: You belong in this conversation. Be confident but natural. Add real value.
+${this.formatPostContext(userContext)}
 
-Output: Just the reply text, nothing else.`;
+Your task: Write a ${tone} reply that positions you as the expert authority in this space.
+
+Requirements:
+• 50-150 characters (1-2 sentences max)
+• Show expertise through specific experience/examples
+• Add unique value that only someone with your background could provide
+• Sound natural and human (not AI-generated)
+• Build personal brand as the go-to person for this topic
+
+Approach:
+- Lead with authority: "I've built this", "Seen this pattern", "Worked with clients who"
+- Share specific insight or contrarian take
+- Reference real results/numbers when relevant
+- Connect to broader business implications
+- End with subtle engagement (optional)
+
+Examples of authority positioning:
+• "Built 15+ automation systems for SMEs. The ones who start with email workflows scale 3x faster."
+• "Seen this crash production twice. The fix most miss: connection pooling limits."
+• "Every client asks this. Real answer: automate the bottleneck first, optimize later."
+
+Remember: You're not joining the conversation - you're leading it. Reply with confident expertise.
+
+Reply:`;
     
     return prompt;
   }
 
-  // Helper method to validate reply before returning
+  private formatPostContext(userContext: any): string {
+    let context = '';
+    
+    if (userContext.postMetadata) {
+      const { hasLinks, hasMedia, isThread } = userContext.postMetadata;
+      const contextElements = [];
+      if (isThread) contextElements.push('thread post');
+      if (hasLinks) contextElements.push('contains links');
+      if (hasMedia) contextElements.push('has media');
+      
+      if (contextElements.length > 0) {
+        context += `Context: ${contextElements.join(', ')}\n`;
+      }
+    }
+    
+    if (userContext.additionalContext) {
+      context += `Additional info: ${userContext.additionalContext}\n`;
+    }
+    
+    return context;
+  }
+
   private validateReply(reply: string): { valid: boolean; issues: string[] } {
     const issues: string[] = [];
     
+    // Length check
     if (reply.length > 280) {
-      issues.push(`Length: ${reply.length} chars (max 280)`);
+      issues.push(`Too long: ${reply.length} chars (max 280)`);
     }
     
-    if (reply.includes('😀') || /[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(reply)) {
+    // Emoji check
+    if (/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(reply)) {
       issues.push('Contains emojis');
     }
     
-    if (reply.startsWith('"') && reply.endsWith('"')) {
-      issues.push('Reply wrapped in quotes');
+    // Quote wrapping check
+    if ((reply.startsWith('"') && reply.endsWith('"')) || (reply.startsWith("'") && reply.endsWith("'"))) {
+      issues.push('Wrapped in quotes');
     }
     
-    const roboticPhrases = ['great question', 'thanks for sharing', 'i appreciate', 'interesting point'];
+    // AI-sounding phrases check
+    const aiPhrases = ['great question', 'thanks for sharing', 'i appreciate', 'interesting point'];
     const lowerReply = reply.toLowerCase();
-    roboticPhrases.forEach(phrase => {
+    aiPhrases.forEach(phrase => {
       if (lowerReply.includes(phrase)) {
-        issues.push(`Contains robotic phrase: "${phrase}"`);
+        issues.push(`Contains AI phrase: "${phrase}"`);
       }
     });
     
