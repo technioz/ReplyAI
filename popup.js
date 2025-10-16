@@ -6,12 +6,12 @@ class QuirklyPopup {
     this.isAuthenticated = false;
     this.user = null;
     
-    // Use production URLs directly
-    this.authUrl = 'https://quirkly.technioz.com/api/auth/validate';
-    this.dashboardUrl = 'https://quirkly.technioz.com';
+    // Use dynamic URLs from QuirklyConfig
+    this.authUrl = QuirklyConfig.getAuthUrl();
+    this.dashboardUrl = QuirklyConfig.getDashboardUrl();
     
     console.log('Quirkly Popup: Environment config loaded:', {
-      environment: 'production',
+      environment: QuirklyConfig.getConfig().environment,
       authUrl: this.authUrl,
       dashboardUrl: this.dashboardUrl
     });

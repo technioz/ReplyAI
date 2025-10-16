@@ -1,26 +1,16 @@
 // Quirkly Content Script - Premium Authentication & AI Integration
 // Version: 2.1.0 - Production URLs Enabled
-console.log('🚀 Quirkly Content Script v2.1.0: Script loaded and starting...');
 
 class Quirkly {
   constructor() {
-    console.log('🚀 Quirkly: Constructor called');
     this.apiKey = null;
     this.user = null;
     this.isEnabled = false;
     this.profileExtractor = null;
     this.extractedProfile = null;
     
-    // Use production config directly
-    this.config = {
-      environment: 'production',
-      authUrl: 'https://quirkly.technioz.com/api/auth/validate',
-      replyUrl: 'https://quirkly.technioz.com/api/reply/generate',
-      profileUrl: 'https://quirkly.technioz.com/api/profile/extract',
-      dashboardUrl: 'https://quirkly.technioz.com',
-      isDev: false
-    };
-    console.log('🚀 Quirkly: Using production config:', this.config);
+    // Use dynamic config from QuirklyConfig
+    this.config = QuirklyConfig.getConfig();
     
     this.observer = null;
     this.initialized = false;
@@ -28,7 +18,6 @@ class Quirkly {
     this.checkInterval = 2000; // Check every 2 seconds
     this.periodicSearchInterval = null;
     
-    console.log('🚀 Quirkly: Constructor completed, calling init...');
     
     // Initialize the extension
     this.init();
@@ -36,7 +25,6 @@ class Quirkly {
 
   // Handle extension context invalidation gracefully
   handleContextInvalidationGracefully() {
-    console.log('Quirkly: Handling extension context invalidation gracefully...');
     
     // Show user-friendly message
     this.showError('Extension connection lost. Please refresh the page to reconnect.');
@@ -56,7 +44,6 @@ class Quirkly {
           chrome.runtime.reload();
         }
       } catch (error) {
-        console.log('Quirkly: Auto-reload failed, manual reload required');
       }
     }, 5000);
   }
@@ -68,7 +55,6 @@ class Quirkly {
 
   // Simple, direct approach to handle context invalidation
   handleContextInvalidation() {
-    console.log('Extension context invalid, handling gracefully...');
     
     // Use the graceful approach
     this.handleContextInvalidationGracefully();
@@ -78,12 +64,10 @@ class Quirkly {
     try {
       // Check if extension context is still valid
       if (!this.isExtensionContextValid()) {
-        console.error('Extension context invalid during initialization');
         this.handleContextInvalidation();
         return;
       }
 
-      console.log('Quirkly: Initializing content script...');
       
       // Load settings from storage
       await this.loadSettings();
@@ -104,14 +88,11 @@ class Quirkly {
       // Initialize profile extractor (includes manual extraction button)
       this.initializeProfileExtractor();
       
-      console.log('Quirkly: Content script initialized successfully');
     } catch (error) {
       if (error.message?.includes('Extension context invalidated')) {
-        console.log('Quirkly: Extension context invalidated during initialization');
         this.handleContextInvalidation();
         return;
       }
-      console.error('Quirkly: Initialization failed:', error);
     }
   }
 
@@ -119,7 +100,6 @@ class Quirkly {
     try {
       // Check if extension context is still valid
       if (!chrome.runtime?.id) {
-        console.log('Quirkly: Extension context invalidated, stopping initialization');
         return;
       }
 
@@ -129,7 +109,7 @@ class Quirkly {
       this.user = result.user || null;
       this.isAuthenticated = !!(this.apiKey && this.user);
       
-      console.log('Quirkly settings loaded:', { 
+      chrome.runtime.sendMessage({
         hasApiKey: !!this.apiKey, 
         isEnabled: this.isEnabled, 
         hasUser: !!this.user,
@@ -138,10 +118,8 @@ class Quirkly {
 
       // Show authentication notice if not authenticated
       if (!this.isAuthenticated) {
-        console.log('Quirkly: Not authenticated, showing notice');
         this.showAuthenticationNotice();
       } else {
-        console.log('Quirkly: Authenticated, starting button injection');
         // Clean up any existing buttons first
         this.cleanupDuplicateButtons();
         this.cleanupOrphanedButtons(); // Clean up orphaned buttons
@@ -150,10 +128,8 @@ class Quirkly {
       }
     } catch (error) {
       if (error.message?.includes('Extension context invalidated')) {
-        console.log('Quirkly: Extension context invalidated, stopping execution');
         return;
       }
-      console.error('Error loading Quirkly settings:', error);
       this.isAuthenticated = false;
       this.isEnabled = false;
     }
@@ -306,7 +282,6 @@ class Quirkly {
       try {
         // Check if extension context is still valid
         if (!chrome.runtime?.id) {
-          console.log('Quirkly: Extension context invalidated, clearing interval');
           clearInterval(intervalId);
           this.handleContextInvalidationGracefully();
           return;
@@ -314,7 +289,6 @@ class Quirkly {
 
         // Additional context health check
         if (!this.isExtensionContextValid()) {
-          console.log('Quirkly: Context health check failed, handling gracefully');
           clearInterval(intervalId);
           this.handleContextInvalidationGracefully();
           return;
@@ -328,14 +302,12 @@ class Quirkly {
         
         // Check if authentication status changed
         if (this.isAuthenticated !== newIsAuthenticated) {
-          console.log('Quirkly: Authentication status changed:', newIsAuthenticated);
           this.isAuthenticated = newIsAuthenticated;
           this.apiKey = newApiKey;
           this.user = newUser;
           this.isEnabled = newIsEnabled;
           
           if (newIsAuthenticated) {
-            console.log('Quirkly: User authenticated, starting button injection');
             // Clean up any existing buttons first
             this.cleanupDuplicateButtons();
             this.cleanupOrphanedButtons(); // Clean up orphaned buttons
@@ -355,7 +327,7 @@ class Quirkly {
           this.apiKey = newApiKey;
           this.isEnabled = newIsEnabled;
           this.user = newUser;
-          console.log('Quirkly settings updated:', { 
+          chrome.runtime.sendMessage({
             hasApiKey: !!this.apiKey, 
             isEnabled: this.isEnabled, 
             hasUser: !!this.user
@@ -363,7 +335,6 @@ class Quirkly {
           
           // If newly authenticated, start button injection
           if (this.isAuthenticated && this.isEnabled) {
-            console.log('Quirkly: Settings updated, searching for reply boxes');
             // Clean up any existing buttons first
             this.cleanupDuplicateButtons();
             this.cleanupOrphanedButtons(); // Clean up orphaned buttons
@@ -376,32 +347,27 @@ class Quirkly {
         }
       } catch (error) {
         if (error.message?.includes('Extension context invalidated')) {
-          console.log('Quirkly: Extension context invalidated, clearing interval');
           clearInterval(intervalId);
           return;
         }
-        console.error('Error checking Quirkly settings:', error);
       }
     }, 2000); // Check every 2 seconds
   }
 
   removeAllButtons() {
     const existingButtons = document.querySelectorAll('.quirkly-buttons');
-    console.log(`Quirkly: Removing ${existingButtons.length} button containers`);
     existingButtons.forEach(buttonContainer => {
       buttonContainer.remove();
     });
     
     // Remove injected flags
     const injectedElements = document.querySelectorAll('[data-quirkly-injected]');
-    console.log(`Quirkly: Removing ${injectedElements.length} injected flags`);
     injectedElements.forEach(element => {
       element.removeAttribute('data-quirkly-injected');
     });
     
     // Remove container flags
     const containerFlags = document.querySelectorAll('[data-quirkly-container]');
-    console.log(`Quirkly: Removing ${containerFlags.length} container flags`);
     containerFlags.forEach(element => {
       element.removeAttribute('data-quirkly-container');
     });
@@ -415,7 +381,6 @@ class Quirkly {
         return; // No duplicates
       }
       
-      console.log(`Quirkly: Found ${allButtons.length} button containers, cleaning up duplicates...`);
       
       // Keep only the first button container in each parent
       const processedParents = new Set();
@@ -423,17 +388,13 @@ class Quirkly {
       allButtons.forEach((buttonContainer, index) => {
         const parent = buttonContainer.parentElement;
         if (processedParents.has(parent)) {
-          console.log(`Quirkly: Removing duplicate button container ${index}`);
           buttonContainer.remove();
         } else {
           processedParents.add(parent);
-          console.log(`Quirkly: Keeping button container ${index} in parent`);
         }
       });
       
-      console.log(`Quirkly: Cleanup completed, kept ${processedParents.size} button containers`);
     } catch (error) {
-      console.error('Quirkly: Error cleaning up duplicate buttons:', error);
     }
   }
 
@@ -441,7 +402,6 @@ class Quirkly {
   cleanupOrphanedButtons() {
     try {
       const allButtons = document.querySelectorAll('.quirkly-buttons');
-      console.log(`Quirkly: Checking ${allButtons.length} button containers for orphans...`);
       
       allButtons.forEach((buttonContainer, index) => {
         const parent = buttonContainer.parentElement;
@@ -449,22 +409,18 @@ class Quirkly {
           // Check if this parent contains a valid reply box
           const hasReplyBox = parent.querySelector('[data-testid="tweetTextarea_0"], [data-testid="replyTextarea"], [data-testid="composeTextarea"]');
           if (!hasReplyBox) {
-            console.log(`Quirkly: Removing orphaned button container ${index} from invalid parent`);
             buttonContainer.remove();
           }
         }
       });
       
-      console.log('Quirkly: Orphaned button cleanup completed');
     } catch (error) {
-      console.error('Quirkly: Error cleaning up orphaned buttons:', error);
     }
   }
 
   // Reset initialization flag when extension is reloaded
   resetInitializationFlag() {
     if (window.quirklyInitialized) {
-      console.log('Quirkly: Resetting initialization flag');
       window.quirklyInitialized = false;
     }
   }
@@ -475,38 +431,24 @@ class Quirkly {
       // Remove any elements that might conflict with Twitter's functionality
       const conflictingElements = document.querySelectorAll('[data-quirkly-extension]');
       if (conflictingElements.length > 0) {
-        console.log(`Quirkly: Cleaning up ${conflictingElements.length} conflicting elements`);
         conflictingElements.forEach(element => {
           try {
             element.remove();
           } catch (error) {
-            console.log('Quirkly: Error removing conflicting element:', error);
           }
         });
       }
     } catch (error) {
-      console.log('Quirkly: Error cleaning up conflicts:', error);
     }
   }
 
   observeDOM() {
     try {
-      // Only observe if we don't already have buttons
-      if (document.querySelectorAll('.quirkly-buttons').length > 0) {
-        console.log('Quirkly: Buttons already exist, skipping DOM observation');
-        return;
-      }
-      
       const observer = new MutationObserver((mutations) => {
-        // Stop observing if we already have buttons
-        if (document.querySelectorAll('.quirkly-buttons').length > 0) {
-          console.log('Quirkly: Buttons found, stopping DOM observation');
-          observer.disconnect();
-          return;
-        }
+        let shouldSearch = false;
         
         mutations.forEach((mutation) => {
-          // Only process added nodes to avoid conflicts
+          // Process added nodes
           if (mutation.type === 'childList') {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === Node.ELEMENT_NODE) {
@@ -515,42 +457,99 @@ class Quirkly {
                   return;
                 }
                 
-                // Skip if this is a text node or content change
-                if (node.nodeType === Node.TEXT_NODE || node.nodeName === '#text') {
-                  return;
+                // Check if this looks like a modal or reply box
+                if (this.isModalOrReplyBox(node)) {
+                  shouldSearch = true;
                 }
                 
-                // Use a small delay to let Twitter's code settle
-                setTimeout(() => {
-                  try {
-                    // Double-check we still don't have buttons
-                    if (document.querySelectorAll('.quirkly-buttons').length === 0) {
-                      this.checkForReplyBox(node);
-                    }
-                  } catch (error) {
-                    console.log('Quirkly: Error checking reply box:', error);
-                  }
-                }, 200);
+                // Check if any child elements look like reply boxes
+                const replyBoxes = node.querySelectorAll ? node.querySelectorAll('[data-testid*="tweetTextarea"], div[contenteditable="true"], textarea') : [];
+                if (replyBoxes.length > 0) {
+                  shouldSearch = true;
+                }
               }
             });
           }
+          
+          // Process attribute changes (for modal visibility)
+          if (mutation.type === 'attributes') {
+            const target = mutation.target;
+            if (target.hasAttribute('role') && target.getAttribute('role') === 'dialog') {
+              shouldSearch = true;
+            }
+            
+            // Check for modal visibility changes
+            if (mutation.attributeName === 'style' || mutation.attributeName === 'class') {
+              if (this.isModalOrReplyBox(target)) {
+                shouldSearch = true;
+              }
+            }
+          }
         });
+        
+        // Trigger search if needed
+        if (shouldSearch) {
+          setTimeout(() => {
+            this.searchForReplyBoxes();
+          }, 100); // Small delay to let DOM settle
+        }
       });
-
-      // Use very conservative observation settings
+      
+      // Start observing with more comprehensive options
       observer.observe(document.body, {
         childList: true,
         subtree: true,
-        attributes: false, // Don't watch attribute changes
-        characterData: false // Don't watch text changes
+        attributes: true,
+        attributeFilter: ['role', 'style', 'class', 'data-testid']
       });
       
       this.observer = observer;
-      
-      console.log('Quirkly: DOM observer started with very conservative settings');
     } catch (error) {
-      console.error('Quirkly: Failed to start DOM observer:', error);
     }
+  }
+
+  // Check if element looks like a modal or reply box
+  isModalOrReplyBox(element) {
+    // Check for modal indicators
+    if (element.hasAttribute('role') && element.getAttribute('role') === 'dialog') {
+      return true;
+    }
+    
+    // Check for modal-related classes
+    const classList = element.classList;
+    if (classList.contains('modal') || 
+        classList.contains('overlay') || 
+        classList.contains('backdrop') ||
+        classList.contains('popup') ||
+        classList.contains('dialog')) {
+      return true;
+    }
+
+    // Check for modal-specific data attributes
+    if (element.hasAttribute('data-testid')) {
+      const testId = element.getAttribute('data-testid');
+      if (testId.includes('modal') || 
+          testId.includes('dialog') || 
+          testId.includes('overlay') ||
+          testId.includes('popup') ||
+          testId.includes('compose') ||
+          testId.includes('tweetTextarea')) {
+        return true;
+      }
+    }
+
+    // Check for reply box indicators
+    if (element.hasAttribute('data-testid') && 
+        element.getAttribute('data-testid').includes('tweetTextarea')) {
+      return true;
+    }
+
+    if (element.hasAttribute('contenteditable') && 
+        element.getAttribute('contenteditable') === 'true') {
+      return true;
+    }
+
+    return false;
   }
 
   startPeriodicReplyBoxSearch() {
@@ -561,7 +560,6 @@ class Quirkly {
     
     // Don't start periodic search if we already have buttons
     if (document.querySelectorAll('.quirkly-buttons').length > 0) {
-      console.log('Quirkly: Buttons already exist, skipping periodic search');
       return;
     }
     
@@ -570,10 +568,8 @@ class Quirkly {
         // Only search if we haven't found any reply boxes yet
         const existingButtons = document.querySelectorAll('.quirkly-buttons');
         if (existingButtons.length === 0) {
-          console.log('Quirkly: No buttons found, searching for missed reply boxes...');
           this.searchForMissedReplyBoxes();
         } else {
-          console.log(`Quirkly: Found ${existingButtons.length} button containers, stopping periodic search`);
           clearInterval(this.periodicSearchInterval);
         }
       }
@@ -592,7 +588,6 @@ class Quirkly {
       const replyBoxes = document.querySelectorAll(selector);
       replyBoxes.forEach(replyBox => {
         if (!replyBox.hasAttribute('data-quirkly-injected')) {
-          console.log('Found missed reply box with selector:', selector);
           this.injectButtons(replyBox);
         }
       });
@@ -615,7 +610,6 @@ class Quirkly {
       return;
     }
     
-    console.log('Checking node for reply box:', node);
     
     // Only look for the specific Twitter reply textarea
     const twitterTextarea = node.querySelector ? node.querySelector('[data-testid="tweetTextarea_0"]') : null;
@@ -624,7 +618,6 @@ class Quirkly {
       // Check if buttons already exist in the parent container
       const parentContainer = twitterTextarea.parentElement;
       if (parentContainer && !parentContainer.querySelector('.quirkly-buttons')) {
-        console.log('Found Twitter reply textarea, injecting buttons');
         this.injectButtons(twitterTextarea);
         return;
       }
@@ -636,7 +629,6 @@ class Quirkly {
         // Check if buttons already exist in the parent container
         const parentContainer = node.parentElement;
         if (parentContainer && !parentContainer.querySelector('.quirkly-buttons')) {
-          console.log('Node itself is Twitter reply textarea, injecting buttons');
           this.injectButtons(node);
         }
       }
@@ -644,38 +636,26 @@ class Quirkly {
   }
 
   injectButtons(replyBox) {
-    console.log('Quirkly: injectButtons called with replyBox:', replyBox);
-    console.log('Quirkly: isAuthenticated:', this.isAuthenticated, 'isEnabled:', this.isEnabled, 'hasApiKey:', !!this.apiKey);
-    
     if (!this.isAuthenticated || !this.isEnabled || !this.apiKey) {
-      console.log('Quirkly: Skipping button injection - not authenticated or disabled');
-      console.log('Quirkly: Details - isAuthenticated:', this.isAuthenticated, 'isEnabled:', this.isEnabled, 'hasApiKey:', !!this.apiKey);
       return;
     }
     
     // Check if buttons already exist for this reply box
     if (replyBox.hasAttribute('data-quirkly-injected')) {
-      console.log('Quirkly: Buttons already injected for this reply box, skipping');
       return;
     }
     
     // Check if buttons already exist in the parent container
     const existingButtons = replyBox.parentElement?.querySelector('.quirkly-buttons');
     if (existingButtons) {
-      console.log('Quirkly: Buttons already exist in parent container, skipping');
       return;
     }
     
     // Final check: make sure we don't have buttons anywhere
     if (document.querySelectorAll('.quirkly-buttons').length > 0) {
-      console.log('Quirkly: Buttons already exist somewhere, skipping injection');
       return;
     }
     
-    // Debug the DOM structure
-    this.debugDOMStructure(replyBox);
-    
-    console.log('Quirkly: Injecting buttons...');
     replyBox.setAttribute('data-quirkly-injected', 'true');
 
     // Create premium button container with minimal interference
@@ -684,16 +664,12 @@ class Quirkly {
     buttonContainer.setAttribute('data-quirkly-container', 'true');
     buttonContainer.setAttribute('data-quirkly-extension', 'true');
     
-    // Use more Twitter-friendly styling to avoid conflicts
+    // Let CSS handle the styling, minimal inline styles
     buttonContainer.style.cssText = `
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      padding: 8px 0;
-      flex-wrap: wrap;
-      z-index: 1000;
-      position: relative;
       pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     `;
     
     buttonContainer.innerHTML = `
@@ -720,34 +696,258 @@ class Quirkly {
       </button>
     `;
 
-    // Insert buttons after the reply box with minimal DOM disruption
+    // Add CSS styles for buttons to ensure proper alignment
+    if (!document.querySelector('#quirkly-button-styles')) {
+      const style = document.createElement('style');
+      style.id = 'quirkly-button-styles';
+      style.textContent = `
+        .quirkly-btn {
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          padding: 8px 12px !important;
+          margin: 0 !important;
+          border: 1px solid rgba(29, 155, 240, 0.3) !important;
+          border-radius: 20px !important;
+          background: rgba(29, 155, 240, 0.1) !important;
+          color: rgb(29, 155, 240) !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          font-size: 13px !important;
+          font-weight: 500 !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+          white-space: nowrap !important;
+          flex-shrink: 0 !important;
+          position: relative !important;
+          z-index: 1001 !important;
+        }
+        
+        .quirkly-btn:hover {
+          background: rgba(29, 155, 240, 0.2) !important;
+          border-color: rgba(29, 155, 240, 0.5) !important;
+          transform: translateY(-1px) !important;
+        }
+        
+        .quirkly-btn:active {
+          transform: translateY(0) !important;
+          background: rgba(29, 155, 240, 0.3) !important;
+        }
+        
+        .quirkly-btn:disabled {
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+        }
+        
+        .quirkly-btn .btn-icon {
+          font-size: 14px !important;
+          line-height: 1 !important;
+        }
+        
+        .quirkly-buttons {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          width: auto !important;
+          margin: 0 !important;
+          padding: 0 !important; /* Remove padding to align with native buttons */
+          position: relative !important;
+          z-index: 1000 !important;
+          /* Remove border-top to integrate seamlessly */
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Insert buttons into X's toolbar container
     try {
-      // Use a more careful insertion method
+      
+      // Target the action button container that holds the native X buttons
+      const toolbarSelectors = [
+        // 1. Primary: Look for the container with native X action buttons
+        '[data-testid="toolbar"]',
+        '[data-testid="composeToolbar"]', 
+        '[data-testid="tweetComposeToolbar"]',
+        // 2. Alternative: Look for containers with native action buttons
+        '[data-testid="addPhotosOrVideo"]', // Will get parent container
+        '[data-testid="addGif"]', // Will get parent container
+        // 3. Fallback: Legacy selectors
+        'nav[aria-live="polite"][aria-relevant="additions text"]',
+        'nav[aria-live="polite"][role="toolbar"]',
+        'nav[role="toolbar"]',
+        '[role="toolbar"]'
+      ];
+      
+      let toolbar = null;
+      let usedSelector = null;
+      
+      for (const selector of toolbarSelectors) {
+        if (selector === '[data-testid="addPhotosOrVideo"]' || selector === '[data-testid="addGif"]') {
+          // Special case: get parent container of native action buttons
+          const actionButton = document.querySelector(selector);
+          if (actionButton) {
+            // Find the parent container that holds the action buttons
+            let container = actionButton.parentElement;
+            while (container && container !== document.body) {
+              // Check if this container has multiple action buttons (likely the toolbar)
+              const actionButtons = container.querySelectorAll('[data-testid="addPhotosOrVideo"], [data-testid="addGif"], [data-testid="grokButton"]');
+              if (actionButtons.length >= 2) {
+                toolbar = container;
+                usedSelector = selector + ' (parent container)';
+                break;
+              }
+              container = container.parentElement;
+            }
+            if (toolbar) break;
+          }
+        } else {
+          toolbar = document.querySelector(selector);
+          if (toolbar) {
+            usedSelector = selector;
+            break;
+          }
+        }
+      }
+      
+      // If still no toolbar, look for action button containers by searching for typical X buttons
+      // But only within the context of the current reply box
+      if (!toolbar) {
+        // Look for containers that have typical X action buttons within the reply box context
+        const replyContainer = replyBox.closest('[role="dialog"]') || replyBox.closest('div[data-testid*="compose"]') || replyBox.closest('div[data-testid*="reply"]') || document;
+        const searchContext = replyContainer === document ? document : replyContainer;
+        
+        const actionButtonSelectors = [
+          '[data-testid="addPhotosOrVideo"]',
+          '[data-testid="addGif"]', 
+          '[data-testid="grokButton"]',
+          '[aria-label*="Add photos or video"]',
+          '[aria-label*="GIF"]',
+          '[aria-label*="Grok"]'
+        ];
+        
+        for (const buttonSelector of actionButtonSelectors) {
+          const actionButton = searchContext.querySelector(buttonSelector);
+          if (actionButton) {
+            // Find the parent container that holds action buttons
+            let container = actionButton.parentElement;
+            while (container && container !== document.body) {
+              // Check if this container has multiple action buttons (likely the toolbar)
+              const actionButtons = container.querySelectorAll(actionButtonSelectors.join(', '));
+              if (actionButtons.length >= 2) {
+                // Additional check: make sure this container is related to the current reply box
+                const isRelatedToReplyBox = container.contains(replyBox) || 
+                                          container.closest('[role="dialog"]') === replyBox.closest('[role="dialog"]') ||
+                                          container === replyBox.parentElement?.parentElement;
+                
+                if (isRelatedToReplyBox) {
+                  toolbar = container;
+                  usedSelector = `action-button-container (found via ${buttonSelector})`;
+                  break;
+                }
+              }
+              container = container.parentElement;
+            }
+            if (toolbar) break;
+          }
+        }
+        
+        // If still no toolbar, try the disabled Reply button approach
+        if (!toolbar) {
+          const disabledReplyButton = document.querySelector('[role="button"]:disabled, button:disabled');
+          if (disabledReplyButton) {
+            // Look for adjacent group/div container
+            const adjacentContainer = disabledReplyButton.previousElementSibling || 
+                                    disabledReplyButton.parentElement?.previousElementSibling;
+            
+            if (adjacentContainer) {
+              toolbar = adjacentContainer;
+              usedSelector = 'disabled-reply-button-adjacent';
+            }
+          }
+        }
+        
+        // If still no toolbar, check dialog container
+        if (!toolbar) {
+          const dialog = replyBox.closest('[role="dialog"]');
+          if (dialog) {
+            for (const selector of toolbarSelectors) {
+              if (selector === 'textarea[aria-current="true"][aria-autocomplete="list"]') {
+                const textarea = dialog.querySelector(selector);
+                if (textarea && textarea.parentNode) {
+                  toolbar = textarea.parentNode;
+                  usedSelector = selector + ' (within dialog, parent)';
+                  break;
+                }
+              } else {
+                toolbar = dialog.querySelector(selector);
+                if (toolbar) {
+                  usedSelector = selector + ' (within dialog)';
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if (toolbar) {
+        // Insert buttons directly into the toolbar
+        toolbar.appendChild(buttonContainer);
+      } else {
+        
+        // Create a custom toolbar-like container
+        const customToolbar = document.createElement('div');
+        customToolbar.setAttribute('role', 'toolbar');
+        customToolbar.setAttribute('aria-label', 'Quirkly tone buttons');
+        customToolbar.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-top: 1px solid rgba(83, 100, 113, 0.3);
+          background: transparent;
+        `;
+        
+        // Insert the custom toolbar after the reply box
       const parent = replyBox.parentElement;
       if (parent) {
-        // Insert after the reply box, not at the end of parent
+          // Look for existing action buttons to insert before them
+          const actionButtons = parent.querySelector('[data-testid*="toolbar"]') ||
+                               parent.querySelector('[role="group"]') ||
+                               parent.querySelector('[data-testid*="action"]');
+          
+          if (actionButtons) {
+            parent.insertBefore(customToolbar, actionButtons);
+          } else {
+            // Insert after reply box
         if (replyBox.nextSibling) {
-          parent.insertBefore(buttonContainer, replyBox.nextSibling);
+              parent.insertBefore(customToolbar, replyBox.nextSibling);
         } else {
-          parent.appendChild(buttonContainer);
+              parent.appendChild(customToolbar);
+            }
+          }
+          
+          // Add buttons to the custom toolbar
+          customToolbar.appendChild(buttonContainer);
+        } else {
+          return;
         }
       }
     } catch (error) {
-      console.error('Quirkly: Error inserting buttons:', error);
       return;
     }
 
     // Add click handlers with better event handling
     buttonContainer.querySelectorAll('.quirkly-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        console.log('Quirkly: Button clicked:', btn.dataset.tone);
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation(); // Prevent Twitter's handlers from running
         
         // Check extension context before proceeding
         if (!this.isExtensionContextValid()) {
-          console.error('Quirkly: Extension context invalid when button clicked');
           this.showError('Extension connection lost. Please refresh the page and try again.');
           return;
         }
@@ -759,55 +959,30 @@ class Quirkly {
       });
     });
     
-    console.log('Quirkly: Buttons injected successfully');
-    console.log('Quirkly: Button container added to DOM:', buttonContainer);
-    
     // Stop all monitoring once we have buttons
     this.stopAllMonitoring();
   }
 
-  // Debug DOM structure for troubleshooting
-  debugDOMStructure(replyBox) {
-    try {
-      console.log('Quirkly: Debugging DOM structure for replyBox:', replyBox);
-      console.log('Quirkly: ReplyBox tagName:', replyBox.tagName);
-      console.log('Quirkly: ReplyBox className:', replyBox.className);
-      console.log('Quirkly: ReplyBox id:', replyBox.id);
-      console.log('Quirkly: ReplyBox data attributes:', replyBox.dataset);
-      console.log('Quirkly: ReplyBox parent:', replyBox.parentElement);
-      console.log('Quirkly: ReplyBox parent tagName:', replyBox.parentElement?.tagName);
-      console.log('Quirkly: ReplyBox parent className:', replyBox.parentElement?.className);
-    } catch (error) {
-      console.log('Quirkly: Error debugging DOM structure:', error);
-    }
-  }
 
   async generateReply(tone, replyBox) {
     // Check if extension context is still valid before proceeding
     if (!this.isExtensionContextValid()) {
-      console.error('Extension context invalidated during reply generation');
       this.showError('Extension context lost. Please refresh the page and try again.');
       return;
     }
 
-    console.log('=== QUIRKLY DEBUG START ===');
-    console.log('Tone:', tone);
-    console.log('ReplyBox:', replyBox);
-    console.log('API Key available:', !!this.apiKey);
-    console.log('User data:', this.user);
     
     try {
       // Simple loading state - just disable the button
       const button = document.querySelector(`[data-tone="${tone}"]`);
       if (button) {
         button.disabled = true;
-        button.textContent = 'Generating...';
+        button.innerHTML = '<span class="btn-icon">⏳</span> Generating...';
       }
       
       // Get original post content
       const originalPost = this.getOriginalPost();
       
-      console.log('Sending message to background script for reply generation');
       
       // Check extension context again before sending message
       if (!this.isExtensionContextValid()) {
@@ -843,7 +1018,6 @@ class Quirkly {
         });
       });
 
-      console.log('Background script response:', response);
       
       // Check extension context before processing reply data
       if (!this.isExtensionContextValid()) {
@@ -854,7 +1028,6 @@ class Quirkly {
       let replyData = response.data;
       
       if (replyData && typeof replyData === 'object' && replyData.reply) {
-        console.log('Received reply:', replyData.reply);
         
         // Use the simplified method: inject directly into the Twitter reply box
         try {
@@ -870,7 +1043,6 @@ class Quirkly {
             this.showError('Could not find Twitter reply textarea');
           }
         } catch (fillError) {
-          console.error('Error filling reply box:', fillError);
           this.showError('Error inserting reply into text area');
         }
         
@@ -879,21 +1051,30 @@ class Quirkly {
       }
       
     } catch (error) {
-      console.error('❌ Error generating reply:', error);
       
       // Handle extension context errors specifically
       if (error.message?.includes('Extension context invalidated')) {
         this.showError('Extension context lost. Please refresh the page and try again.');
-        console.log('Quirkly: Extension context invalidated, user should refresh page');
       } else {
         this.showError(`Failed to generate reply: ${error.message}`);
       }
     } finally {
-      // Re-enable button
+      // Re-enable button and restore original content
       const button = document.querySelector(`[data-tone="${tone}"]`);
       if (button) {
         button.disabled = false;
-        button.textContent = tone.charAt(0).toUpperCase() + tone.slice(1);
+        // Restore original button content with emoji
+        const emojiMap = {
+          professional: '💼',
+          casual: '😊', 
+          humorous: '😄',
+          empathetic: '❤️',
+          analytical: '🧠',
+          enthusiastic: '🔥',
+          controversial: '⚡'
+        };
+        const emoji = emojiMap[tone] || '';
+        button.innerHTML = `<span class="btn-icon">${emoji}</span> ${tone.charAt(0).toUpperCase() + tone.slice(1)}`;
       }
     }
   }
@@ -903,7 +1084,6 @@ class Quirkly {
   // Fill the reply box with the generated reply text using simple, effective injection
   fillReplyBox(editableContent, replyText) {
     try {
-      console.log('Filling reply box with text:', replyText);
       
       if (!replyText || typeof replyText !== 'string') {
         throw new Error('Invalid reply text');
@@ -913,7 +1093,6 @@ class Quirkly {
       const textarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
       
       if (textarea) {
-        console.log('Found Twitter reply textarea, injecting reply...');
         
         // Focus the textarea first
         textarea.focus();
@@ -928,7 +1107,6 @@ class Quirkly {
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
         textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
         
-        console.log('Reply successfully injected into Twitter textarea');
         
         // Hide placeholder text if present
         const placeholder = textarea.parentElement?.querySelector('.public-DraftEditorPlaceholder-inner');
@@ -938,12 +1116,10 @@ class Quirkly {
         
         return true;
       } else {
-        console.error('Could not find Twitter reply textarea');
         return false;
       }
       
     } catch (error) {
-      console.error('Error in fillReplyBox:', error);
       throw error;
     }
   }
@@ -954,33 +1130,63 @@ class Quirkly {
 
   // Start monitoring for reply boxes with context validation
   startMonitoring() {
-    console.log('Quirkly: Starting reply box monitoring...');
     
-    // Only start DOM observer if we don't have buttons yet
-    if (document.querySelectorAll('.quirkly-buttons').length === 0) {
-      this.observeDOM();
-    }
+    // Always start DOM observer for modal detection
+    this.observeDOM();
     
-    // Start periodic search for reply boxes (but less frequently)
+    // Add event listeners for modal-specific events
+    this.addModalEventListeners();
+    
+    // Start periodic search for reply boxes (more frequent for modals)
     this.periodicSearchInterval = setInterval(() => {
       // Check if extension context is still valid
       if (!this.isExtensionContextValid()) {
-        console.log('Quirkly: Extension context lost during monitoring, stopping...');
         this.handleContextInvalidation();
         return;
       }
       
-      // Only search if we don't have any buttons
-      const existingButtons = document.querySelectorAll('.quirkly-buttons');
-      if (existingButtons.length === 0) {
-        console.log('Quirkly: No buttons found, searching for reply boxes...');
-        this.searchForReplyBoxes();
-      } else {
-        console.log(`Quirkly: Found ${existingButtons.length} button containers, skipping search`);
-      }
-    }, 5000); // Check every 5 seconds
+      // Always search for reply boxes (both inline and modal)
+      this.searchForReplyBoxes();
+    }, 2000); // Check every 2 seconds for faster modal detection
     
-    console.log('Quirkly: Reply box monitoring started');
+  }
+
+  // Add event listeners for modal-specific events
+  addModalEventListeners() {
+    // Listen for clicks that might open modals
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      
+      // Check if this click might open a reply modal
+      if (target.closest('[data-testid="reply"]') || 
+          target.closest('[aria-label*="Reply"]') ||
+          target.closest('button[aria-label*="Reply"]')) {
+        setTimeout(() => {
+          this.searchForReplyBoxes();
+        }, 500);
+      }
+    }, true); // Use capture phase for better detection
+
+    // Listen for keyboard events that might open modals
+    document.addEventListener('keydown', (event) => {
+      // Check for common modal opening shortcuts
+      if (event.key === 'Enter' && event.ctrlKey) {
+        setTimeout(() => {
+          this.searchForReplyBoxes();
+        }, 200);
+      }
+    });
+
+    // Listen for focus events on potential reply boxes
+    document.addEventListener('focusin', (event) => {
+      const target = event.target;
+      if (target.hasAttribute('data-testid') && 
+          target.getAttribute('data-testid').includes('tweetTextarea')) {
+        setTimeout(() => {
+          this.searchForReplyBoxes();
+        }, 100);
+      }
+    }, true);
   }
 
   // Search for reply boxes and inject buttons
@@ -990,34 +1196,200 @@ class Quirkly {
         return;
       }
 
-      // Skip if we already have buttons
-      if (document.querySelectorAll('.quirkly-buttons').length > 0) {
-        return;
-      }
 
-      console.log('Quirkly: Searching for reply boxes...');
-      console.log('Quirkly: Current auth state - isAuthenticated:', this.isAuthenticated, 'isEnabled:', this.isEnabled);
+      // First, clean up buttons from inactive reply boxes
+      this.cleanupInactiveButtons();
 
-      // Only look for the specific Twitter reply textarea
-      const twitterTextarea = document.querySelector('[data-testid="tweetTextarea_0"]');
-      
-      if (twitterTextarea && !twitterTextarea.hasAttribute('data-quirkly-injected')) {
-        // Check if buttons already exist in the parent container
-        const parentContainer = twitterTextarea.parentElement;
-        if (parentContainer && !parentContainer.querySelector('.quirkly-buttons')) {
-          console.log('Quirkly: Found Twitter reply textarea, injecting buttons');
-          this.injectButtons(twitterTextarea);
-        } else {
-          console.log('Quirkly: Buttons already exist in parent container');
+      // Find all potential reply textareas
+      const replyTextareas = document.querySelectorAll('[data-testid="tweetTextarea_0"]');
+
+      let activeTextareaFound = false;
+
+      for (const textarea of replyTextareas) {
+        // Skip if already injected
+        if (textarea.hasAttribute('data-quirkly-injected')) {
+          continue;
         }
-      } else {
-        console.log('Quirkly: No Twitter reply textarea found or already injected');
+
+        // Check if this textarea is currently focused/active
+        const isActive = document.activeElement === textarea || 
+                        textarea.matches(':focus') ||
+                        textarea.closest('[role="dialog"]') !== null; // Modal replies are active
+
+        // Only inject into active/focused textareas or modal textareas
+        if (isActive) {
+        // Check if buttons already exist in the parent container
+          const parentContainer = textarea.parentElement;
+        if (parentContainer && !parentContainer.querySelector('.quirkly-buttons')) {
+            this.injectButtons(textarea);
+            activeTextareaFound = true;
+            break; // Only inject into one active textarea at a time
+        } else {
+            activeTextareaFound = true;
+          }
+        }
+      }
+
+      // If no active textarea found, inject into the first available one (fallback)
+      if (!activeTextareaFound) {
+        const firstAvailableTextarea = Array.from(replyTextareas).find(textarea => 
+          !textarea.hasAttribute('data-quirkly-injected') && 
+          !textarea.closest('.quirkly-buttons')
+        );
+        
+        if (firstAvailableTextarea) {
+          this.injectButtons(firstAvailableTextarea);
+        }
       }
       
-      console.log('Quirkly: Reply box search completed');
     } catch (error) {
-      console.warn('Error searching for reply boxes:', error);
     }
+  }
+
+  // Clean up buttons from inactive reply boxes
+  cleanupInactiveButtons() {
+    try {
+      const allQuirklyButtons = document.querySelectorAll('.quirkly-buttons');
+
+      for (const buttonContainer of allQuirklyButtons) {
+        // Find the associated textarea
+        const associatedTextarea = buttonContainer.closest('div')?.querySelector('[data-testid="tweetTextarea_0"]');
+        
+        if (associatedTextarea) {
+          const isActive = document.activeElement === associatedTextarea || 
+                          associatedTextarea.matches(':focus') ||
+                          associatedTextarea.closest('[role="dialog"]') !== null;
+
+          if (!isActive) {
+            buttonContainer.remove();
+            associatedTextarea.removeAttribute('data-quirkly-injected');
+          }
+        }
+      }
+    } catch (error) {
+    }
+  }
+
+  // Find reply textarea in popup modal
+  findModalReplyTextarea() {
+    // Look for textarea in modal with specific attributes
+    const modalSelectors = [
+      '[data-testid="tweetTextarea_0"]', // Standard textarea
+      'div[role="textbox"][data-testid="tweetTextarea_0"]', // Modal textarea
+      'div[contenteditable="true"][data-testid="tweetTextarea_0"]', // Contenteditable version
+      'div[role="textbox"][contenteditable="true"]', // Generic modal textbox
+      'div[data-testid="tweetTextarea_0"][contenteditable="true"]' // Modal contenteditable
+    ];
+
+    for (const selector of modalSelectors) {
+      const textarea = document.querySelector(selector);
+      if (textarea && this.isInModal(textarea)) {
+        return textarea;
+      }
+    }
+
+    // Fallback: look for any textarea/div with contenteditable in a modal
+    const allTextareas = document.querySelectorAll('div[contenteditable="true"], textarea');
+    for (const textarea of allTextareas) {
+      if (this.isInModal(textarea) && this.looksLikeReplyBox(textarea)) {
+        return textarea;
+      }
+    }
+
+    return null;
+  }
+
+  // Check if element is inside a modal
+  isInModal(element) {
+    // Look for modal indicators in the DOM hierarchy
+    let current = element;
+    while (current && current !== document.body) {
+      // Check for modal-specific attributes and classes
+      if (current.hasAttribute('role') && current.getAttribute('role') === 'dialog') {
+        return true;
+      }
+      
+      // Check for modal-related classes
+      const classList = current.classList;
+      if (classList.contains('modal') || 
+          classList.contains('overlay') || 
+          classList.contains('backdrop') ||
+          classList.contains('popup') ||
+          classList.contains('dialog')) {
+        return true;
+      }
+
+      // Check for modal-specific data attributes
+      if (current.hasAttribute('data-testid')) {
+        const testId = current.getAttribute('data-testid');
+        if (testId.includes('modal') || 
+            testId.includes('dialog') || 
+            testId.includes('overlay') ||
+            testId.includes('popup')) {
+          return true;
+        }
+      }
+
+      current = current.parentElement;
+    }
+
+    return false;
+  }
+
+  // Check if element looks like a reply box
+  looksLikeReplyBox(element) {
+    // Check for reply-specific attributes
+    if (element.hasAttribute('data-testid') && 
+        element.getAttribute('data-testid').includes('tweetTextarea')) {
+      return true;
+    }
+
+    // Check for placeholder text that suggests it's a reply box
+    const placeholder = element.getAttribute('placeholder') || 
+                      element.getAttribute('aria-label') || 
+                      element.textContent;
+    
+    if (placeholder && (
+        placeholder.toLowerCase().includes('reply') ||
+        placeholder.toLowerCase().includes('tweet') ||
+        placeholder.toLowerCase().includes('post'))) {
+      return true;
+    }
+
+    // Check if it's in a context that suggests it's a reply
+    const parent = element.parentElement;
+    if (parent && parent.textContent.toLowerCase().includes('replying to')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Find the modal container for button injection
+  findModalContainer(textarea) {
+    // Look for the action bar or button container in the modal
+    let current = textarea;
+    while (current && current !== document.body) {
+      // Look for action bar or button container
+      if (current.querySelector('[role="button"], button, .action-bar, .toolbar')) {
+        return current;
+      }
+      
+      // Look for specific modal containers
+      if (current.hasAttribute('data-testid')) {
+        const testId = current.getAttribute('data-testid');
+        if (testId.includes('toolbar') || 
+            testId.includes('action') || 
+            testId.includes('compose')) {
+          return current;
+        }
+      }
+
+      current = current.parentElement;
+    }
+
+    // Fallback: return the textarea's immediate parent
+    return textarea.parentElement;
   }
 
   getOriginalPost() {
@@ -1138,8 +1510,7 @@ class Quirkly {
     `;
 
     testButton.addEventListener('click', () => {
-      console.log('Quirkly Test Button Clicked');
-      console.log('Quirkly Current State:', {
+      chrome.runtime.sendMessage({
         isAuthenticated: this.isAuthenticated,
         isEnabled: this.isEnabled,
         hasApiKey: !!this.apiKey,
@@ -1149,7 +1520,6 @@ class Quirkly {
       
       // Test storage access
       chrome.storage.sync.get(['apiKey', 'isEnabled', 'user'], (result) => {
-        console.log('Quirkly Storage Test:', result);
         this.showSuccess(`Test: Auth=${this.isAuthenticated}, Enabled=${this.isEnabled}, API Key=${!!this.apiKey}`);
       });
     });
@@ -1178,19 +1548,16 @@ class Quirkly {
 
   // Verify if the reply was successfully injected into the page
   verifyReplyInjection(replyText) {
-    console.log('Quirkly: Verifying reply injection...');
     
     // Look for the reply text in the Twitter textarea
     const twitterTextarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
     if (twitterTextarea) {
       const content = twitterTextarea.textContent || '';
       if (content.includes(replyText)) {
-        console.log('Quirkly: Reply successfully injected into Twitter textarea');
         return true;
       }
     }
     
-    console.warn('Quirkly: Reply text not found in Twitter textarea. Injection may have failed.');
     return false;
   }
 
@@ -1201,31 +1568,26 @@ class Quirkly {
   // Stop all monitoring once we have buttons
   stopAllMonitoring() {
     try {
-      console.log('Quirkly: Stopping all monitoring since buttons are now injected');
       
       // Stop DOM observer
       if (this.observer) {
         this.observer.disconnect();
         this.observer = null;
-        console.log('Quirkly: DOM observer stopped');
       }
       
       // Stop periodic search
       if (this.periodicSearchInterval) {
         clearInterval(this.periodicSearchInterval);
         this.periodicSearchInterval = null;
-        console.log('Quirkly: Periodic search stopped');
       }
       
       // Stop periodic reply box search
       if (this.periodicSearchInterval) {
         clearInterval(this.periodicSearchInterval);
         this.periodicSearchInterval = null;
-        console.log('Quirkly: Periodic reply box search stopped');
       }
       
     } catch (error) {
-      console.error('Quirkly: Error stopping monitoring:', error);
     }
   }
 
@@ -1234,7 +1596,6 @@ class Quirkly {
     try {
       if (window.XProfileExtractor) {
         this.profileExtractor = new window.XProfileExtractor();
-        console.log('✅ Profile extractor initialized');
         
         // Extract profile data if we're on a profile page
         this.extractProfileDataIfNeeded();
@@ -1242,10 +1603,8 @@ class Quirkly {
         // Add manual extraction button for debugging
         this.addManualExtractionButton();
       } else {
-        console.log('⚠️ XProfileExtractor not available');
       }
     } catch (error) {
-      console.error('❌ Failed to initialize profile extractor:', error);
     }
   }
 
@@ -1296,11 +1655,9 @@ class Quirkly {
       button.disabled = true;
       
       try {
-        console.log('🔄 Manual profile extraction triggered');
         const profileData = await this.profileExtractor.extractProfileData();
         
         if (profileData) {
-          console.log('✅ Manual extraction successful:', profileData);
           await this.sendProfileDataToBackend(profileData);
           button.textContent = '✅ Extracted!';
           button.style.background = 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)';
@@ -1314,7 +1671,6 @@ class Quirkly {
           throw new Error('Extraction returned null');
         }
       } catch (error) {
-        console.error('❌ Manual extraction failed:', error);
         button.textContent = '❌ Failed';
         button.style.background = 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
         
@@ -1327,13 +1683,11 @@ class Quirkly {
     };
 
     document.body.appendChild(button);
-    console.log('✅ Manual extraction button added');
   }
 
   async extractProfileDataIfNeeded() {
     try {
       if (!this.profileExtractor) {
-        console.log('⚠️ Profile extractor not initialized');
         return;
       }
 
@@ -1357,7 +1711,6 @@ class Quirkly {
       );
 
       if (isProfilePage) {
-        console.log('🔍 Detected profile page, extracting profile data...');
         
         // Wait for critical elements to load
         await this.waitForProfileElements();
@@ -1366,16 +1719,13 @@ class Quirkly {
         const profileData = await this.profileExtractor.extractProfileData();
         if (profileData) {
           this.extractedProfile = profileData;
-          console.log('✅ Profile data extracted:', profileData);
           
           // Send profile data to background script for storage
           await this.sendProfileDataToBackend(profileData);
         } else {
-          console.warn('⚠️ Profile extraction returned null - may need manual trigger');
         }
       }
     } catch (error) {
-      console.error('❌ Error extracting profile data:', error);
     }
   }
 
@@ -1399,10 +1749,8 @@ class Quirkly {
           document.querySelector(selector) !== null
         );
         
-        console.log(`🔍 Found ${foundElements.length}/${criticalSelectors.length} critical elements`);
         
         if (foundElements.length >= 2 || elapsedTime >= maxWaitTime) {
-          console.log('✅ Critical elements loaded or timeout reached');
           resolve(foundElements.length >= 2);
         } else {
           elapsedTime += checkInterval;
@@ -1417,13 +1765,9 @@ class Quirkly {
   async sendProfileDataToBackend(profileData) {
     try {
       if (!this.apiKey || !this.user) {
-        console.log('⚠️ No API key or user, cannot send profile data');
         return;
       }
 
-      console.log('📤 Sending profile data to backend...');
-      console.log('📤 User object:', this.user);
-      console.log('📤 User ID to send:', this.user.id || this.user._id);
       
       const response = await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
@@ -1440,12 +1784,9 @@ class Quirkly {
       });
 
       if (response && response.success) {
-        console.log('✅ Profile data stored successfully');
       } else {
-        console.error('❌ Failed to store profile data:', response?.error);
       }
     } catch (error) {
-      console.error('❌ Error sending profile data to backend:', error);
     }
   }
 
@@ -1456,7 +1797,6 @@ class Quirkly {
   // Enhanced reply generation with profile context
   async generateReplyWithProfileContext(tone, replyBox) {
     try {
-      console.log('🤖 Generating reply with profile context...');
       
       // Get the original post content
       const originalPost = this.extractOriginalPost(replyBox);
@@ -1475,7 +1815,6 @@ class Quirkly {
         }
       } : {};
 
-      console.log('📝 Profile context for reply generation:', profileContext);
 
       // Send message to background script with profile context
       const response = await new Promise((resolve, reject) => {
@@ -1501,20 +1840,17 @@ class Quirkly {
         });
       });
 
-      console.log('Background script response:', response);
       
       // Handle the response
       let replyData = response.data;
       
       if (replyData && typeof replyData === 'object' && replyData.reply) {
         this.insertReply(replyData.reply, replyBox);
-        console.log('✅ Reply inserted successfully with profile context');
       } else {
         throw new Error('Invalid response format from background script');
       }
 
     } catch (error) {
-      console.error('❌ Error generating reply with profile context:', error);
       this.showError('Failed to generate reply: ' + error.message);
     }
   }
@@ -1559,7 +1895,6 @@ class Quirkly {
 
       return expertise;
     } catch (error) {
-      console.error('Error extracting expertise from profile:', error);
       return { domains: [], keywords: [], topics: [] };
     }
   }
@@ -1600,7 +1935,6 @@ class Quirkly {
 
       return tone;
     } catch (error) {
-      console.error('Error extracting tone from profile:', error);
       return { primaryTone: 'professional', secondaryTones: [], characteristics: [] };
     }
   }
@@ -1609,7 +1943,6 @@ class Quirkly {
 // Global error handler for extension context errors
 window.addEventListener('error', (event) => {
   if (event.error?.message?.includes('Extension context invalidated')) {
-    console.log('Quirkly: Global error handler caught extension context invalidation');
     // Stop any running intervals or listeners
     return true; // Prevent default error handling
   }
@@ -1619,43 +1952,35 @@ window.addEventListener('error', (event) => {
 function initializeQuirkly() {
   // Check if extension context is valid before initializing
   if (!chrome.runtime?.id) {
-    console.log('Quirkly: Extension context not available, skipping initialization');
     return;
   }
 
   // Check if Quirkly is already initialized to prevent duplicates
   if (window.quirklyInitialized) {
-    console.log('Quirkly: Already initialized, skipping duplicate initialization');
     return;
   }
 
-  console.log('Quirkly: Content script loaded');
   
   try {
     if (document.readyState === 'loading') {
-      console.log('Quirkly: DOM still loading, waiting for DOMContentLoaded');
       document.addEventListener('DOMContentLoaded', () => {
         if (chrome.runtime?.id && !window.quirklyInitialized) {
-          console.log('Quirkly: DOMContentLoaded fired, initializing');
           window.quirklyInitialized = true;
           new Quirkly();
         } else {
-          console.log('Quirkly: Extension context invalidated before DOM ready or already initialized');
         }
       });
     } else {
-      console.log('Quirkly: DOM already ready, initializing immediately');
       window.quirklyInitialized = true;
       new Quirkly();
     }
   } catch (error) {
     if (error.message?.includes('Extension context invalidated')) {
-      console.log('Quirkly: Extension context invalidated during initialization');
     } else {
-      console.error('Quirkly: Failed to initialize:', error);
     }
   }
 }
 
 // Initialize with a small delay to ensure Chrome APIs are ready
+setTimeout(initializeQuirkly, 100);
 setTimeout(initializeQuirkly, 100);

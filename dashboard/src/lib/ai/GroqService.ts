@@ -12,7 +12,7 @@ export class GroqService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
@@ -36,12 +36,11 @@ export class GroqService implements AIService {
             content: userPrompt
           }
         ],
-        // Optimal parameters for expert, authoritative responses
-        max_tokens: 150,
-        temperature: 0.85, // Balanced for confident yet creative responses
-        top_p: 0.92, // Slightly tighter nucleus sampling for expertise
-        frequency_penalty: 0.35, // Reduces repetitive phrases
-        presence_penalty: 0.45, // Encourages varied, nuanced perspectives
+        max_tokens: 120, // Shortened for X replies
+        temperature: 0.8, // More natural responses
+        top_p: 0.9, 
+        frequency_penalty: 0.4, // Avoid repetitive patterns
+        presence_penalty: 0.5, // Encourage unique perspectives
         stream: false
       })
     });
@@ -70,177 +69,74 @@ export class GroqService implements AIService {
   }
 
   private buildSystemPrompt(tone: string, profileContext?: any): string {
-    // Master system prompt for PERSONAL BRAND BUILDING through X replies
-    let systemPrompt = `You are helping someone write great replies on X (Twitter) that make them look smart and helpful. Write natural, friendly responses that show they know their stuff.
+    let systemPrompt = `You are an AI designed to generate natural, human-like replies to social media posts. Your goal is to respond in a way that matches the profile's context, tone, and domain, while adding value and promoting engagement without over-explaining or using emojis. Follow these numbered steps for every reply:
 
-Key Rules (MUST FOLLOW):
+1. Analyze the provided post and profile: Identify the key tone (e.g., casual, professional, enthusiastic) and domain (e.g., fitness, tech). Use the specific tone instructed if given.
+2. Craft a reply: Start by adding value (e.g., share a relevant insight or tip based on the post's content). Incorporate profile context naturally. Speak like a natural person using the same tonality as the posts.
+3. Ensure constraints: Keep replies 50-100 characters. Stay within the post's domain. Do not add emojis, give too many examples, ask questions, or overexplain the post.
+4. Output format: Provide only the reply text, nothing else.
 
-How to Write: 
-- Talk like a real person, not a robot
-- No emojis, no fancy words, no stiff formal language
-- Sound like a smart friend having a casual chat
-- Keep it simple and clear - don't try to sound impressive
+CRITICAL RULES:
+- Do NOT ask questions in your replies. Do NOT end with questions. Do NOT use question marks (?). Provide value through statements, insights, tips, or observations only.
+- Use simple, everyday language. Avoid complex words, jargon, or fancy vocabulary. Write like a real person talks - use layman terms that anyone can understand.
+- Sound conversational and natural. If there's a simple word and a complex word, always choose the simple one.
 
-Keep it Short: 
-- ONE sentence is best - that's your goal
-- Under 280 characters max, aim for 100-150
-- Only write more if you really need to explain something
-- Short and punchy beats long and wordy
+Acceptance criteria: Replies must be natural and engaging, add value first, match tone and context, and adhere to length and constraints. If uncertain about tone, default to neutral and flag it. Avoid speculation; base replies only on provided facts. Do not output personal information or unsafe content.`;
 
-Stay Honest: 
-- Only use facts from the tweet or what you know about the person
-- Don't make stuff up or add fake details
-- Stick to what's actually there
-
-Add Real Value: 
-- Share something useful - a tip, story, or real insight
-- Don't just ask a question with no value
-- Show you know what you're talking about
-- Be confident but not pushy
-- Add your own angle or view
-
-Build Their Brand: 
-- Make them look smart and helpful
-- Show they really know this topic
-- Skip generic stuff like "great post!"
-- Make them sound like someone who's been there
-
-What to Send:
-- Just the reply text, nothing else
-- No quotes around it
-- No extra explanations
-- Clean, plain text only
-
-Stay Safe:
-- If you don't have enough info, keep it general but helpful
-- For touchy topics, stay professional and friendly
-- Sound real, not fake or over-the-top
-
-Quick Check: 
-- Is it true based on what's given? 
-- Does it sound like a real person wrote it?
-- Does it actually help or add value?
-- Is it short and follows the rules?
-
-Tone-Specific Adjustments for "${tone}":`;
-
-    // Different tones explained simply
-    const toneGuides = {
-      professional: `
-- Show you really know this stuff
-- Stay confident but not cocky
-- Share what works from real experience
-- Add your unique take`,
-      
-      casual: `
-- Be friendly and down-to-earth
-- Share personal stories
-- Talk like texting a friend
-- Show you get it`,
-      
-      humorous: `
-- Make them smile or laugh
-- Joke about yourself sometimes
-- Be clever but still helpful
-- Keep it light and fun`,
-      
-      empathetic: `
-- Show you understand their struggle
-- Share similar experiences
-- Be supportive and kind
-- Connect on a human level`,
-      
-      analytical: `
-- Break things down simply
-- Share what the data shows
-- Connect the dots
-- Think it through logically`,
-      
-      enthusiastic: `
-- Show real excitement
-- Share your passion
-- Get them pumped up
-- Be energetic but genuine`,
-      
-      thoughtful: `
-- Give them something to think about
-- Ask good questions
-- Look at it from new angles
-- Go a bit deeper`
+    // Add tone-specific guidance
+    const toneGuides: { [key: string]: string } = {
+      professional: `Tone Guidance: Use professional but simple language. Show expertise through clear insights, not claims. Keep words everyday and easy to understand.`,
+      casual: `Tone Guidance: Be conversational and relatable. Talk like you're chatting with a friend. Use simple everyday words and a friendly approach.`,
+      analytical: `Tone Guidance: Focus on data and patterns. Break down complex ideas into simple, clear language that anyone can get.`,
+      empathetic: `Tone Guidance: Show understanding and support. Use warm, simple words to acknowledge how they feel.`,
+      humorous: `Tone Guidance: Be light and witty. Use simple, relatable humor that clicks right away.`,
+      enthusiastic: `Tone Guidance: Show genuine excitement with simple, energetic words. Be positive and motivating without overdoing it.`,
+      contrarian: `Tone Guidance: Challenge assumptions respectfully using straightforward language. Offer different views clearly and confidently.`
     };
 
-    systemPrompt += toneGuides[tone] || toneGuides.professional;
-
-    // Add info about the person
-    if (profileContext?.userProfile) {
-      const userProfile = profileContext.userProfile;
-      systemPrompt += `
-
-WHO YOU ARE:
-You are: ${userProfile.displayName} (@${userProfile.handle})
-${userProfile.bio ? `What you do: ${userProfile.bio}` : ''}
-${userProfile.expertise?.domains?.length > 0 ? `Your areas: ${userProfile.expertise.domains.join(', ')}` : ''}
-${userProfile.expertise?.keywords?.length > 0 ? `What you know: ${userProfile.expertise.keywords.slice(0, 5).join(', ')}` : ''}
-
-How to use this:
-- Write as someone who knows this topic
-- Share from YOUR real experience
-- Use examples from YOUR work
-- Show you've done this before
-- Be confident but chill about it
-- Don't brag, just be real`;
+    if (tone && toneGuides[tone.toLowerCase()]) {
+      systemPrompt += toneGuides[tone.toLowerCase()];
     }
 
-    systemPrompt += `
-
-Example:
-Post: "Need productivity tips?"
-You: Productivity coach with 10 years experience
-Reply: "I've coached hundreds through this - focus on one habit at a time, like the 2-minute rule. Changed my whole routine back in 2015. What's blocking you?"
-
-Remember:
-- Sound like a real person
-- Show don't tell your expertise
-- Keep it conversational
-- No robot talk or fancy words
-- No emojis or special characters`;
+    // Add profile context if available
+    if (profileContext?.userProfile) {
+      const userProfile = profileContext.userProfile;
+      systemPrompt += `Profile Context:`;
+      if (userProfile.displayName) systemPrompt += `- Name: ${userProfile.displayName}`;
+      if (userProfile.handle) systemPrompt += `- Handle: @${userProfile.handle}`;
+      if (userProfile.bio) systemPrompt += `- Bio: ${userProfile.bio}`;
+      if (userProfile.expertise?.domains?.length > 0) {
+        systemPrompt += `- Expertise: ${userProfile.expertise.domains.join(', ')}`;
+      }
+      systemPrompt += `Incorporate this profile context naturally into your reply to make it personalized and authentic.`;
+    }
 
     return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
-    let prompt = `Tweet to reply to: ${tweetText}\n`;
-    
-    // Add extra info if available
+    let prompt = `Post to reply to: "${tweetText}"`;
+
     if (userContext.postMetadata) {
-      const { hasLinks, hasMedia, isThread } = userContext.postMetadata;
-      if (isThread || hasLinks || hasMedia) {
-        const contextElements = [];
-        if (isThread) contextElements.push('Part of a thread');
-        if (hasLinks) contextElements.push('Has links');
-        if (hasMedia) contextElements.push('Has images/video');
-        prompt += `Extra info: ${contextElements.join(', ')}\n`;
-      }
+      const metadata = this.formatPostMetadata(userContext.postMetadata);
+      if (metadata) prompt += `${metadata}`;
     }
-    
-    // Add more context if given
+
     if (userContext.additionalContext) {
-      prompt += `More context: ${userContext.additionalContext}\n`;
+      prompt += `Additional Context: ${userContext.additionalContext}`;
     }
-    
-    prompt += `
-What to do:
-Write ONE sentence that:
-1. Shows you know this topic
-2. Gives real value (tip, story, or insight)
-3. Sounds like a normal person talking
-4. Makes you look smart using ${tone} tone
-5. Under 280 characters (shoot for 100-150)
 
-Remember: You belong in this conversation. Be confident but natural. Add real value.
+    prompt += `Tone: ${tone}`;
+    prompt += `Generate a reply following the steps outlined in your system instructions.`;
 
-Output: Just the reply text, nothing else.`;
-    
     return prompt;
+  }
+
+  private formatPostMetadata(metadata: any): string {
+    const elements = [];
+    if (metadata.isThread) elements.push('Part of thread');
+    if (metadata.hasLinks) elements.push('Contains links');  
+    if (metadata.hasMedia) elements.push('Has media');
+    return elements.length > 0 ? `Post context: ${elements.join(', ')}` : '';
   }
 }
