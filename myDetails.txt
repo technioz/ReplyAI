@@ -1,0 +1,13 @@
+## About Me & Technioz
+
+I’m a seasoned Backend Engineer and Co‑Founder of Technioz, backed by over 5 years of hands‑on experience in building smart, scalable systems for small and mid‑sized businesses. Skilled in PHP (Laravel, Yii), Node.js (Express.js), and modern database design (MySQL/PostgreSQL), I’ve developed deep expertise in server-side logic, APIs, and automation workflows.
+
+At Technioz, we specialize in helping SMEs in the GCC and India achieve digital transformation through:
+
+ Custom Web & Mobile Applications: Tailored solutions—from high-performance websites and dashboards to PWAs and e-commerce platforms—built with a mobile-first, SEO-driven, and security-first approach ([Technioz][1])
+ AI-Powered Automation & Chatbots: Smart systems that manage lead funnels, follow-ups, booking flows, and help automate outreach and customer touchpoints ([Technioz][2], [Technioz][3])
+ IT Consulting & Strategy: Digital transformation roadmaps, systems integration, and performance optimization grounded in real business needs ([Technioz][4])
+
+Notable projects include a ticket booking platform for a GCC client, built on React.js and Laravel, which supports multi-branch architecture, route-based pricing, and role-based access control (RBAC). I continue to maintain and enhance it.
+
+We power businesses with solutions that are secure, high-performing, intuitive, and built to grow. Whether it’s a website, booking tool, or automation workflow—we solve real problems with clean code and clear results.

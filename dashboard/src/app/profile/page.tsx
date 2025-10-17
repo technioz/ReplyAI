@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import QuirklyDashboardConfig from '@/lib/config';
+import { QuickPostGenerator } from '@/components/post/QuickPostGenerator';
 
 interface ProfileData {
   xHandle: string;
@@ -258,7 +259,11 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {console.log('🔍 ProfilePage: Rendering with profileData:', profileData)}
+          {/* Quick Post Generator - New Feature */}
+          <div className="mb-8">
+            <QuickPostGenerator />
+          </div>
+
           {!profileData ? (
             /* No Profile Data */
             <div className="bg-card rounded-lg border p-8 text-center">
