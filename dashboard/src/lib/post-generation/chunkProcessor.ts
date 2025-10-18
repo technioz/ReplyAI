@@ -31,6 +31,14 @@ export class KnowledgeChunkProcessor {
     const desireChunks = await this.processDesireFramework();
     chunks.push(...desireChunks);
 
+    // Process backendEngineeringKnowledge.md (NEW - Technical knowledge base)
+    const backendChunks = await this.processBackendEngineering();
+    chunks.push(...backendChunks);
+
+    // Process humanBehaviour.md (NEW - Human writing style patterns)
+    const humanBehaviourChunks = await this.processHumanBehaviour();
+    chunks.push(...humanBehaviourChunks);
+
     console.log(`✅ Processed ${chunks.length} total knowledge chunks`);
     
     return chunks;
@@ -57,11 +65,12 @@ export class KnowledgeChunkProcessor {
       chunks.push({
         id: `profile-${chunkId++}`,
         content: `## PERSONAL IDENTITY\n${identity}`,
-        category: 'profile',
-        importance: 'critical',
         metadata: {
-          source: 'profileContext.md',
-          section: 'identity'
+          source: 'profileContext',
+          category: 'profile',
+          subcategory: 'identity',
+          keywords: ['identity', 'personal', 'brand'],
+          importance: 'critical'
         }
       });
     }
@@ -72,11 +81,12 @@ export class KnowledgeChunkProcessor {
       chunks.push({
         id: `profile-${chunkId++}`,
         content: `## TECHNICAL EXPERTISE\n${expertise}`,
-        category: 'profile',
-        importance: 'critical',
         metadata: {
-          source: 'profileContext.md',
-          section: 'expertise'
+          source: 'profileContext',
+          category: 'profile',
+          subcategory: 'expertise',
+          keywords: ['expertise', 'technical', 'backend', 'ai', 'automation'],
+          importance: 'critical'
         }
       });
     }
@@ -88,11 +98,12 @@ export class KnowledgeChunkProcessor {
       chunks.push({
         id: `profile-${chunkId++}`,
         content: `## TARGET AUDIENCE\n${audience}\n\n## POSITIONING\n${positioning}`,
-        category: 'profile',
-        importance: 'high',
         metadata: {
-          source: 'profileContext.md',
-          section: 'audience-positioning'
+          source: 'profileContext',
+          category: 'profile',
+          subcategory: 'audience-positioning',
+          keywords: ['audience', 'positioning', 'sme', 'gcc', 'india'],
+          importance: 'high'
         }
       });
     }
@@ -103,11 +114,12 @@ export class KnowledgeChunkProcessor {
       chunks.push({
         id: `profile-${chunkId++}`,
         content: `## VOICE AND TONE\n${voice}`,
-        category: 'style',
-        importance: 'critical',
         metadata: {
-          source: 'profileContext.md',
-          section: 'voice'
+          source: 'profileContext',
+          category: 'style',
+          subcategory: 'voice',
+          keywords: ['voice', 'tone', 'style', 'writing'],
+          importance: 'critical'
         }
       });
     }
@@ -385,6 +397,265 @@ export class KnowledgeChunkProcessor {
 
     console.log(`✅ Extracted ${chunks.length} chunks from OWNING_A_DESIRE_FRAMEWORK.md`);
     return chunks;
+  }
+
+  /**
+   * Process backendEngineeringKnowledge.md - Technical knowledge base
+   */
+  private async processBackendEngineering(): Promise<KnowledgeChunk[]> {
+    const filePath = path.join(this.projectRoot, 'backendEngineeringKnowledge.md');
+    
+    if (!fs.existsSync(filePath)) {
+      console.warn('⚠️  backendEngineeringKnowledge.md not found, skipping');
+      return [];
+    }
+    
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const chunks: KnowledgeChunk[] = [];
+    let chunkId = 2000; // Start from 2000 to avoid ID conflicts
+
+    // Major sections to extract
+    const sections: Array<{ heading: string; category: 'technical' | 'example'; subcategory: string }> = [
+      { heading: '## Database Engineering & Optimization', category: 'technical', subcategory: 'database' },
+      { heading: '### Relational Databases (SQL)', category: 'technical', subcategory: 'sql-databases' },
+      { heading: '### NoSQL Databases', category: 'technical', subcategory: 'nosql-databases' },
+      { heading: '### Database Design Patterns', category: 'technical', subcategory: 'database-design' },
+      { heading: '## API Development & Architecture', category: 'technical', subcategory: 'api' },
+      { heading: '### RESTful API Design', category: 'technical', subcategory: 'rest-api' },
+      { heading: '### GraphQL APIs', category: 'technical', subcategory: 'graphql' },
+      { heading: '### gRPC & Protocol Buffers', category: 'technical', subcategory: 'grpc' },
+      { heading: '## System Architecture & Design', category: 'technical', subcategory: 'architecture' },
+      { heading: '### Microservices Architecture', category: 'technical', subcategory: 'microservices' },
+      { heading: '### Message Queues & Streaming', category: 'technical', subcategory: 'message-queues' },
+      { heading: '## Performance & Scalability', category: 'technical', subcategory: 'performance' },
+      { heading: '### Caching Strategies', category: 'technical', subcategory: 'caching' },
+      { heading: '### Load Balancing', category: 'technical', subcategory: 'load-balancing' },
+      { heading: '## Cloud Infrastructure', category: 'technical', subcategory: 'cloud' },
+      { heading: '### AWS Services', category: 'technical', subcategory: 'aws' },
+      { heading: '## DevOps & CI/CD', category: 'technical', subcategory: 'devops' },
+      { heading: '### Containerization', category: 'technical', subcategory: 'docker' },
+      { heading: '### CI/CD Pipelines', category: 'technical', subcategory: 'cicd' },
+      { heading: '### Monitoring & Observability', category: 'technical', subcategory: 'monitoring' },
+      { heading: '## Security & Authentication', category: 'technical', subcategory: 'security' },
+      { heading: '### Authentication Mechanisms', category: 'technical', subcategory: 'authentication' },
+      { heading: '### Authorization', category: 'technical', subcategory: 'authorization' },
+      { heading: '## Real-World Implementation Scenarios', category: 'example', subcategory: 'implementation' },
+      { heading: '## Performance Optimization Case Studies', category: 'example', subcategory: 'optimization' },
+      { heading: '## Common Backend Challenges & Solutions', category: 'example', subcategory: 'challenges' }
+    ];
+
+    // Extract each major section as a chunk
+    for (let i = 0; i < sections.length; i++) {
+      const currentSection = sections[i];
+      const nextSection = i < sections.length - 1 ? sections[i + 1] : null;
+      
+      let sectionContent: string | null;
+      if (nextSection) {
+        sectionContent = this.extractSection(content, currentSection.heading, nextSection.heading);
+      } else {
+        // Last section - extract to end of file
+        const startIndex = content.indexOf(currentSection.heading);
+        if (startIndex !== -1) {
+          sectionContent = content.substring(startIndex).trim();
+        } else {
+          sectionContent = null;
+        }
+      }
+      
+      if (sectionContent && sectionContent.length > 200) {
+        // For very large sections (>3000 chars), split them into smaller chunks
+        if (sectionContent.length > 3000) {
+          const subchunks = this.splitLargeSection(sectionContent, 2000);
+          subchunks.forEach((subchunk, index) => {
+            chunks.push({
+              id: `backend-${chunkId++}`,
+              content: subchunk,
+              metadata: {
+                source: 'backendEngineering',
+                category: currentSection.category,
+                subcategory: `${currentSection.subcategory}-${index + 1}`,
+                keywords: this.extractTechnicalKeywords(subchunk),
+                importance: currentSection.category === 'example' ? 'high' : 'medium'
+              }
+            });
+          });
+        } else {
+          chunks.push({
+            id: `backend-${chunkId++}`,
+            content: sectionContent,
+            metadata: {
+              source: 'backendEngineering',
+              category: currentSection.category,
+              subcategory: currentSection.subcategory,
+              keywords: this.extractTechnicalKeywords(sectionContent),
+              importance: currentSection.category === 'example' ? 'high' : 'medium'
+            }
+          });
+        }
+      }
+    }
+
+    console.log(`✅ Extracted ${chunks.length} chunks from backendEngineeringKnowledge.md`);
+    return chunks;
+  }
+
+  /**
+   * Split large section into smaller chunks
+   */
+  private splitLargeSection(content: string, maxChunkSize: number): string[] {
+    const chunks: string[] = [];
+    const lines = content.split('\n');
+    let currentChunk = '';
+
+    for (const line of lines) {
+      if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
+        chunks.push(currentChunk.trim());
+        // Keep the current line as start of next chunk if it's a heading
+        if (line.startsWith('#')) {
+          currentChunk = line + '\n';
+        } else {
+          currentChunk = '';
+        }
+      } else {
+        currentChunk += line + '\n';
+      }
+    }
+
+    if (currentChunk.trim().length > 0) {
+      chunks.push(currentChunk.trim());
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Extract technical keywords from backend engineering content
+   */
+  private extractTechnicalKeywords(text: string): string[] {
+    const keywords: string[] = [];
+    const lowerText = text.toLowerCase();
+
+    // Database keywords
+    const dbKeywords = ['postgresql', 'mysql', 'mongodb', 'redis', 'dynamodb', 'cassandra', 
+                       'indexing', 'query optimization', 'sql', 'nosql', 'database'];
+    
+    // API keywords
+    const apiKeywords = ['rest', 'graphql', 'grpc', 'api', 'webhook', 'endpoint', 
+                        'authentication', 'authorization', 'jwt'];
+    
+    // Architecture keywords
+    const archKeywords = ['microservices', 'monolith', 'serverless', 'architecture', 
+                         'event-driven', 'message queue', 'kafka', 'rabbitmq'];
+    
+    // Performance keywords
+    const perfKeywords = ['caching', 'cdn', 'load balancing', 'scaling', 'performance', 
+                         'optimization', 'latency', 'throughput'];
+    
+    // Cloud keywords
+    const cloudKeywords = ['aws', 'azure', 'gcp', 'cloud', 'lambda', 's3', 'ec2', 
+                          'kubernetes', 'docker', 'container'];
+    
+    // DevOps keywords
+    const devopsKeywords = ['ci/cd', 'jenkins', 'github actions', 'deployment', 'monitoring', 
+                           'logging', 'observability', 'prometheus', 'grafana'];
+    
+    // Security keywords
+    const securityKeywords = ['security', 'encryption', 'oauth', 'jwt', 'authentication', 
+                             'authorization', 'rbac', 'tls', 'ssl'];
+
+    const allKeywords = [...dbKeywords, ...apiKeywords, ...archKeywords, ...perfKeywords, 
+                        ...cloudKeywords, ...devopsKeywords, ...securityKeywords];
+
+    allKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword)) {
+        keywords.push(keyword);
+      }
+    });
+
+    return Array.from(new Set(keywords));
+  }
+
+  /**
+   * Process humanBehaviour.md - Human writing style patterns for X
+   */
+  private async processHumanBehaviour(): Promise<KnowledgeChunk[]> {
+    const filePath = path.join(this.projectRoot, 'humanBehaviour.md');
+    
+    if (!fs.existsSync(filePath)) {
+      console.warn('⚠️  humanBehaviour.md not found, skipping');
+      return [];
+    }
+    
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const chunks: KnowledgeChunk[] = [];
+    let chunkId = 3000; // Start from 3000 to avoid ID conflicts
+
+    // Extract major sections
+    const sections = [
+      { heading: '## Category 1: Short, Punchy Wisdom', endHeading: '## Category 2:', category: 'style', subcategory: 'punchy-wisdom' },
+      { heading: '## Category 2: The Hook + Insight Pattern', endHeading: '## Category 3:', category: 'style', subcategory: 'hook-insight' },
+      { heading: '## Category 3: Thread Starter / Teaser Pattern', endHeading: '## Category 4:', category: 'style', subcategory: 'thread-starter' },
+      { heading: '## Category 4: Technical/Educational (Still Human)', endHeading: '## Category 5:', category: 'style', subcategory: 'technical-human' },
+      { heading: '## Category 5: Quote/Reframe Pattern', endHeading: '## Key Human Writing Patterns', category: 'style', subcategory: 'quote-reframe' },
+      { heading: '## Key Human Writing Patterns Observed:', endHeading: '## LLM Training Prompt', category: 'style', subcategory: 'human-patterns' },
+      { heading: '## LLM Training Prompt Based on These Samples:', endHeading: null, category: 'style', subcategory: 'llm-training-rules' }
+    ];
+
+    for (const section of sections) {
+      let sectionContent: string | null;
+      
+      if (section.endHeading) {
+        sectionContent = this.extractSection(content, section.heading, section.endHeading);
+      } else {
+        // Last section - extract to end
+        const startIndex = content.indexOf(section.heading);
+        if (startIndex !== -1) {
+          sectionContent = content.substring(startIndex).trim();
+        } else {
+          sectionContent = null;
+        }
+      }
+
+      if (sectionContent && sectionContent.length > 100) {
+        chunks.push({
+          id: `human-behaviour-${chunkId++}`,
+          content: sectionContent,
+          metadata: {
+            source: 'profileContext', // Group with style guidance
+            category: 'style',
+            subcategory: section.subcategory,
+            keywords: this.extractHumanStyleKeywords(sectionContent),
+            importance: 'critical' // This is CRITICAL for authentic voice
+          }
+        });
+      }
+    }
+
+    console.log(`✅ Extracted ${chunks.length} chunks from humanBehaviour.md`);
+    return chunks;
+  }
+
+  /**
+   * Extract keywords from human behaviour content
+   */
+  private extractHumanStyleKeywords(text: string): string[] {
+    const keywords: string[] = [];
+    const lowerText = text.toLowerCase();
+
+    const styleKeywords = [
+      'human', 'authentic', 'casual', 'conversational', 'punchy', 
+      'lowercase', 'fragments', 'rhythm', 'imperfection', 'typo',
+      'hook', 'thread', 'teaser', 'pattern', 'style', 'voice',
+      'short sentences', 'repetition', 'emphasis', 'natural'
+    ];
+
+    styleKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword)) {
+        keywords.push(keyword);
+      }
+    });
+
+    return Array.from(new Set(keywords));
   }
 
   /**

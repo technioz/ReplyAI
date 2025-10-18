@@ -61,16 +61,27 @@ async function initializeKnowledgeBase() {
     
     console.log('');
 
-    // Step 4: Upload vectors to Pinecone
-    console.log('⬆️  STEP 4: Uploading Vectors to Pinecone');
+    // Step 4: Delete all existing vectors (fresh start)
+    console.log('🗑️  STEP 4: Deleting All Existing Vectors');
+    console.log('─────────────────────────────────────');
+    
+    console.log('⚠️  Removing all existing embeddings from Pinecone...');
+    await pineconeService.deleteAllVectors();
+    console.log('✅ All existing vectors deleted - starting fresh\n');
+    
+    // Wait a moment for deletion to propagate
+    await sleep(2000);
+
+    // Step 5: Upload vectors to Pinecone
+    console.log('⬆️  STEP 5: Uploading New Vectors to Pinecone');
     console.log('─────────────────────────────────────');
     
     await pineconeService.upsertChunks(chunksWithEmbeddings);
     
     console.log('');
 
-    // Step 5: Verify upload
-    console.log('✅ STEP 5: Verifying Upload');
+    // Step 6: Verify upload
+    console.log('✅ STEP 6: Verifying Upload');
     console.log('─────────────────────────────────────');
     
     const indexStats = await pineconeService.getIndexStats();

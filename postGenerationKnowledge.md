@@ -647,11 +647,11 @@ LinkedIn:
 - Results: Reservations up 34%, owner took first full day off in 2 years
 - Pillar: Systems that work while you sleep
 
-2. GCC Fintech API Stability
-- Problem: API crashed 3x/week from legitimate traffic spikes
-- Solution: Multi-tier rate limiting with Redis
-- Tech: Express.js, Redis, distributed rate limiting
-- Results: Zero downtime for 8 months
+2. GCC Fintech API Scaling
+- Problem: Growing rapidly, API response times increasing to 2.5s during peak
+- Solution: Implemented Redis caching and database query optimization
+- Tech: Express.js, Redis, PostgreSQL indexing, connection pooling
+- Results: Response times to 180ms, handles 5x traffic, zero performance issues
 - Pillar: Build systems that work while you sleep
 
 3. E-commerce Checkout Optimization
@@ -682,19 +682,138 @@ LinkedIn:
 - Results: Recovered 15 hours/week, zero double-bookings
 - Pillar: Manual processes = revenue leaks (time is money)
 
-7. Payment Gateway Debug
-- Problem: Webhook signature validation breaking on special characters
-- Solution: Fixed character encoding in webhook handler
-- Tech: Node.js, payment gateway API
-- Results: ₹8.7 lakh processed without issues during major sale
-- Pillar: Systems that work while you sleep (reliability)
+7. Payment Gateway Optimization
+- Problem: Payment processing taking 4-6 seconds, causing user drop-off
+- Solution: Implemented async webhook processing with queue system
+- Tech: Node.js, RabbitMQ, payment gateway API
+- Results: Processing time reduced to 800ms, successful payments up 31%
+- Pillar: Systems that work while you sleep
 
-8. Production Database Crash
-- Problem: Database connection pool maxed, system crashed at 100 users
-- Solution: Implemented connection pooling, increased limits
-- Tech: PostgreSQL connection pooling configuration
-- Results: Now handles 500+ concurrent users
-- Pillar: Build systems that scale
+8. SaaS Database Migration Win
+- Problem: Growing too fast, needed scalable database solution
+- Solution: Migrated from shared MySQL to dedicated PostgreSQL cluster
+- Tech: PostgreSQL, pg_dump, zero-downtime migration
+- Results: Query performance 5x faster, can now handle 10x user growth
+- Pillar: Automation isn't expense, it's survival
+
+9. Healthcare Portal Performance Boost
+- Problem: Patient portal loading slowly (3.5s), frustrating users
+- Solution: Implemented Redis cache layer for frequently accessed data
+- Tech: Redis, Node.js, cache invalidation strategy
+- Results: Load times dropped to 450ms, user satisfaction up 47%
+- Pillar: Manual processes (slow systems) = revenue leaks
+
+10. Logistics API Scaling Success
+- Problem: API struggling with 500 concurrent requests during peak hours
+- Solution: Implemented horizontal scaling with load balancer
+- Tech: AWS ALB, EC2 auto-scaling, Docker containers
+- Results: Now handles 5000+ concurrent requests, zero downtime
+- Pillar: Build systems that work while you sleep
+
+11. E-commerce Search Optimization
+- Problem: Product search taking 2-3 seconds, hurting conversions
+- Solution: Migrated to Elasticsearch with proper indexing
+- Tech: Elasticsearch, bulk indexing, search optimization
+- Results: Search response time to 80ms, conversions up 28%
+- Pillar: Manual processes = revenue leaks
+
+12. Fintech Monitoring Implementation
+- Problem: Finding out about issues from customer complaints
+- Solution: Implemented comprehensive monitoring with Prometheus + Grafana
+- Tech: Prometheus, Grafana, alerting, custom metrics
+- Results: Detect issues 15 minutes before users notice, uptime to 99.97%
+- Pillar: Systems that work while you sleep
+
+13. SaaS CI/CD Pipeline Success
+- Problem: Manual deployments taking 2 hours, risky process
+- Solution: Built automated CI/CD pipeline with testing
+- Tech: GitHub Actions, Docker, automated testing, staging environment
+- Results: Deployments now 8 minutes, 3x more frequent releases, zero failed deployments
+- Pillar: Automation isn't expense, it's survival
+
+14. Real Estate Portal Cost Optimization
+- Problem: AWS bill at ₹2.5 lakh/month and growing
+- Solution: Optimized instance sizes, implemented caching, used reserved instances
+- Tech: AWS cost optimization, Redis caching, S3 lifecycle policies
+- Results: Bill reduced to ₹1.1 lakh/month (56% savings), better performance
+- Pillar: Manual processes (inefficiency) = revenue leaks
+
+15. Food Delivery API Gateway
+- Problem: Multiple microservices, clients making 12+ API calls per order
+- Solution: Implemented GraphQL API gateway with optimized queries
+- Tech: GraphQL, Apollo Server, DataLoader for batching
+- Results: API calls reduced by 75%, mobile app load time cut in half
+- Pillar: Systems that work while you sleep
+
+16. EdTech Video Streaming Optimization
+- Problem: Video buffering issues, students dropping off
+- Solution: Implemented CDN and adaptive bitrate streaming
+- Tech: AWS CloudFront, HLS streaming, multi-bitrate encoding
+- Results: Buffer time reduced 82%, student engagement up 41%
+- Pillar: Manual processes (poor UX) = revenue leaks
+
+17. B2B SaaS Multi-Tenant Architecture
+- Problem: Single database slowing down as clients grew
+- Solution: Implemented proper multi-tenant architecture with sharding
+- Tech: PostgreSQL sharding, connection pooling, query optimization
+- Results: Onboarded 40 new clients without performance degradation
+- Pillar: Build systems that work while you sleep
+
+18. Retail Analytics Pipeline
+- Problem: Manual daily reports taking 6 hours to generate
+- Solution: Built automated ETL pipeline with scheduled processing
+- Tech: Apache Airflow, PostgreSQL, data warehouse, automated reports
+- Results: Reports generated automatically every morning, 6 hours saved daily
+- Pillar: Automation isn't expense, it's survival
+
+19. Travel Booking Rate Limiting Win
+- Problem: Need to protect API from scrapers without blocking legit users
+- Solution: Implemented intelligent rate limiting with Redis
+- Tech: Redis, token bucket algorithm, IP-based + user-based limits
+- Results: Scrapers blocked, legitimate users unaffected, API stable
+- Pillar: Systems that work while you sleep
+
+20. Healthcare Data Encryption Compliance
+- Problem: Need HIPAA compliance for patient data
+- Solution: Implemented end-to-end encryption and access controls
+- Tech: AES-256 encryption, AWS KMS, audit logging, RBAC
+- Results: Passed HIPAA audit, secure patient data, zero breaches
+- Pillar: Build systems that work while you sleep
+
+21. SaaS Background Job Processing
+- Problem: Heavy report generation blocking API requests
+- Solution: Moved to async job processing with Bull queue
+- Tech: Bull, Redis, worker processes, job prioritization
+- Results: API response times improved 4x, can process 1000+ reports/hour
+- Pillar: Systems that work while you sleep
+
+22. E-commerce Inventory Sync Automation
+- Problem: Manual inventory updates 3x daily, errors causing overselling
+- Solution: Real-time inventory sync with webhook automation
+- Tech: Webhooks, event-driven architecture, inventory API integration
+- Results: Zero overselling incidents, inventory accuracy 99.9%
+- Pillar: Automation isn't expense, it's survival
+
+23. Fintech Transaction Monitoring
+- Problem: Fraud detection happening after the fact
+- Solution: Real-time transaction monitoring with ML patterns
+- Tech: Kafka streams, pattern matching, automated alerts
+- Results: Fraud detected in real-time, losses reduced 73%
+- Pillar: Systems that work while you sleep
+
+24. SaaS Database Backup Strategy
+- Problem: No reliable backup, one failure away from disaster
+- Solution: Implemented automated backups with testing and retention
+- Tech: Automated PostgreSQL backups, S3 storage, restoration testing
+- Results: Daily tested backups, RTO of 30 minutes, peace of mind
+- Pillar: Build systems that work while you sleep
+
+25. API Documentation Automation
+- Problem: API docs always outdated, developers frustrated
+- Solution: Automated API documentation from OpenAPI specs
+- Tech: OpenAPI/Swagger, automated generation, version control
+- Results: Always up-to-date docs, developer onboarding 3x faster
+- Pillar: Automation isn't expense, it's survival
 
 ### Usage Guidelines
 

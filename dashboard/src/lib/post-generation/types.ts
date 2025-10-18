@@ -21,15 +21,17 @@ export interface KnowledgeChunk {
   id: string;
   content: string;
   metadata: {
-    source: 'postGeneration' | 'desireFramework';
-    category: 'pillar' | 'postType' | 'style' | 'framework' | 'example' | 'hook';
+    source: 'postGeneration' | 'desireFramework' | 'profileContext' | 'backendEngineering';
+    category: 'pillar' | 'postType' | 'style' | 'framework' | 'example' | 'hook' | 'profile' | 'technical';
     subcategory?: string;
     pillar?: Pillar;
     postType?: PostType;
-    keywords: string[];
-    importance: 'critical' | 'high' | 'medium' | 'low';
+    keywords?: string[];
+    importance?: 'critical' | 'high' | 'medium' | 'low';
   };
   embedding?: number[];
+  category?: string; // For backward compatibility
+  importance?: 'critical' | 'high' | 'medium' | 'low'; // For backward compatibility
 }
 
 export interface PostGenerationRequest {

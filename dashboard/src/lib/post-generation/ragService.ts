@@ -32,11 +32,11 @@ export class RAGService {
       // Generate query embedding
       const queryEmbedding = await this.cohereService.generateQueryEmbedding(query);
       
-      // Search for similar chunks in Pinecone
-      const searchResults = await this.pineconeService.searchSimilar(queryEmbedding, 10);
+      // Search for similar chunks in Pinecone (reduced to 3 for token efficiency)
+      const searchResults = await this.pineconeService.searchSimilar(queryEmbedding, 3);
       
-      // Build context from retrieved chunks
-      const context = this.buildEnhancedContext(searchResults, postType);
+      // Build context from retrieved chunks (focus on HOW to write, not WHAT to write)
+      const context = this.buildFocusedContext(searchResults, postType);
       
       return context;
       
@@ -48,6 +48,7 @@ export class RAGService {
 
   /**
    * Build semantic query from post type and context
+   * FOCUS: Writing style, tone, structure - NOT technical content
    */
   private buildSemanticQuery(
     postType: PostType,
@@ -57,27 +58,14 @@ export class RAGService {
       technicalConcept?: string;
     }
   ): string {
-    const parts: string[] = [];
+    // Ultra-specific query for STYLE and STRUCTURE only
+    const styleQuery = [
+      `How to write ${postType.replace(/-/g, ' ')} in authentic conversational tone`,
+      `sentence structure and paragraph flow for ${postType}`,
+      `voice authenticity patterns and engagement hooks`
+    ].join(', ');
 
-    // Add post type
-    parts.push(`${postType.replace(/-/g, ' ')} post structure and template`);
-
-    // Add specific context
-    if (userContext?.topic) {
-      parts.push(`about ${userContext.topic}`);
-    }
-    if (userContext?.trendingTopic) {
-      parts.push(`related to ${userContext.trendingTopic}`);
-    }
-    if (userContext?.technicalConcept) {
-      parts.push(`explaining ${userContext.technicalConcept}`);
-    }
-
-    // Add general requirements
-    parts.push('with real examples and business outcomes');
-    parts.push('emphasizing freedom from operational chaos');
-
-    return parts.join(' ');
+    return styleQuery;
   }
 
   /**
@@ -142,6 +130,52 @@ export class RAGService {
         sections.push('\n---\n');
       });
     }
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Build FOCUSED context - prioritizes writing style over technical content
+   * Dramatically reduces token usage while maintaining authenticity
+   */
+  private buildFocusedContext(results: RAGSearchResult[], postType: PostType): string {
+    if (results.length === 0) {
+      return 'No specific context retrieved. Use your authentic voice and technical expertise.';
+    }
+
+    const sections: string[] = [];
+    
+    // Group results by category
+    const grouped = this.groupByCategory(results);
+
+    // ONLY include the most essential writing guidance
+    // Priority 1: Post type structure (if available)
+    if (grouped.postType && grouped.postType.length > 0) {
+      sections.push('## POST STRUCTURE TEMPLATE\n');
+      // Take ONLY the first result
+      sections.push(grouped.postType[0].content);
+      sections.push('\n');
+    }
+
+    // Priority 2: Writing style (if available)
+    if (grouped.style && grouped.style.length > 0) {
+      sections.push('## AUTHENTIC VOICE PATTERNS\n');
+      sections.push(grouped.style[0].content);
+      sections.push('\n');
+    }
+
+    // Priority 3: Hook formula (if available)
+    if (grouped.hook && grouped.hook.length > 0) {
+      sections.push('## ENGAGEMENT HOOK\n');
+      sections.push(grouped.hook[0].content);
+      sections.push('\n');
+    }
+
+    // Add diversity instruction
+    sections.push('\n## IMPORTANT INSTRUCTION\n');
+    sections.push('Generate UNIQUE and VARIED content. Draw from the vast knowledge of software engineering (databases, APIs, automation, infrastructure, performance optimization, system architecture, DevOps, cloud, security, etc.).');
+    sections.push('\nAvoid repetitive scenarios. Each post should explore a different angle, client situation, or technical domain.');
+    sections.push('\nFocus on POSITIVE transformations and growth stories, not just crisis/crash scenarios.');
 
     return sections.join('\n');
   }

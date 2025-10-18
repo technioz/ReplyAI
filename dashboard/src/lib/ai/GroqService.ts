@@ -12,7 +12,7 @@ export class GroqService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
