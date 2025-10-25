@@ -1,0 +1,392 @@
+# XBot (Quirkly) - AI-Powered Social Media Post Generation
+
+## Project Overview
+
+XBot is an AI-powered platform that generates authentic, human-like social media content for Gaurav Bhatia (Co-Founder, Technioz) - a backend engineer and AI automation specialist. The system uses RAG (Retrieval Augmented Generation) with vector embeddings to create personalized, on-brand content across multiple platforms.
+
+## Core Architecture
+
+### Tech Stack
+- **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Node.js
+- **Database**: MongoDB (Mongoose)
+- **Vector DB**: Pinecone (for RAG knowledge base)
+- **Embeddings**: Cohere (text-embedding-3-large)
+- **LLM Providers**: Groq (llama-3.3-70b-versatile, openai/gpt-oss-120b), XAI (grok-4)
+- **Chrome Extension**: Content script for X/Twitter integration
+
+### Key Components
+
+#### 1. RAG Knowledge Base (`dashboard/src/lib/post-generation/`)
+- `chunkProcessor.ts` - Processes markdown files into semantic chunks
+- `ragService.ts` - Retrieves relevant context from Pinecone
+- `pineconeService.ts` - Vector database operations
+- `cohereService.ts` - Generates embeddings for text
+
+#### 2. Knowledge Sources (Root Directory)
+- `profileContext.md` - Personal brand identity, voice, positioning (199 lines)
+- `postGenerationKnowledge.md` - Post structures, examples, style guide (31 diverse client stories)
+- `backendEngineeringKnowledge.md` - Technical knowledge base (24 sections across all domains)
+- `humanBehaviour.md` - Authentic X writing patterns analysis (7 style categories)
+- `OWNING_A_DESIRE_FRAMEWORK.md` - Engagement framework
+
+#### 3. AI Generation (`dashboard/src/lib/post-generation/`)
+- `aiAdapter.ts` - Handles API calls to Groq/XAI with optimized parameters
+- `promptBuilder.ts` - Constructs system and user prompts with RAG context
+- `postGenerationService.ts` - Main orchestrator for post generation
+
+## AI Generation Parameters (Optimized for Creativity & Reasoning)
+
+### LLM Configuration
+```typescript
+{
+  model: 'llama-3.3-70b-versatile', // or 'openai/gpt-oss-120b'
+  max_tokens: 2000, // Increased for complete, reasoned responses
+  temperature: 1.0, // Maximum creativity and variety
+  top_p: 0.95, // Allow diverse token selection
+  presence_penalty: 0.6, // Encourage new topics, avoid repetition
+  frequency_penalty: 0.7 // Penalize repeating same phrases
+}
+```
+
+### Why These Parameters?
+- **max_tokens: 2000** - Allows LLM to fully develop thoughts and provide complete responses
+- **temperature: 1.0** - Maximum creativity for varied, unique content generation
+- **top_p: 0.95** - Broader token selection for more diverse vocabulary
+- **presence_penalty: 0.6** - Forces exploration of new topics and concepts
+- **frequency_penalty: 0.7** - Prevents repetitive phrases like "API crash" "system crash"
+
+## Content Generation Philosophy
+
+### Human-First Writing
+The system prioritizes authentic, human-like writing over perfect AI-generated content:
+
+1. **Short, punchy sentences** - Period. Like this.
+2. **Intentional imperfection** - Occasional lowercase, missing apostrophes ("Thats")
+3. **Casual language** - "stupid money" "cool shit" "pretty much it"
+4. **Varied rhythm** - Mix short and long sentences
+5. **Fragments for impact** - "Life changing." "Zero downtime."
+6. **No corporate speak** - Avoid "Great question!" "Thanks for sharing!"
+
+### Content Diversity (10 Themes)
+Rotate through these technical angles to avoid repetition:
+- Performance optimization (speed, latency, throughput)
+- Cost reduction (cloud costs, infrastructure savings)
+- Scaling stories (handling growth, load balancing)
+- Automation wins (CI/CD, deployment, testing)
+- Architecture decisions (microservices, serverless)
+- Security improvements (authentication, encryption)
+- Developer experience (tooling, productivity)
+- AI/ML integration (chatbots, recommendations)
+- Migration success (cloud migration, modernization)
+- Business impact (revenue growth, customer satisfaction)
+
+### Reasoning Process
+Before generating content, the LLM thinks through:
+1. **Unique angle** - What technical story haven't we explored?
+2. **Client situation** - What industry/scenario makes this relatable?
+3. **Concrete metrics** - What numbers demonstrate value?
+4. **Freshness** - How is this different from previous posts?
+5. **Emotional hook** - What grabs attention? (frustration, curiosity, relief)
+
+## RAG System Architecture
+
+### Knowledge Base Stats (78 Total Chunks)
+- **9 Style Chunks** - Writing patterns, voice, tone
+- **31 Example Chunks** - Diverse client transformation stories
+- **24 Technical Chunks** - Backend engineering knowledge
+- **6 Post Type Chunks** - Structure templates
+- **6 Framework Chunks** - Engagement strategies
+- **3 Pillar Chunks** - Brand positioning
+
+### Vector Search Flow
+1. Build semantic query from post type + user context
+2. Generate query embedding via Cohere (1024 dimensions)
+3. Search Pinecone for top 10 similar chunks
+4. Prioritize: style → examples → structure → technical
+5. Construct focused context (emphasize HOW to write, not WHAT to write)
+6. Pass to LLM with enhanced system prompt
+
+### Context Optimization
+- **Profile context** - Ultra-minimal (26 lines, 400 chars) to save tokens
+- **Style guidance** - Critical importance, always included
+- **Example randomization** - Shuffle examples to ensure variety
+- **Explicit diversity instructions** - "Generate DIFFERENT variations"
+
+## Development Best Practices
+
+### Code Organization
+```
+dashboard/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── api/               # API routes
+│   │   │   ├── post/generate/ # Post generation endpoint
+│   │   │   └── auth/          # Authentication
+│   │   └── dashboard/         # Dashboard pages
+│   ├── components/            # React components
+│   │   ├── post/             # Post generation UI
+│   │   └── providers/        # Context providers
+│   └── lib/                   # Core business logic
+│       ├── post-generation/  # RAG & AI generation
+│       ├── ai/               # AI service factories
+│       └── models/           # MongoDB models
+├── scripts/
+│   └── initKnowledgeBase.ts  # One-time knowledge ingestion
+└── public/                    # Static assets
+```
+
+### Error Handling
+- Use `AppError` class for all application errors
+- Always wrap API routes with try-catch and `handleApiError`
+- Log errors with context (user, request, timestamp)
+- Validate inputs at API boundaries using Zod schemas
+
+### Database Patterns
+- Use Mongoose schemas with TypeScript interfaces
+- Implement indexes for frequently queried fields
+- Use virtuals for computed properties
+- Always call `dbConnect()` before database operations
+
+## Environment Variables
+
+### Required Variables
+```bash
+# Database
+MONGODB_URI=mongodb://127.0.0.1:27017/quirkly
+
+# AI Providers
+AI_PROVIDER=groq  # or 'xai'
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile  # or 'openai/gpt-oss-120b'
+XAI_API_KEY=
+XAI_MODEL=grok-4
+
+# Vector DB & Embeddings
+PINECONE_API_KEY=
+PINECONE_INDEX_NAME=quirkly-knowledge-base
+COHERE_API_KEY=
+
+# Authentication
+JWT_SECRET=  # Min 32 characters
+JWT_EXPIRES_IN=7d
+
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Model Selection Guide
+
+#### Groq Models
+- **llama-3.3-70b-versatile** ⭐ RECOMMENDED
+  - 300K TPM (highest limit)
+  - Best for creative, varied content
+  - 280 T/S
+  - $0.59/$0.79 per 1M tokens
+
+- **openai/gpt-oss-120b** (Current)
+  - 250K TPM
+  - 500 T/S (faster)
+  - $0.15/$0.60 per 1M tokens
+  - Good general purpose
+
+- **openai/gpt-oss-20b** (Budget option)
+  - 250K TPM
+  - 1000 T/S (fastest)
+  - $0.075/$0.30 per 1M tokens
+
+#### XAI Models
+- **grok-4** - Latest Grok model for reasoning tasks
+
+## Post Generation Workflow
+
+### 1. User Request → API
+```typescript
+POST /api/post/generate
+{
+  postType: 'client-story-thread',
+  platform: 'twitter',
+  context?: { topic?: string }
+}
+```
+
+### 2. RAG Context Retrieval
+- Build semantic query from post type
+- Search Pinecone for relevant chunks
+- Construct focused context (style + examples + structure)
+
+### 3. Prompt Construction
+- System prompt with RAG context + human writing rules + reasoning process
+- User prompt with specific post type instructions
+
+### 4. AI Generation
+- Call Groq or XAI API with optimized parameters
+- Temperature 1.0 for creativity
+- Presence/frequency penalties for variety
+
+### 5. Content Validation
+- Check for minimum length
+- Validate thread structure (if applicable)
+- Ensure no forbidden patterns
+
+### 6. Return to User
+- Display generated content in UI
+- Allow editing before posting
+
+## Knowledge Base Management
+
+### Initialization (One-Time Setup)
+```bash
+npm run init-knowledge
+```
+
+This script:
+1. Processes all markdown files into chunks
+2. Generates embeddings via Cohere
+3. Deletes all existing vectors in Pinecone (clean slate)
+4. Uploads new vectors to Pinecone
+5. Verifies upload
+
+### Adding New Knowledge
+1. Create/edit markdown file in project root
+2. Add processing logic in `chunkProcessor.ts`
+3. Run `npm run init-knowledge`
+4. Restart Next.js dev server
+
+### Knowledge File Structure
+```markdown
+## Section Heading
+
+Content goes here. This will be extracted as a chunk.
+
+## Another Section
+
+More content. Each section becomes a separate chunk.
+```
+
+## Testing & Debugging
+
+### Testing Post Generation
+1. Start dev server: `npm run dev`
+2. Login to dashboard
+3. Navigate to post generation
+4. Select post type and platform
+5. Generate and review output
+
+### Debugging Tips
+- Check system prompt length in logs (should be < 8000 chars for gpt-oss-120b)
+- Monitor Pinecone vector count after ingestion
+- Verify Cohere embeddings are 1024 dimensions
+- Check for "request too large" errors (TPM limit)
+
+### Common Issues
+- **Robotic content** - Check temperature (should be 1.0), verify human patterns in RAG
+- **Repetitive content** - Check presence_penalty (0.6) and frequency_penalty (0.7)
+- **Token limit errors** - Reduce context size, switch to llama-3.3-70b-versatile (300K TPM)
+- **Empty Pinecone** - Wait 5 seconds after upsert for propagation
+
+## Code Style Guidelines
+
+### TypeScript
+- Use strict typing everywhere
+- Define interfaces for all data structures
+- Use `type` for unions, `interface` for objects
+- Prefer `async/await` over `.then()`
+
+### React Components
+- Functional components with hooks
+- Use `useCallback` for event handlers
+- Use `useMemo` for expensive computations
+- Proper error boundaries for graceful failures
+
+### API Routes
+- Always validate inputs with Zod
+- Use try-catch with `handleApiError`
+- Return structured error responses
+- Include timestamps and error codes
+
+### Naming Conventions
+- **Files**: camelCase for modules, PascalCase for components
+- **Variables**: camelCase
+- **Constants**: UPPER_SNAKE_CASE
+- **Interfaces**: PascalCase with 'I' prefix (e.g., `IUser`)
+
+## Security Considerations
+
+### Authentication
+- JWT tokens for API authentication
+- API keys for extension authentication
+- Secure password hashing with bcrypt (12 rounds)
+- Account lockout after 5 failed attempts
+
+### Input Validation
+- Validate all inputs with Zod schemas
+- Sanitize user content to prevent XSS
+- Use parameterized queries (MongoDB)
+- Set rate limits on API endpoints
+
+### Environment Security
+- Never commit `.env.local` to git
+- Use different secrets for dev/prod
+- Validate all required env vars on startup
+- Minimum 32 characters for JWT_SECRET
+
+## Deployment Checklist
+
+### Pre-Deployment
+- [ ] Run knowledge ingestion in production
+- [ ] Verify all environment variables set
+- [ ] Test post generation with all post types
+- [ ] Check Pinecone vector count (should be 78)
+- [ ] Verify API keys are valid
+- [ ] Test authentication flow
+- [ ] Check logs for errors
+
+### Post-Deployment
+- [ ] Monitor error rates
+- [ ] Check API response times
+- [ ] Verify RAG retrieval working
+- [ ] Test content quality
+- [ ] Monitor token usage (stay under TPM limits)
+
+## Performance Optimization
+
+### RAG Performance
+- Pinecone queries: < 100ms
+- Cohere embeddings: < 200ms
+- LLM generation: 2-5 seconds (depends on model)
+
+### Caching Strategy
+- Cache frequently used embeddings
+- Memoize RAG search results (5 min TTL)
+- Use Next.js route caching where appropriate
+
+## Support & Resources
+
+### Documentation
+- Next.js: https://nextjs.org/docs
+- Pinecone: https://docs.pinecone.io
+- Cohere: https://docs.cohere.ai
+- Groq: https://console.groq.com/docs
+
+### Monitoring
+- Check Pinecone dashboard for vector stats
+- Monitor Groq console for usage/limits
+- Review MongoDB logs for query performance
+
+## Future Enhancements
+
+### Planned Features
+- [ ] Multi-language support
+- [ ] A/B testing for different writing styles
+- [ ] Engagement analytics integration
+- [ ] Automated posting scheduler
+- [ ] Content calendar management
+- [ ] Performance metrics dashboard
+
+### Research Areas
+- Fine-tuning custom models on brand voice
+- Experimenting with different embedding models
+- Optimizing RAG retrieval algorithms
+- Exploring alternative vector databases
+
