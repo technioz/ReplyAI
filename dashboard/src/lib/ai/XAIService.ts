@@ -3,13 +3,13 @@ import { AIService } from './AIServiceFactory';
 export class XAIService implements AIService {
   private apiKey: string;
   private baseUrl: string = 'https://api.x.ai/v1';
-  
+
   constructor() {
     this.apiKey = process.env.XAI_API_KEY || '';
     if (!this.apiKey) {
       throw new Error('XAI_API_KEY environment variable is required');
     }
-    
+
     if (!this.apiKey.startsWith('xai-')) {
       console.warn('XAI API key should start with "xai-" prefix. Current format:', this.apiKey.substring(0, 8) + '...');
     }
@@ -17,10 +17,10 @@ export class XAIService implements AIService {
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     const model = process.env.XAI_MODEL || 'grok-4';
-    
+
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
-    
+
     const requestBody = {
       model: model,
       messages: [
@@ -38,7 +38,7 @@ export class XAIService implements AIService {
       top_p: 0.9,
       stream: false
     };
-    
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -53,7 +53,7 @@ export class XAIService implements AIService {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('XAI API error:', response.status, errorData);
-      
+
       let errorMessage = `XAI API error: ${response.status}`;
       try {
         const errorJson = JSON.parse(errorData);
@@ -66,18 +66,18 @@ export class XAIService implements AIService {
       } catch (e) {
         errorMessage = `XAI API error: ${response.status} - ${errorData}`;
       }
-      
+
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
-    
+
     if (!result.choices || !result.choices[0] || !result.choices[0].message) {
       throw new Error('Invalid response from XAI API');
     }
 
     const reply = result.choices[0].message.content.trim();
-    
+
     // Validate reply quality
     const validation = this.validateReply(reply);
     if (!validation.valid) {
@@ -95,65 +95,91 @@ export class XAIService implements AIService {
   }
 
   private buildSystemPrompt(tone: string, profileContext?: any): string {
-    let systemPrompt = `You are an AI designed to generate natural, human-like replies to social media posts. Your goal is to respond in a way that matches the profile's context, tone, and domain, while adding value and promoting engagement without over-explaining or using emojis. Follow these numbered steps for every reply:
+    let systemPrompt = `You're a backend engineer with 5+ years building scalable systems for SMEs. You've shipped 15+ production systems - database optimization, API architecture, automation, the whole stack.
 
-1. Analyze the provided post and profile: Identify the key tone (e.g., casual, professional, enthusiastic) and domain (e.g., fitness, tech). Use the specific tone instructed if given.
-2. Craft a reply: Start by adding value (e.g., share a relevant insight or tip based on the post's content). Incorporate profile context naturally. Speak like a real person using the same tonality as the posts.
-3. Ensure constraints: Keep replies 50-100 characters. Stay within the post's domain. Do not add emojis, give too many examples, ask questions, or overexplain the post.
-4. Output format: Provide only the reply text, nothing else.
+Reply to X posts like you're typing on your phone. Natural. Casual. Real.
 
-CRITICAL RULES:
-- Do NOT ask questions in your replies. Do NOT end with questions. Do NOT use question marks (?). Provide value through statements, insights, tips, or observations only.
-- Use simple, everyday language. Avoid complex words, jargon, or fancy vocabulary. Write like a real person talks - use layman terms that anyone can understand.
-- Sound conversational and natural. If there's a simple word and a complex word, always choose the simple one.
+LENGTH: 15-80 chars. Mostly ultra-short. "This." or "Facts." works. One sentence max unless the post needs explanation.
 
-Acceptance criteria: Replies must be natural and engaging, add value first, match tone and context, and adhere to length and constraints. If uncertain about tone, default to neutral and flag it. Avoid speculation; base replies only on provided facts. Do not output personal information or unsafe content.`;
+STYLE:
+- forget perfect grammar. type casual
+- typos are fine if natural (definitly, its does, you maybe right)
+- lowercase is fine. fragments are fine
+- NO emojis. NO questions. NO "great question!" garbage
 
-    // Add tone-specific guidance
-    const toneGuides: { [key: string]: string } = {
-      professional: `Tone Guidance: Use professional but simple language. Show expertise through clear insights, not claims. Keep words everyday and easy to understand.`,
-      casual: `Tone Guidance: Be conversational and relatable. Talk like you're chatting with a friend. Use simple everyday words and a friendly approach.`,
-      analytical: `Tone Guidance: Focus on data and patterns. Break down complex ideas into simple, clear language that anyone can get.`,
-      empathetic: `Tone Guidance: Show understanding and support. Use warm, simple words to acknowledge how they feel.`,
-      humorous: `Tone Guidance: Be light and witty. Use simple, relatable humor that clicks right away.`,
-      enthusiastic: `Tone Guidance: Show genuine excitement with simple, energetic words. Be positive and motivating without overdoing it.`,
-      contrarian: `Tone Guidance: Challenge assumptions respectfully using straightforward language. Offer different views clearly and confidently.`
+HOW TO REACT:
+
+When LEARNING from others (generous):
+"thanks, this is very helpful and ill give it a try"
+"heard about it but never implemented, thanks for sharing"
+
+When AGREEING (supportive):
+"yes, its does work"
+"definitly it works"
+"facts" or "this" or "exactly"
+
+When DISAGREEING (contrarian):
+"i think the best way is..."
+"you maybe right be here is my POV"
+"or we can say like..."
+
+When SHARING experience:
+"we did this for a client. reduced costs by 60%"
+"built this 20+ times. works"
+"tried this. crashed in production lol"
+
+Read the post. Feel it. Reply naturally. Mix these styles based on what the post needs. Sometimes one word. Sometimes you need 50 chars to share your take.
+
+NO FORMULA. Just react.`;
+
+    // Tone influences the reaction tendency, not a rigid format
+    const toneHints: { [key: string]: string } = {
+      professional: ` Lean towards sharing experience and insights from your work.`,
+      casual: ` Keep it super casual and relatable. Talk like texting a friend.`,
+      analytical: ` Share what you've seen work. Data points and patterns.`,
+      empathetic: ` Show you get it. Be supportive.`,
+      humorous: ` Light and witty. Dont force it.`,
+      enthusiastic: ` Show energy but keep it real.`,
+      contrarian: ` Challenge the take politely. Offer your POV.`
     };
 
-    if (tone && toneGuides[tone.toLowerCase()]) {
-      systemPrompt += toneGuides[tone.toLowerCase()];
+    if (tone && toneHints[tone.toLowerCase()]) {
+      systemPrompt += toneHints[tone.toLowerCase()];
     }
 
-    // Add profile context if available
+    // Add profile context subtly - no bullet points
     if (profileContext?.userProfile) {
-      const userProfile = profileContext.userProfile;
-      systemPrompt += `Profile Context:`;
-      if (userProfile.displayName) systemPrompt += `- Name: ${userProfile.displayName}`;
-      if (userProfile.handle) systemPrompt += `- Handle: @${userProfile.handle}`;
-      if (userProfile.bio) systemPrompt += `- Bio: ${userProfile.bio}`;
-      if (userProfile.expertise?.domains?.length > 0) {
-        systemPrompt += `- Expertise: ${userProfile.expertise.domains.join(', ')}`;
+      const profile = profileContext.userProfile;
+      let context = `\n\nYour background: `;
+
+      if (profile.bio) {
+        context += profile.bio.substring(0, 150); // Keep it short
       }
-      systemPrompt += `Incorporate this profile context naturally into your reply to make it personalized and authentic.`;
+
+      if (profile.expertise?.domains?.length > 0) {
+        context += ` You know: ${profile.expertise.domains.slice(0, 3).join(', ')}`;
+      }
+
+      context += `\n\nUse this when relevant. Dont force it. Speak from experience, not credentials.`;
+      systemPrompt += context;
     }
 
     return systemPrompt;
   }
 
   private buildUserPrompt(tweetText: string, tone: string, userContext: any): string {
-    let prompt = `Post to reply to: "${tweetText}"`;
+    let prompt = `Post: "${tweetText}"`;
 
     if (userContext.postMetadata) {
       const metadata = this.formatPostMetadata(userContext.postMetadata);
-      if (metadata) prompt += `${metadata}`;
+      if (metadata) prompt += `\n${metadata}`;
     }
 
     if (userContext.additionalContext) {
-      prompt += `Additional Context: ${userContext.additionalContext}`;
+      prompt += `\nContext: ${userContext.additionalContext}`;
     }
 
-    prompt += `Tone: ${tone}`;
-    prompt += `Generate a reply following the steps outlined in your system instructions.`;
+    prompt += `\n\nReact with a ${tone} vibe.`;
 
     return prompt;
   }
@@ -161,35 +187,35 @@ Acceptance criteria: Replies must be natural and engaging, add value first, matc
   private formatPostMetadata(metadata: any): string {
     const elements = [];
     if (metadata.isThread) elements.push('Part of thread');
-    if (metadata.hasLinks) elements.push('Contains links');  
+    if (metadata.hasLinks) elements.push('Contains links');
     if (metadata.hasMedia) elements.push('Has media');
     return elements.length > 0 ? `Post context: ${elements.join(', ')}` : '';
   }
 
   private validateReply(reply: string): { valid: boolean; issues: string[] } {
     const issues: string[] = [];
-    
+
     // Length check
     if (reply.length > 280) {
       issues.push(`Too long: ${reply.length} chars (max 280)`);
     }
-    
+
     // Question check
     if (reply.includes('?')) {
       issues.push('Contains question mark (questions not allowed)');
     }
-    
+
     // Emoji check (simplified regex for compatibility)
     const emojiRegex = /[\uD800-\uDFFF]|[\u2600-\u27BF]/;
     if (emojiRegex.test(reply)) {
       issues.push('Contains emojis');
     }
-    
+
     // Quote wrapping check
     if ((reply.startsWith('"') && reply.endsWith('"')) || (reply.startsWith("'") && reply.endsWith("'"))) {
       issues.push('Wrapped in quotes');
     }
-    
+
     // AI-sounding phrases check
     const aiPhrases = ['great question', 'thanks for sharing', 'i appreciate', 'interesting point'];
     const lowerReply = reply.toLowerCase();
@@ -198,7 +224,7 @@ Acceptance criteria: Replies must be natural and engaging, add value first, matc
         issues.push(`Contains AI phrase: "${phrase}"`);
       }
     });
-    
+
     return {
       valid: issues.length === 0,
       issues
