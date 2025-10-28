@@ -7,13 +7,13 @@ XBot is an AI-powered platform that generates authentic, human-like social media
 ## Core Architecture
 
 ### Tech Stack
-- **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Node.js
-- **Database**: MongoDB (Mongoose)
-- **Vector DB**: Pinecone (for RAG knowledge base)
-- **Embeddings**: Cohere (text-embedding-3-large)
-- **LLM Providers**: Groq (llama-3.3-70b-versatile, openai/gpt-oss-120b), XAI (grok-4)
-- **Chrome Extension**: Content script for X/Twitter integration
+- Frontend: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- Backend: Next.js API Routes, Node.js
+- Database: MongoDB (Mongoose)
+- Vector DB: Pinecone (for RAG knowledge base)
+- Embeddings: Cohere (text-embedding-3-large)
+- LLM Providers: Groq (llama-3.3-70b-versatile, openai/gpt-oss-120b), XAI (grok-4)
+- Chrome Extension: Content script for X/Twitter integration
 
 ### Key Components
 
@@ -50,23 +50,23 @@ XBot is an AI-powered platform that generates authentic, human-like social media
 ```
 
 ### Why These Parameters?
-- **max_tokens: 2000** - Allows LLM to fully develop thoughts and provide complete responses
-- **temperature: 1.0** - Maximum creativity for varied, unique content generation
-- **top_p: 0.95** - Broader token selection for more diverse vocabulary
-- **presence_penalty: 0.6** - Forces exploration of new topics and concepts
-- **frequency_penalty: 0.7** - Prevents repetitive phrases like "API crash" "system crash"
+- max_tokens: 2000 - Allows LLM to fully develop thoughts and provide complete responses
+- temperature: 1.0 - Maximum creativity for varied, unique content generation
+- top_p: 0.95 - Broader token selection for more diverse vocabulary
+- presence_penalty: 0.6 - Forces exploration of new topics and concepts
+- frequency_penalty: 0.7 - Prevents repetitive phrases like "API crash" "system crash"
 
 ## Content Generation Philosophy
 
 ### Human-First Writing
 The system prioritizes authentic, human-like writing over perfect AI-generated content:
 
-1. **Short, punchy sentences** - Period. Like this.
-2. **Intentional imperfection** - Occasional lowercase, missing apostrophes ("Thats")
-3. **Casual language** - "stupid money" "cool shit" "pretty much it"
-4. **Varied rhythm** - Mix short and long sentences
-5. **Fragments for impact** - "Life changing." "Zero downtime."
-6. **No corporate speak** - Avoid "Great question!" "Thanks for sharing!"
+1. Short, punchy sentences - Period. Like this.
+2. Intentional imperfection - Occasional lowercase, missing apostrophes ("Thats")
+3. Casual language - "stupid money" "cool shit" "pretty much it"
+4. Varied rhythm - Mix short and long sentences
+5. Fragments for impact - "Life changing." "Zero downtime."
+6. No corporate speak - Avoid "Great question!" "Thanks for sharing!"
 
 ### Content Diversity (10 Themes)
 Rotate through these technical angles to avoid repetition:
@@ -83,21 +83,21 @@ Rotate through these technical angles to avoid repetition:
 
 ### Reasoning Process
 Before generating content, the LLM thinks through:
-1. **Unique angle** - What technical story haven't we explored?
-2. **Client situation** - What industry/scenario makes this relatable?
-3. **Concrete metrics** - What numbers demonstrate value?
-4. **Freshness** - How is this different from previous posts?
-5. **Emotional hook** - What grabs attention? (frustration, curiosity, relief)
+1. Unique angle - What technical story haven't we explored?
+2. Client situation - What industry/scenario makes this relatable?
+3. Concrete metrics - What numbers demonstrate value?
+4. Freshness - How is this different from previous posts?
+5. Emotional hook - What grabs attention? (frustration, curiosity, relief)
 
 ## RAG System Architecture
 
 ### Knowledge Base Stats (78 Total Chunks)
-- **9 Style Chunks** - Writing patterns, voice, tone
-- **31 Example Chunks** - Diverse client transformation stories
-- **24 Technical Chunks** - Backend engineering knowledge
-- **6 Post Type Chunks** - Structure templates
-- **6 Framework Chunks** - Engagement strategies
-- **3 Pillar Chunks** - Brand positioning
+- 9 Style Chunks - Writing patterns, voice, tone
+- 31 Example Chunks - Diverse client transformation stories
+- 24 Technical Chunks - Backend engineering knowledge
+- 6 Post Type Chunks - Structure templates
+- 6 Framework Chunks - Engagement strategies
+- 3 Pillar Chunks - Brand positioning
 
 ### Vector Search Flow
 1. Build semantic query from post type + user context
@@ -108,10 +108,10 @@ Before generating content, the LLM thinks through:
 6. Pass to LLM with enhanced system prompt
 
 ### Context Optimization
-- **Profile context** - Ultra-minimal (26 lines, 400 chars) to save tokens
-- **Style guidance** - Critical importance, always included
-- **Example randomization** - Shuffle examples to ensure variety
-- **Explicit diversity instructions** - "Generate DIFFERENT variations"
+- Profile context - Ultra-minimal (26 lines, 400 chars) to save tokens
+- Style guidance - Critical importance, always included
+- Example randomization - Shuffle examples to ensure variety
+- Explicit diversity instructions - "Generate DIFFERENT variations"
 
 ## Development Best Practices
 
@@ -178,25 +178,25 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ### Model Selection Guide
 
 #### Groq Models
-- **llama-3.3-70b-versatile** ⭐ RECOMMENDED
+- llama-3.3-70b-versatile ⭐ RECOMMENDED
   - 300K TPM (highest limit)
   - Best for creative, varied content
   - 280 T/S
   - $0.59/$0.79 per 1M tokens
 
-- **openai/gpt-oss-120b** (Current)
+- openai/gpt-oss-120b (Current)
   - 250K TPM
   - 500 T/S (faster)
   - $0.15/$0.60 per 1M tokens
   - Good general purpose
 
-- **openai/gpt-oss-20b** (Budget option)
+- openai/gpt-oss-20b (Budget option)
   - 250K TPM
   - 1000 T/S (fastest)
   - $0.075/$0.30 per 1M tokens
 
 #### XAI Models
-- **grok-4** - Latest Grok model for reasoning tasks
+- grok-4 - Latest Grok model for reasoning tasks
 
 ## Post Generation Workflow
 
@@ -280,10 +280,10 @@ More content. Each section becomes a separate chunk.
 - Check for "request too large" errors (TPM limit)
 
 ### Common Issues
-- **Robotic content** - Check temperature (should be 1.0), verify human patterns in RAG
-- **Repetitive content** - Check presence_penalty (0.6) and frequency_penalty (0.7)
-- **Token limit errors** - Reduce context size, switch to llama-3.3-70b-versatile (300K TPM)
-- **Empty Pinecone** - Wait 5 seconds after upsert for propagation
+- Robotic content - Check temperature (should be 1.0), verify human patterns in RAG
+- Repetitive content - Check presence_penalty (0.6) and frequency_penalty (0.7)
+- Token limit errors - Reduce context size, switch to llama-3.3-70b-versatile (300K TPM)
+- Empty Pinecone - Wait 5 seconds after upsert for propagation
 
 ## Code Style Guidelines
 
@@ -306,10 +306,10 @@ More content. Each section becomes a separate chunk.
 - Include timestamps and error codes
 
 ### Naming Conventions
-- **Files**: camelCase for modules, PascalCase for components
-- **Variables**: camelCase
-- **Constants**: UPPER_SNAKE_CASE
-- **Interfaces**: PascalCase with 'I' prefix (e.g., `IUser`)
+- Files: camelCase for modules, PascalCase for components
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Interfaces: PascalCase with 'I' prefix (e.g., `IUser`)
 
 ## Security Considerations
 
