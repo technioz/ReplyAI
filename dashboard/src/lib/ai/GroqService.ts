@@ -12,8 +12,13 @@ export class GroqService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
-    
+    // DeepSeek R1 Distill recommended for critical thinking & reasoning
+    // llama-3.3-70b-versatile for balanced performance
+    // llama-3.1-8b-instant for ultra-fast responses
+    const model = process.env.GROQ_MODEL || 'deepseek-r1-distill-llama-70b';
+
+    console.log(`🤖 Using Groq model: ${model}`);
+
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
     
