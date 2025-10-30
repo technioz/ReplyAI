@@ -1,175 +1,203 @@
-# AI Model Selection Guide
+# AI Model Selection Guide (2025 - UPDATED)
 
-## TL;DR - Recommended Setup
+## TL;DR - Best Setup for Critical Thinking
 
 ```bash
-AI_PROVIDER=groq
-GROQ_MODEL=deepseek-r1-distill-llama-70b
+AI_PROVIDER=xai
+XAI_MODEL=grok-4-fast-reasoning
 ```
 
-**Why?** Best balance of speed (280 T/S) + critical thinking + reasoning.
+**Why?** Best reasoning + fast (227-344 T/S) + cheapest ($0.20/$0.50 per 1M tokens).
+
+**Alternative (Groq):**
+```bash
+AI_PROVIDER=groq
+GROQ_MODEL=llama-3.3-70b-versatile
+```
 
 ---
 
-## Available Models
+## Currently Available Models (2025)
 
-### Groq Models (FAST - Recommended)
+### Groq Models (LPU-Accelerated - FAST)
 
-Groq uses LPU (Language Processing Unit) hardware - custom chips for LLMs that are WAY faster than GPUs.
+#### 1. **llama-3.3-70b-versatile** ⭐ (Groq Default)
 
-#### 1. **deepseek-r1-distill-llama-70b** ⭐ RECOMMENDED
-
-- **Speed**: ~280 tokens/second
-- **TPM**: 60K tokens per minute
-- **Strength**: **Critical thinking & reasoning**
-- **Use Case**: X replies that need independent evaluation
-- **Cost**: ~$0.35/$1.40 per 1M tokens
-
-**Why This One?**
-- Chain-of-thought reasoning built-in
-- Distilled from DeepSeek R1 (reasoning specialist)
-- Evaluates posts critically before responding
-- Suggests better alternatives naturally
-- Still fast enough for real-time replies
-
-#### 2. **llama-3.3-70b-versatile** (Balanced)
-
-- **Speed**: ~280 tokens/second
-- **TPM**: 300K (highest)
-- **Strength**: General purpose, balanced
-- **Use Case**: High volume usage, good enough reasoning
-- **Cost**: ~$0.59/$0.79 per 1M tokens
+- **Speed**: 276-394 tokens/second
+- **Context**: 128K tokens
+- **Cost**: $0.59/$0.79 per 1M tokens
+- **Reasoning**: Good (general purpose)
+- **Response Time**: ~0.4 seconds
 
 **When to Use:**
-- Need high TPM limits
+- Need balanced speed + reasoning
 - General social media replies
-- Less critical thinking needed
+- Good enough for most use cases
 
-#### 3. **llama-3.1-8b-instant** (Ultra-Fast)
+#### 2. **llama-3.3-70b-specdec** (Ultra-Fast)
 
-- **Speed**: ~6000 tokens/second (BLAZING)
-- **TPM**: 30K
-- **Strength**: Speed
-- **Use Case**: Bulk operations, simple replies
-- **Cost**: ~$0.05/$0.08 per 1M tokens (cheap)
+- **Speed**: **1,665 tokens/second** (6x faster!)
+- **Context**: 128K tokens
+- **Cost**: $0.59/$0.99 per 1M tokens
+- **Reasoning**: Same as versatile
+- **Response Time**: ~0.07 seconds (BLAZING)
+- **Note**: Uses speculative decoding
 
 **When to Use:**
 - Need instant responses (<100ms)
-- Simple agree/disagree replies
-- Budget-conscious
-- Less reasoning required
+- High-volume bulk operations
+- Speed is top priority
+- Reasoning still matters (better than 8b-instant)
 
-#### 4. **mixtral-8x7b-32768** (Mixture of Experts)
+#### 3. **llama-3.1-8b-instant** (Budget)
 
-- **Speed**: ~500 tokens/second
-- **TPM**: 20K
-- **Strength**: Complex reasoning, long context
-- **Use Case**: Complex multi-step thinking
-- **Cost**: ~$0.24/$0.24 per 1M tokens
+- **Speed**: 6000 tokens/second (SUPER FAST)
+- **Context**: 30K tokens
+- **Cost**: $0.05/$0.08 per 1M tokens (cheapest)
+- **Reasoning**: **Weak** (limited knowledge)
+- **Response Time**: ~0.02 seconds
 
 **When to Use:**
-- Need to analyze long threads
-- Multiple perspectives needed
-- Complex technical evaluation
+- Budget-conscious
+- Simple agree/disagree replies
+- Don't need critical thinking
+- **NOT recommended for building authority**
 
 ---
 
-## XAI Models (SLOW - Not Recommended for Replies)
+### XAI Models (GPU-Accelerated)
 
-### **grok-4** (Powerful but Slow)
+#### 1. **grok-4-fast-reasoning** ⭐⭐⭐ (RECOMMENDED)
 
-- **Speed**: ~30-50 tokens/second (VERY SLOW)
-- **Response Time**: 5-10 seconds per reply
-- **Strength**: Advanced reasoning, huge context window
-- **Model Size**: ~314B+ parameters (massive)
+- **Speed**: 227-344 tokens/second
+- **Latency**: 1.1s end-to-end for complex queries
+- **Context**: **2M tokens** (MASSIVE)
+- **Cost**: **$0.20/$0.50 per 1M tokens** (CHEAPEST!)
+- **Reasoning**: **Excellent** (built for reasoning)
+- **Response Time**: ~1.5 seconds total
 
-**Why So Slow?**
-1. **No specialized hardware** - XAI uses GPUs, not LPUs like Groq
-2. **Massive model** - Grok-4 is GPT-4 scale (10x bigger than Llama 70B)
-3. **Deep reasoning** - Built for complex thinking, not speed
-4. **Network latency** - XAI infrastructure not optimized for low latency
+**Why This is Best:**
+- ✅ Built specifically for critical thinking
+- ✅ 10x faster than old Grok 4
+- ✅ Cheapest option with best reasoning
+- ✅ Huge 2M context window
+- ✅ Uses 40% fewer thinking tokens than Grok 4
+- ✅ Perfect for challenging posts and suggesting alternatives
 
-**When to Use Grok:**
-- Long-form content generation (blog posts, threads)
-- Complex analysis requiring deep reasoning
-- When speed doesn't matter
-- NOT for quick X replies
+**When to Use:**
+- **Building personal brand** (your use case!)
+- Need independent evaluation
+- Want creative, contrarian responses
+- Challenging conventional wisdom
+- Suggesting better alternatives
+
+#### 2. **grok-4** (NOT Recommended)
+
+- **Speed**: ~40 tokens/second (SLOW)
+- **Context**: 256K tokens
+- **Cost**: Higher than grok-4-fast
+- **Reasoning**: Excellent (overkill)
+- **Response Time**: 5-10 seconds
+
+**Why NOT Use:**
+- ❌ 5-10 second response time (too slow)
+- ❌ Overkill for quick X replies
+- ❌ More expensive
+- ❌ grok-4-fast-reasoning is better for everything
 
 ---
 
 ## Speed Comparison
 
-| Model | Speed (T/S) | Reply Time | Reasoning Quality |
-|-------|-------------|------------|-------------------|
-| llama-3.1-8b-instant | 6000 | 0.1s | ⭐⭐ |
-| deepseek-r1-distill-70b | 280 | 0.4s | ⭐⭐⭐⭐⭐ |
-| llama-3.3-70b-versatile | 280 | 0.4s | ⭐⭐⭐⭐ |
-| mixtral-8x7b-32768 | 500 | 0.3s | ⭐⭐⭐⭐ |
-| grok-4 (XAI) | 40 | 5-8s | ⭐⭐⭐⭐⭐ |
+| Model | Speed (T/S) | Reply Time | Reasoning | Cost (per 1M) |
+|-------|-------------|------------|-----------|---------------|
+| llama-3.3-70b-specdec | 1,665 | 0.07s | ⭐⭐⭐⭐ | $0.59/$0.99 |
+| llama-3.1-8b-instant | 6,000 | 0.02s | ⭐⭐ | $0.05/$0.08 |
+| llama-3.3-70b-versatile | 276-394 | 0.4s | ⭐⭐⭐⭐ | $0.59/$0.79 |
+| **grok-4-fast-reasoning** | 227-344 | 1.5s | ⭐⭐⭐⭐⭐ | **$0.20/$0.50** |
+| grok-4 | 40 | 5-10s | ⭐⭐⭐⭐⭐ | $? (expensive) |
 
 ---
 
-## How to Switch Models
+## Why Grok-4-Fast-Reasoning is Perfect for You
 
-### Option 1: Environment Variable (Recommended)
+### Your Use Case: Building Authority on X
+You need replies that:
+1. ✅ **Think critically** - Don't blindly agree
+2. ✅ **Challenge posts** - Offer contrarian views
+3. ✅ **Suggest alternatives** - Share better approaches
+4. ✅ **Show expertise** - Speak from experience
+5. ✅ **Build personal brand** - Authentic, not robotic
+
+### Why grok-4-fast-reasoning Delivers:
+- **Built for reasoning** - Literally designed for critical thinking
+- **Fast enough** - 1.5s total (vs 5-10s for old Grok)
+- **Cheapest** - $0.20/$0.50 vs Groq's $0.59/$0.79
+- **Best value** - Excellent reasoning + speed + cost
+- **Huge context** - 2M tokens (can analyze long threads)
+
+### Groq vs Grok for Your Needs:
+
+| Factor | Groq (llama-3.3) | Grok-4-Fast |
+|--------|------------------|-------------|
+| Critical Thinking | Good | **Excellent** |
+| Speed | Faster (276-394 T/S) | Fast enough (227-344 T/S) |
+| Cost | $0.59/$0.79 | **$0.20/$0.50** (66% cheaper!) |
+| Context | 128K | **2M** (15x more) |
+| Challenging posts | Can do | **Built for it** |
+| Personal brand | Works | **Perfect** |
+
+---
+
+## Decision Tree
+
+```
+Building authority & need critical thinking?
+  └─ YES → grok-4-fast-reasoning ⭐⭐⭐
+
+Need fastest possible speed?
+  ├─ With reasoning → llama-3.3-70b-specdec (1,665 T/S)
+  └─ Without reasoning → llama-3.1-8b-instant (6,000 T/S)
+
+Balanced speed + reasoning on budget?
+  └─ llama-3.3-70b-versatile
+
+Never use:
+  └─ grok-4 (too slow, overkill)
+```
+
+---
+
+## Setup Instructions
+
+### Option 1: Use Grok (Recommended for You)
 
 ```bash
 # In dashboard/.env.local
-GROQ_MODEL=deepseek-r1-distill-llama-70b
+AI_PROVIDER=xai
+XAI_API_KEY=your-xai-key-here
+XAI_MODEL=grok-4-fast-reasoning
 ```
 
-### Option 2: Default in Code
+### Option 2: Use Groq (Faster but less reasoning)
 
-Edit `dashboard/src/lib/ai/GroqService.ts`:
-```typescript
-const model = process.env.GROQ_MODEL || 'your-preferred-model';
+```bash
+# In dashboard/.env.local
+AI_PROVIDER=groq
+GROQ_API_KEY=your-groq-key-here
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
----
+### Option 3: Use Groq for blazing speed
 
-## Model Selection Decision Tree
-
+```bash
+GROQ_MODEL=llama-3.3-70b-specdec  # 1,665 T/S!
 ```
-Need critical thinking & reasoning?
-  ├─ YES → deepseek-r1-distill-llama-70b ⭐
-  └─ NO → Continue...
-
-Need blazing speed (< 100ms)?
-  ├─ YES → llama-3.1-8b-instant
-  └─ NO → Continue...
-
-Need high volume (300K+ TPM)?
-  ├─ YES → llama-3.3-70b-versatile
-  └─ NO → Continue...
-
-Need long context (32K+)?
-  ├─ YES → mixtral-8x7b-32768
-  └─ NO → deepseek-r1-distill-llama-70b (default)
-
-Deep reasoning, speed doesn't matter?
-  └─ grok-4 (but expect 5-10s delays)
-```
-
----
-
-## Cost Analysis (Per 1M Tokens)
-
-| Model | Input Cost | Output Cost | Best For |
-|-------|-----------|-------------|----------|
-| llama-3.1-8b-instant | $0.05 | $0.08 | Budget |
-| mixtral-8x7b-32768 | $0.24 | $0.24 | Balanced |
-| deepseek-r1-distill-70b | $0.35 | $1.40 | Reasoning ⭐ |
-| llama-3.3-70b-versatile | $0.59 | $0.79 | Volume |
-
-**For X replies (avg 50-100 chars):**
-- ~30 tokens output per reply
-- Cost per 1000 replies: $0.04 - $0.60
 
 ---
 
 ## Testing Your Model
 
-Test the model with:
 ```bash
 curl -X POST http://localhost:3000/api/reply/generate \
   -H "Content-Type: application/json" \
@@ -180,43 +208,82 @@ curl -X POST http://localhost:3000/api/reply/generate \
   }'
 ```
 
-**Expected Behavior with DeepSeek R1:**
+**Expected with grok-4-fast-reasoning:**
 - Should challenge the post
-- Suggest simpler alternatives (monolith, modular monolith)
-- Share experience-based perspective
+- Suggest monolith/modular monolith as alternatives
+- Share specific experience
 - NOT just agree
+- ~1-2 second response time
 
 ---
 
-## Why DeepSeek R1 Distill is Perfect for This Project
+## Cost Analysis (Per 1000 Replies)
 
-1. **Built for Reasoning** - Trained specifically for critical thinking
-2. **Fast Enough** - 280 T/S means ~0.4s replies (acceptable)
-3. **Evaluates Critically** - Won't blindly agree with posts
-4. **Suggests Alternatives** - Naturally offers better approaches
-5. **Experience-Based** - Speaks from engineering perspective
-6. **Cost-Effective** - $0.35 input, worth it for quality
+Assuming 30 tokens output per reply:
+
+| Model | Cost per 1K replies | Monthly (30K replies) |
+|-------|---------------------|----------------------|
+| grok-4-fast-reasoning | **$0.015** | **$0.45** |
+| llama-3.3-70b-versatile | $0.024 | $0.72 |
+| llama-3.1-8b-instant | $0.002 | $0.06 |
+
+**Winner:** grok-4-fast-reasoning - Best value for quality
+
+---
+
+## Why DeepSeek R1 / Mixtral are Gone
+
+These models have been **deprecated** by Groq:
+- ❌ deepseek-r1-distill-llama-70b - No longer available
+- ❌ mixtral-8x7b-32768 - Deprecated August 8, 2025
+
+**Replacement:** Use llama-3.3-70b-versatile or grok-4-fast-reasoning instead.
 
 ---
 
 ## Troubleshooting
 
 ### "Model not found" error
-- Check model name spelling
-- Verify Groq API key is valid
-- Try `llama-3.3-70b-versatile` as fallback
+- Check model name: `grok-4-fast-reasoning` (with hyphens)
+- Verify API key is valid
+- Try llama-3.3-70b-versatile as fallback
 
-### Responses still too slow
-- Switch to `llama-3.1-8b-instant`
-- Check network latency
-- Verify you're using Groq, not XAI
+### Responses too slow
+- If using grok-4 → Switch to grok-4-fast-reasoning
+- If using Grok → Try llama-3.3-70b-specdec (1,665 T/S)
 
-### Not enough reasoning
-- Use `deepseek-r1-distill-llama-70b`
-- Or try `mixtral-8x7b-32768`
-- Avoid `llama-3.1-8b-instant` (too simple)
+### Not enough critical thinking
+- Switch from Groq to Grok (grok-4-fast-reasoning)
+- Check your prompts include "THINK FIRST" layer
+- Avoid llama-3.1-8b-instant (too simple)
+
+### Grok still slow
+- Ensure you're using grok-4-fast-reasoning NOT grok-4
+- Check logs: `console.log` should show correct model
+- Verify AI_PROVIDER=xai and XAI_MODEL set correctly
 
 ---
 
-**Last Updated**: 2025-10-30
-**Recommended Model**: `deepseek-r1-distill-llama-70b`
+## Final Recommendation
+
+**For your use case (building authority on X with critical thinking):**
+
+```bash
+AI_PROVIDER=xai
+XAI_MODEL=grok-4-fast-reasoning
+```
+
+This gives you:
+- ✅ Best reasoning capabilities
+- ✅ Fast enough (1-2s vs 5-10s)
+- ✅ Cheapest cost ($0.20/$0.50)
+- ✅ Challenges posts intelligently
+- ✅ Suggests better alternatives
+- ✅ Speaks from experience
+- ✅ Builds authentic personal brand
+
+---
+
+**Last Updated**: October 30, 2025
+**Verified Available Models**: llama-3.3-70b-versatile, llama-3.3-70b-specdec, llama-3.1-8b-instant, grok-4-fast-reasoning
+**Deprecated Models**: deepseek-r1, mixtral-8x7b, gemma2-9b-it

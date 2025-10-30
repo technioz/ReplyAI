@@ -16,7 +16,12 @@ export class XAIService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    const model = process.env.XAI_MODEL || 'grok-4';
+    // Available models (2025):
+    // grok-4-fast-reasoning - RECOMMENDED: 227-344 T/S, excellent reasoning, $0.20/$0.50 per 1M
+    // grok-4 - NOT recommended: 40 T/S, 5-10s response, overkill for quick replies
+    const model = process.env.XAI_MODEL || 'grok-4-fast-reasoning';
+
+    console.log(`🤖 Using XAI model: ${model}`);
 
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);

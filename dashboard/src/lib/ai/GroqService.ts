@@ -12,10 +12,11 @@ export class GroqService implements AIService {
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
-    // DeepSeek R1 Distill recommended for critical thinking & reasoning
-    // llama-3.3-70b-versatile for balanced performance
-    // llama-3.1-8b-instant for ultra-fast responses
-    const model = process.env.GROQ_MODEL || 'deepseek-r1-distill-llama-70b';
+    // Available models (2025):
+    // llama-3.3-70b-versatile - Balanced speed (276-394 T/S) + reasoning
+    // llama-3.3-70b-specdec - Ultra-fast (1,665 T/S) with speculative decoding
+    // llama-3.1-8b-instant - Super fast (6000 T/S) but weak reasoning
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
     console.log(`🤖 Using Groq model: ${model}`);
 
