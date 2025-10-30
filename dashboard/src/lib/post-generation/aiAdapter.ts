@@ -35,7 +35,10 @@ export class PostGenerationAIAdapter {
    */
   private async callGroqAPI(systemPrompt: string, userPrompt: string): Promise<string> {
     const apiKey = process.env.GROQ_API_KEY;
-    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    // Use current available model (llama-3.3-70b-versatile for balanced performance)
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+
+    console.log(`🤖 Post Generation using Groq model: ${model}`);
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -77,7 +80,10 @@ export class PostGenerationAIAdapter {
    */
   private async callXAIAPI(systemPrompt: string, userPrompt: string): Promise<string> {
     const apiKey = process.env.XAI_API_KEY;
-    const model = process.env.XAI_MODEL || 'grok-beta';
+    // Use grok-4-fast-reasoning for best reasoning + speed
+    const model = process.env.XAI_MODEL || 'grok-4-fast-reasoning';
+
+    console.log(`🤖 Post Generation using XAI model: ${model}`);
 
     const requestBody = {
       model,
