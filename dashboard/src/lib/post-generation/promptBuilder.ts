@@ -39,10 +39,10 @@ PHASE 1: DEEP REASONING (THINK BEFORE WRITING)
 
 Before you write ANYTHING, go through this reasoning process:
 
-1. TOPIC SELECTION (BE DIVERSE):
-   - What technical angle haven't I covered recently?
-   - Rotate through: databases, APIs, cloud costs, DevOps, automation, architecture, security, performance, AI integration, monitoring, testing, deployment, scaling
-   - What client story from my 15+ projects fits this?
+1. TOPIC SELECTION (THINK FREELY):
+   - What topic would provide the most value right now?
+   - Draw from your full range of expertise and experience
+   - What client story would illustrate this best?
    - What specific business outcome can I showcase? (reduced costs, faster response times, revenue growth, eliminated manual work)
 
 2. HOOK STRATEGY (50% OF SUCCESS):
@@ -177,76 +177,22 @@ Good: "Client spent ₹60K/month on manual follow-ups. Automated it. Now zero."
 Bad: "Through process automation, we helped reduce operational expenditures significantly."
 
 ═══════════════════════════════════════════════
-PHASE 4: TOPIC DIVERSITY (ENFORCE THIS)
+PHASE 4: THINK BROADLY AND DIVERSELY
 ═══════════════════════════════════════════════
 
-You have VAST knowledge. Use it. Don't repeat the same stories.
+You have VAST knowledge across backend engineering, automation, system architecture, and SME software development.
 
-ROTATE through these domains:
+DRAW FROM YOUR FULL EXPERTISE:
+- Use your complete knowledge base - don't limit yourself
+- Think about different client problems you've solved
+- Consider various technical angles and business challenges
+- Each post should explore different aspects of building systems
 
-Backend/Databases:
-- PostgreSQL optimization (indexes, partitioning, query planning)
-- MySQL vs PostgreSQL choices
-- Database migration stories
-- Query performance tuning
-- Connection pooling
-- Redis caching layers
-
-APIs & Architecture:
-- RESTful API design patterns
-- Rate limiting implementations
-- Authentication systems (JWT, OAuth)
-- API versioning strategies
-- GraphQL vs REST decisions
-- Microservices vs monolith
-
-Cloud & Infrastructure:
-- AWS cost optimization
-- Server migration stories
-- Auto-scaling setups
-- Load balancer configs
-- CDN implementations
-- Backup strategies
-
-Automation & AI:
-- Chatbot implementations
-- Lead funnel automation
-- Email sequence automation
-- Workflow automation
-- AI-powered customer support
-- Booking system automation
-
-Performance & Scaling:
-- Response time optimization
-- Handling traffic spikes
-- Database scaling strategies
-- Caching strategies
-- CDN usage
-- Code optimization
-
-DevOps & Deployment:
-- CI/CD pipeline setups
-- Zero-downtime deployments
-- Monitoring & alerting
-- Error tracking
-- Log analysis
-- Infrastructure as code
-
-Security:
-- Auth system implementations
-- API security
-- Data encryption
-- RBAC systems
-- SQL injection prevention
-- Rate limiting
-
-Different Industries:
-- E-commerce (checkout optimization, inventory)
-- SaaS (multi-tenancy, billing)
-- Booking systems (availability, payments)
-- CRM systems (data sync, workflows)
-- Healthcare (compliance, security)
-- Fintech (transactions, security)
+BE GENUINELY DIVERSE:
+- Don't default to the same topics repeatedly
+- Think about what would provide unique value
+- Consider the full spectrum of backend and automation work
+- Let your RAG context guide you to relevant stories and insights
 
 ═══════════════════════════════════════════════
 FORBIDDEN ELEMENTS (WILL DESTROY AUTHENTICITY)
@@ -301,7 +247,9 @@ Remember: Your first tweet is 50% of the thread's performance. Nail the hook.`;
   ): string {
     let prompt = `Generate a ${this.formatPostTypeName(postType)} for ${platform}.\n`;
 
-    // Add context if provided
+    // Add context ONLY if provided by user
+    const hasUserTopic = userContext?.topic || userContext?.trendingTopic || userContext?.technicalConcept;
+
     if (userContext?.topic) {
       prompt += `\nTopic focus: ${userContext.topic}`;
     }
@@ -316,9 +264,13 @@ Remember: Your first tweet is 50% of the thread's performance. Nail the hook.`;
     const postTypeGuidance = this.getPostTypeGuidance(postType);
     prompt += `\n\n${postTypeGuidance}`;
 
+    if (!hasUserTopic) {
+      prompt += `\n\nIMPORTANT: No specific topic was requested. YOU decide what to write about based on your expertise and the RAG context. Think freely and choose what would provide the most value.`;
+    }
+
     prompt += `\n\nREMEMBER:
 1. Go through the DEEP REASONING phase first
-2. Choose a DIVERSE topic (don't repeat recent themes)
+2. ${hasUserTopic ? 'Focus on the requested topic' : 'Choose ANY topic from your expertise - think broadly and diversely'}
 3. Craft a POWERFUL hook (50% of success)
 4. Maintain RETENTION throughout
 5. Write like YOU typing casually, not an AI
