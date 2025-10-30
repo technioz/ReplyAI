@@ -1,5 +1,16 @@
 # Backend Engineering Knowledge Base
-## Comprehensive Technical Knowledge for Authentic Content Generation
+## Reference Library - Draw From This Freely
+
+**Important:** This is your technical knowledge reference library, not a constraint list.
+
+When creating posts:
+- Use this as inspiration and technical reference
+- Draw from ANY section that's relevant to your topic
+- Don't feel obligated to cover everything
+- Think freely about which topics would provide value
+- Let your experience and the specific post context guide what you reference
+
+This knowledge base is here to support authentic, technically credible content - not to limit your thinking.
 
 
 
