@@ -61,7 +61,7 @@ function wrapOllamaNetworkError(err: unknown, requestUrl: string): Error {
       `Inside Docker/Coolify, localhost and host.docker.internal usually do not reach another container. ` +
       `Set OLLAMA_INTERNAL_BASE_URL or OLLAMA_BASE_URL to the Ollama service on the same Docker network ` +
       `(example: http://ollama:11434 — use your real container/service name from docker compose or Coolify). ` +
-      `If Ollama listens on the host with -p 11434:11434, try OLLAMA_TRY_GATEWAYS=http://172.17.0.1:11434 or OLLAMA_AUTO_BRIDGE_FALLBACK=1. ` +
+      `If curl http://localhost:11434 works on the host but not here, set OLLAMA_DISCOVER_HOST_GATEWAY=1 (Linux) or OLLAMA_AUTO_BRIDGE_FALLBACK=1. ` +
       `Call GET /api/ai/ollama-health from this deployment to see which URL responds.`
   );
 }
@@ -84,7 +84,7 @@ function wrapAggregatedOllamaFailure(v1Bases: string[], lastErr: unknown): Error
       `Last error: ${detail}\n\n` +
       `What to do:\n` +
       `1) Coolify: put this app and Ollama on the same Docker network; set OLLAMA_INTERNAL_BASE_URL=http://<ollama-service-name>:11434 (name from Coolify/Docker, not localhost).\n` +
-      `2) Ollama only on host port: try OLLAMA_TRY_GATEWAYS=http://172.17.0.1:11434 or set OLLAMA_AUTO_BRIDGE_FALLBACK=1 (Linux Docker bridge to host; not guaranteed on all hosts).\n` +
+      `2) Host shell curl localhost:11434 works: set OLLAMA_DISCOVER_HOST_GATEWAY=1 (reads container default gateway) or OLLAMA_AUTO_BRIDGE_FALLBACK=1.\n` +
       `3) Open GET /api/ai/ollama-health — it probes GET /api/tags on each candidate and shows which origin works from this container.`
   );
 }
