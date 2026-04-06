@@ -1,6 +1,6 @@
 import { AIService } from './AIServiceFactory';
-import { getOllamaServerOrigin } from './ollamaServerUrl';
-import { openAICompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
+import { getOllamaCandidateOrigins, getOllamaServerOrigin } from './ollamaServerUrl';
+import { openOllamaCompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class OllamaService implements AIService {
   private baseUrl: string;
@@ -12,7 +12,9 @@ export class OllamaService implements AIService {
     this.model = process.env.OLLAMA_MODEL || 'llama2';
     this.apiKey = process.env.OLLAMA_API_KEY; // Optional API key for auth
     
-    console.log(`Ollama Service initialized: ${this.baseUrl}, model: ${this.model}`);
+    console.log(
+      `Ollama Service initialized: primary=${this.baseUrl}, candidates=[${getOllamaCandidateOrigins().join(', ')}], model=${this.model}`
+    );
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
@@ -20,20 +22,15 @@ export class OllamaService implements AIService {
       const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
       const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
 
-      const v1Base = `${this.baseUrl.replace(/\/$/, '')}/v1`;
-      const { content, usage } = await openAICompatibleChat(
-        {
-          baseUrl: v1Base,
-          apiKey: this.apiKey,
-          model: this.model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          ...REPLY_CHAT_OPTIONS,
-        },
-        'Ollama'
-      );
+      const { content, usage } = await openOllamaCompatibleChat({
+        apiKey: this.apiKey,
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        ...REPLY_CHAT_OPTIONS,
+      });
 
       const validation = this.validateReply(content);
       if (!validation.valid) {

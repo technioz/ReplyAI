@@ -4,7 +4,7 @@
  */
 
 import dns from 'dns';
-import { getOllamaV1BaseUrl } from './ollamaServerUrl';
+import { getOllamaCandidateV1Bases } from './ollamaServerUrl';
 
 if (process.env.OLLAMA_FETCH_IPV4 === '1' && typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -60,7 +60,32 @@ function wrapOllamaNetworkError(err: unknown, requestUrl: string): Error {
     `Cannot reach Ollama at ${origin} (connection refused). ` +
       `Inside Docker/Coolify, localhost and host.docker.internal usually do not reach another container. ` +
       `Set OLLAMA_INTERNAL_BASE_URL or OLLAMA_BASE_URL to the Ollama service on the same Docker network ` +
-      `(example: http://ollama:11434 — use your real container/service name from docker compose or Coolify).`
+      `(example: http://ollama:11434 — use your real container/service name from docker compose or Coolify). ` +
+      `If Ollama listens on the host with -p 11434:11434, try OLLAMA_TRY_GATEWAYS=http://172.17.0.1:11434 or OLLAMA_AUTO_BRIDGE_FALLBACK=1. ` +
+      `Call GET /api/ai/ollama-health from this deployment to see which URL responds.`
+  );
+}
+
+function isRetryableForNextOllamaOrigin(err: unknown): boolean {
+  if (isConnectionRefused(err)) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes('ECONNREFUSED')) return true;
+  if (msg.includes('fetch failed')) return true;
+  const e = err as NodeJS.ErrnoException & { cause?: NodeJS.ErrnoException };
+  if (e?.code === 'ENOTFOUND' || e?.cause?.code === 'ENOTFOUND') return true;
+  if (e?.code === 'ETIMEDOUT' || e?.cause?.code === 'ETIMEDOUT') return true;
+  return false;
+}
+
+function wrapAggregatedOllamaFailure(v1Bases: string[], lastErr: unknown): Error {
+  const detail = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  return new Error(
+    `Cannot reach Ollama after trying (OpenAI path /v1/chat/completions): ${v1Bases.join(' → ')}.\n` +
+      `Last error: ${detail}\n\n` +
+      `What to do:\n` +
+      `1) Coolify: put this app and Ollama on the same Docker network; set OLLAMA_INTERNAL_BASE_URL=http://<ollama-service-name>:11434 (name from Coolify/Docker, not localhost).\n` +
+      `2) Ollama only on host port: try OLLAMA_TRY_GATEWAYS=http://172.17.0.1:11434 or set OLLAMA_AUTO_BRIDGE_FALLBACK=1 (Linux Docker bridge to host; not guaranteed on all hosts).\n` +
+      `3) Open GET /api/ai/ollama-health — it probes GET /api/tags on each candidate and shows which origin works from this container.`
   );
 }
 
@@ -76,9 +101,15 @@ function parseErrorBody(status: number, errorData: string, label: string): Error
   return new Error(message);
 }
 
+type OpenAIChatOptions = {
+  /** When false, Ollama network errors are rethrown without the long Docker hint (used while trying fallbacks). */
+  skipOllamaConnectionHint?: boolean;
+};
+
 export async function openAICompatibleChat(
   params: OpenAICompatibleChatParams,
-  errorLabel: string
+  errorLabel: string,
+  opts?: OpenAIChatOptions
 ): Promise<ChatCompletionResult> {
   const url = `${params.baseUrl.replace(/\/$/, '')}/chat/completions`;
   const headers: Record<string, string> = {
@@ -109,7 +140,7 @@ export async function openAICompatibleChat(
       body: JSON.stringify(body),
     });
   } catch (err) {
-    if (errorLabel === 'Ollama') {
+    if (errorLabel === 'Ollama' && !opts?.skipOllamaConnectionHint) {
       throw wrapOllamaNetworkError(err, url);
     }
     throw err;
@@ -160,8 +191,40 @@ export const POST_GENERATION_CHAT_OPTIONS = {
   stream: false as const,
 };
 
-function ollamaV1Base(): string {
-  return getOllamaV1BaseUrl();
+/**
+ * Try each Ollama /v1 base (primary + OLLAMA_TRY_GATEWAYS + optional bridge fallbacks) until one succeeds.
+ */
+export async function openOllamaCompatibleChat(
+  params: Omit<OpenAICompatibleChatParams, 'baseUrl'>
+): Promise<ChatCompletionResult> {
+  const bases = getOllamaCandidateV1Bases();
+  let lastErr: unknown;
+
+  for (let i = 0; i < bases.length; i++) {
+    const baseUrl = bases[i];
+    const isLast = i === bases.length - 1;
+    const skipHint = bases.length > 1 || !isLast;
+
+    try {
+      return await openAICompatibleChat(
+        { ...params, baseUrl },
+        'Ollama',
+        { skipOllamaConnectionHint: skipHint }
+      );
+    } catch (e) {
+      lastErr = e;
+      if (!isLast && isRetryableForNextOllamaOrigin(e)) {
+        console.warn(`[Ollama] unreachable at ${baseUrl}, trying next candidate`);
+        continue;
+      }
+      if (bases.length > 1 && isLast && isRetryableForNextOllamaOrigin(e)) {
+        throw wrapAggregatedOllamaFailure(bases, e);
+      }
+      throw e;
+    }
+  }
+
+  throw wrapAggregatedOllamaFailure(bases, lastErr);
 }
 
 /**
@@ -209,16 +272,12 @@ export async function generatePostGenerationChat(
       return content;
     }
     case 'ollama': {
-      const { content } = await openAICompatibleChat(
-        {
-          baseUrl: ollamaV1Base(),
-          apiKey: process.env.OLLAMA_API_KEY,
-          model: process.env.OLLAMA_MODEL || 'llama2',
-          messages,
-          ...POST_GENERATION_CHAT_OPTIONS,
-        },
-        'Ollama'
-      );
+      const { content } = await openOllamaCompatibleChat({
+        apiKey: process.env.OLLAMA_API_KEY,
+        model: process.env.OLLAMA_MODEL || 'llama2',
+        messages,
+        ...POST_GENERATION_CHAT_OPTIONS,
+      });
       return content;
     }
     default:

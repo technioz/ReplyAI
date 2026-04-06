@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIServiceFactory } from '@/lib/ai/AIServiceFactory';
-import { getOllamaServerOrigin } from '@/lib/ai/ollamaServerUrl';
+import { getOllamaCandidateOrigins, getOllamaServerOrigin } from '@/lib/ai/ollamaServerUrl';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
           ? '***set***'
           : 'not set (falls back to OLLAMA_BASE_URL)',
         ollamaServerOriginUsed: getOllamaServerOrigin(),
+        ollamaCandidateOrigins: getOllamaCandidateOrigins(),
         OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'llama2',
         OLLAMA_API_KEY: process.env.OLLAMA_API_KEY ? '***configured***' : 'not configured',
         GROQ_MODEL: process.env.GROQ_MODEL || 'llama3-8b-8192',
