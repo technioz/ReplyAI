@@ -1,4 +1,5 @@
 import { AIService } from './AIServiceFactory';
+import { getOllamaServerOrigin } from './ollamaServerUrl';
 import { openAICompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class OllamaService implements AIService {
@@ -7,9 +8,7 @@ export class OllamaService implements AIService {
   private apiKey?: string;
   
   constructor() {
-    const customUrl = process.env.OLLAMA_BASE_URL;
-    this.baseUrl = customUrl || 'http://localhost:11434';
-    
+    this.baseUrl = getOllamaServerOrigin();
     this.model = process.env.OLLAMA_MODEL || 'llama2';
     this.apiKey = process.env.OLLAMA_API_KEY; // Optional API key for auth
     

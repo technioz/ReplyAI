@@ -3,6 +3,13 @@
  * Used by reply services and post-generation so provider logic stays in one place.
  */
 
+import dns from 'dns';
+import { getOllamaV1BaseUrl } from './ollamaServerUrl';
+
+if (process.env.OLLAMA_FETCH_IPV4 === '1' && typeof dns.setDefaultResultOrder === 'function') {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 export interface ChatCompletionUsage {
@@ -28,6 +35,33 @@ export interface OpenAICompatibleChatParams {
   stream?: boolean;
   frequency_penalty?: number;
   presence_penalty?: number;
+}
+
+function isConnectionRefused(err: unknown): boolean {
+  const e = err as NodeJS.ErrnoException & { cause?: NodeJS.ErrnoException };
+  if (e?.code === 'ECONNREFUSED') return true;
+  if (e?.cause?.code === 'ECONNREFUSED') return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('ECONNREFUSED');
+}
+
+function wrapOllamaNetworkError(err: unknown, requestUrl: string): Error {
+  if (!isConnectionRefused(err)) {
+    return err instanceof Error ? err : new Error(String(err));
+  }
+  const origin = (() => {
+    try {
+      return new URL(requestUrl).origin;
+    } catch {
+      return requestUrl;
+    }
+  })();
+  return new Error(
+    `Cannot reach Ollama at ${origin} (connection refused). ` +
+      `Inside Docker/Coolify, localhost and host.docker.internal usually do not reach another container. ` +
+      `Set OLLAMA_INTERNAL_BASE_URL or OLLAMA_BASE_URL to the Ollama service on the same Docker network ` +
+      `(example: http://ollama:11434 — use your real container/service name from docker compose or Coolify).`
+  );
 }
 
 function parseErrorBody(status: number, errorData: string, label: string): Error {
@@ -67,11 +101,19 @@ export async function openAICompatibleChat(
   if (params.frequency_penalty != null) body.frequency_penalty = params.frequency_penalty;
   if (params.presence_penalty != null) body.presence_penalty = params.presence_penalty;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    if (errorLabel === 'Ollama') {
+      throw wrapOllamaNetworkError(err, url);
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const errorData = await response.text();
@@ -119,8 +161,7 @@ export const POST_GENERATION_CHAT_OPTIONS = {
 };
 
 function ollamaV1Base(): string {
-  const host = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
-  return `${host}/v1`;
+  return getOllamaV1BaseUrl();
 }
 
 /**
