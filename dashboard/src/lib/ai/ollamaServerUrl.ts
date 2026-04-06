@@ -1,9 +1,11 @@
 /**
  * Server-side Ollama base URL (HTTP origin only, no path).
  *
- * In Docker/Coolify, localhost / 127.0.0.1 point at THIS container, not Ollama.
- * If `curl http://localhost:11434` works on the **host shell** but not from the app,
- * Ollama is bound to the host — use the container→host gateway (see OLLAMA_DISCOVER_HOST_GATEWAY).
+ * Coolify / Docker: use the **internal** service hostname on the same network as this app
+ * (e.g. OLLAMA_INTERNAL_BASE_URL=http://ollama:11434). Do not use localhost for a sibling container.
+ *
+ * Optional env (OLLAMA_DISCOVER_HOST_GATEWAY, OLLAMA_AUTO_BRIDGE_FALLBACK, OLLAMA_TRY_GATEWAYS) only help
+ * when Ollama is bound to the **host** machine instead of the compose/Coolify network.
  */
 
 import fs from 'fs';

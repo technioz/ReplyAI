@@ -1,12 +1,4 @@
-import { getDiscoveredHostGatewayOrigin, getOllamaCandidateOrigins } from './ollamaServerUrl';
-
-/** All origins to probe, plus discovered Linux default-gateway→host when not already listed */
-export function getOllamaProbeOrigins(): string[] {
-  const base = getOllamaCandidateOrigins();
-  const disc = getDiscoveredHostGatewayOrigin();
-  if (!disc || base.includes(disc)) return base;
-  return [...base, disc];
-}
+import { getOllamaCandidateOrigins } from './ollamaServerUrl';
 
 export type OllamaProbeRow = {
   origin: string;
@@ -23,7 +15,7 @@ export async function probeOllamaOrigins(timeoutMs = 4000): Promise<{
   tried: OllamaProbeRow[];
   workingOrigin: string | null;
 }> {
-  const origins = getOllamaProbeOrigins();
+  const origins = getOllamaCandidateOrigins();
   const tried: OllamaProbeRow[] = [];
 
   for (const origin of origins) {

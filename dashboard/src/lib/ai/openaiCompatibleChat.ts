@@ -58,11 +58,9 @@ function wrapOllamaNetworkError(err: unknown, requestUrl: string): Error {
   })();
   return new Error(
     `Cannot reach Ollama at ${origin} (connection refused). ` +
-      `Inside Docker/Coolify, localhost and host.docker.internal usually do not reach another container. ` +
-      `Set OLLAMA_INTERNAL_BASE_URL or OLLAMA_BASE_URL to the Ollama service on the same Docker network ` +
-      `(example: http://ollama:11434 — use your real container/service name from docker compose or Coolify). ` +
-      `If curl http://localhost:11434 works on the host but not here, set OLLAMA_DISCOVER_HOST_GATEWAY=1 (Linux) or OLLAMA_AUTO_BRIDGE_FALLBACK=1. ` +
-      `Call GET /api/ai/ollama-health from this deployment to see which URL responds.`
+      `Set OLLAMA_INTERNAL_BASE_URL (or OLLAMA_BASE_URL) to the Ollama service on the same Coolify/Docker network ` +
+      `(e.g. http://ollama:11434 — the internal hostname from your stack, not localhost). ` +
+      `GET /api/ai/ollama-health probes the origins from your configuration.`
   );
 }
 
@@ -83,9 +81,8 @@ function wrapAggregatedOllamaFailure(v1Bases: string[], lastErr: unknown): Error
     `Cannot reach Ollama after trying (OpenAI path /v1/chat/completions): ${v1Bases.join(' → ')}.\n` +
       `Last error: ${detail}\n\n` +
       `What to do:\n` +
-      `1) Coolify: put this app and Ollama on the same Docker network; set OLLAMA_INTERNAL_BASE_URL=http://<ollama-service-name>:11434 (name from Coolify/Docker, not localhost).\n` +
-      `2) Host shell curl localhost:11434 works: set OLLAMA_DISCOVER_HOST_GATEWAY=1 (reads container default gateway) or OLLAMA_AUTO_BRIDGE_FALLBACK=1.\n` +
-      `3) Open GET /api/ai/ollama-health — it probes GET /api/tags on each candidate and shows which origin works from this container.`
+      `1) Same Coolify/Docker network: set OLLAMA_INTERNAL_BASE_URL=http://<ollama-service-name>:11434 (internal name from your stack, not localhost).\n` +
+      `2) Open GET /api/ai/ollama-health — probes GET /api/tags on each configured candidate.`
   );
 }
 
