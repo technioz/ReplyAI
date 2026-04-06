@@ -1,13 +1,13 @@
 # AI Provider Setup
 
-Quirkly supports two AI backends for reply generation: Groq and XAI. Configure one provider at a time; the Next.js API picks the implementation based on the `AI_PROVIDER` environment variable.
+Quirkly supports multiple AI backends for reply generation: Groq, XAI, and Ollama. Configure one provider at a time; the Next.js API picks the implementation based on the `AI_PROVIDER` environment variable.
 
 ## 1. Choose a Provider
 
 Set `AI_PROVIDER` in `dashboard/.env.local`:
 
 ```
-AI_PROVIDER=groq   # or xai
+AI_PROVIDER=groq   # or xai, or ollama
 ```
 
 ## 2. Groq Configuration
@@ -28,6 +28,20 @@ XAI_MODEL=grok-3   # default if unset
 ```
 
 - Sign up at [https://x.ai](https://x.ai) to obtain a key
+
+## 4. Ollama Configuration
+
+```
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama2   # default if unset
+OLLAMA_API_KEY=your_ollama_api_key   # Optional, only if Ollama requires auth
+```
+
+- Install Ollama locally from [https://ollama.ai](https://ollama.ai)
+- Start the Ollama service: `ollama serve`
+- Pull a model: `ollama pull llama2`
+- Set base URL to your Ollama instance (can be localhost or remote server)
+- API key is optional and only needed if your Ollama instance requires authentication
 
 ## 4. Testing Your Setup
 

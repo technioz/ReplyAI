@@ -1,5 +1,6 @@
 import { GroqService } from './GroqService';
 import { XAIService } from './XAIService';
+import { OllamaService } from './OllamaService';
 
 export interface AIService {
   generateReply(tweetText: string, tone: string, userContext?: any): Promise<{
@@ -19,6 +20,8 @@ export class AIServiceFactory {
     switch (provider.toLowerCase()) {
       case 'xai':
         return new XAIService();
+      case 'ollama':
+        return new OllamaService();
       case 'groq':
       default:
         return new GroqService();
@@ -30,6 +33,8 @@ export class AIServiceFactory {
   }
   
   static getAvailableProviders(): string[] {
-    return ['groq', 'xai'];
+    return ['groq', 'xai', 'ollama'];
   }
 }
+
+

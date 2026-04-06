@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
         AI_PROVIDER: process.env.AI_PROVIDER || 'groq',
         GROQ_API_KEY: process.env.GROQ_API_KEY ? '***configured***' : 'not configured',
         XAI_API_KEY: process.env.XAI_API_KEY ? '***configured***' : 'not configured',
+        OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+        OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'llama2',
+        OLLAMA_API_KEY: process.env.OLLAMA_API_KEY ? '***configured***' : 'not configured',
         GROQ_MODEL: process.env.GROQ_MODEL || 'llama3-8b-8192',
         XAI_MODEL: process.env.XAI_MODEL || 'grok-3'
       }

@@ -161,6 +161,8 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
           model: AIServiceFactory.getCurrentProvider() === 'xai' 
             ? (process.env.XAI_MODEL || 'grok-3')
+            : AIServiceFactory.getCurrentProvider() === 'ollama'
+            ? (process.env.OLLAMA_MODEL || 'llama2')
             : (process.env.GROQ_MODEL || 'llama3-8b-8192'),
           provider: AIServiceFactory.getCurrentProvider()
         }
