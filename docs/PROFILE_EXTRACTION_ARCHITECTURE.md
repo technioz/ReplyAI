@@ -6,7 +6,7 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
 ## 🏗️ Architecture Components
 
 ### 1. Chrome Extension Profile Extractor
-- Location: `content.js` + new `profileExtractor.js`
+- Location: `extension/content.js` + `extension/profileExtractor.js`
 - Purpose: Extract profile data from X/Twitter DOM
 - Data Points:
   - Username/handle
@@ -22,7 +22,7 @@ Extract logged-in X (Twitter) account profile data and use it as contextual info
   - Pinned tweet content
 
 ### 2. Profile Data Processor
-- Location: `background.js`
+- Location: `extension/background.js`
 - Purpose: Process and validate extracted profile data
 - Functions:
   - Data validation and sanitization

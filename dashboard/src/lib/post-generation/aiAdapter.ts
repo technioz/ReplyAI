@@ -52,8 +52,8 @@ export class PostGenerationAIAdapter {
         max_tokens: 2000, // Increased for more complete, reasoned responses
         temperature: 1.0, // Higher for more creativity and varied outputs
         top_p: 0.95, // Allow more diverse token selection
-        presence_penalty: 0.6, // Encourage new topics and avoid repetition
-        frequency_penalty: 0.7 // Penalize repeating the same phrases
+        // presence_penalty: 0.6, // Encourage new topics and avoid repetition
+        // frequency_penalty: 0.7 // Penalize repeating the same phrases
       })
     });
 
@@ -88,8 +88,8 @@ export class PostGenerationAIAdapter {
       max_tokens: 2000, // Increased for more complete, reasoned responses
       temperature: 1.0, // Higher for more creativity and varied outputs
       top_p: 0.95, // Allow more diverse token selection
-      presence_penalty: 0.6, // Encourage new topics and avoid repetition
-      frequency_penalty: 0.7, // Penalize repeating the same phrases
+      // presence_penalty: 0.6, // Encourage new topics and avoid repetition
+      // frequency_penalty: 0.7, // Penalize repeating the same phrases
       stream: false
     };
 

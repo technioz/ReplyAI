@@ -173,18 +173,18 @@ if (typeof module !== 'undefined' && module.exports) {
 function showHelp() {
   log('\n🚀 Quirkly Extension Environment Manager', 'blue');
   log('Usage:', 'yellow');
-  log('  node env-manager.js <command> [options]', 'reset');
+  log('  node extension/env-manager.js <command> [options]', 'reset');
   log('\nCommands:', 'yellow');
   log('  set <environment>     Set environment (development|production)', 'reset');
   log('  show                 Show current environment configuration', 'reset');
   log('  dev                  Set to development environment', 'reset');
   log('  prod                 Set to production environment', 'reset');
   log('  help                 Show this help message', 'reset');
-  log('\nExamples:', 'yellow');
-  log('  node env-manager.js dev', 'reset');
-  log('  node env-manager.js prod', 'reset');
-  log('  node env-manager.js set development', 'reset');
-  log('  node env-manager.js show', 'reset');
+  log('\nExamples (from repo root):', 'yellow');
+  log('  node extension/env-manager.js dev', 'reset');
+  log('  node extension/env-manager.js prod', 'reset');
+  log('  node extension/env-manager.js set development', 'reset');
+  log('  node extension/env-manager.js show', 'reset');
 }
 
 function main() {

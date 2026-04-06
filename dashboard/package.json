@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "init-knowledge": "tsx scripts/initKnowledgeBase.ts"
+    "init-knowledge": "tsx scripts/initKnowledgeBase.ts",
+    "db:sync-schema": "tsx scripts/syncDatabaseSchema.ts"
   },
   "dependencies": {
     "@pinecone-database/pinecone": "^6.1.2",

@@ -85,8 +85,8 @@ scripts/
 - Hook formulas
 
 **Sources:**
-- `postGenerationKnowledge.md` (21 chunks)
-- `OWNING_A_DESIRE_FRAMEWORK.md` (5 chunks)
+- `knowledge-base/postGenerationKnowledge.md` (21 chunks)
+- `knowledge-base/OWNING_A_DESIRE_FRAMEWORK.md` (5 chunks)
 
 ## 🔧 API Usage
 
@@ -194,8 +194,8 @@ Automatic quality checks:
 ### Updating Knowledge Base
 
 1. Edit markdown files:
-   - `postGenerationKnowledge.md`
-   - `OWNING_A_DESIRE_FRAMEWORK.md`
+   - `knowledge-base/postGenerationKnowledge.md`
+   - `knowledge-base/OWNING_A_DESIRE_FRAMEWORK.md`
 
 2. Re-run initialization:
    ```bash
@@ -210,7 +210,7 @@ Automatic quality checks:
 ### Adding New Post Types
 
 1. Update `types.ts` - add to `PostType` enum
-2. Update `postGenerationKnowledge.md` - add structure/examples
+2. Update `knowledge-base/postGenerationKnowledge.md` - add structure/examples
 3. Re-run `npm run init-knowledge`
 4. Update `QuickPostGenerator.tsx` - add button
 5. Update `/api/post/generate/route.ts` - add to valid types
@@ -248,8 +248,8 @@ Automatic quality checks:
 ```
 Total Chunks: 26
 By Source:
-  • postGenerationKnowledge.md: 21
-  • OWNING_A_DESIRE_FRAMEWORK.md: 5
+  • knowledge-base/postGenerationKnowledge.md: 21
+  • knowledge-base/OWNING_A_DESIRE_FRAMEWORK.md: 5
 
 By Category:
   • Pillars: 3

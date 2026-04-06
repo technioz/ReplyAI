@@ -1,100 +1,141 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Quirkly Chrome extension — single build script for development or production.
+# Usage:
+#   ./build-extension.sh development   # or: dev --dev -d
+#   ./build-extension.sh production    # or: prod --prod -p  (default if omitted)
 
-# Quirkly Extension Build Script
-# This script builds the extension with environment-specific configuration
+set -euo pipefail
 
-set -e
-
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Default environment
-ENVIRONMENT=${1:-production}
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXT_DIR="$REPO_ROOT/extension"
 
-echo -e "${BLUE}🚀 Building Quirkly Extension for ${ENVIRONMENT} environment${NC}"
+usage() {
+  echo "Usage: ./build-extension.sh <mode>"
+  echo ""
+  echo "Modes:"
+  echo "  development | dev | --dev | -d   Localhost dashboard (dev build name in manifest)"
+  echo "  production  | prod | --prod | -p   Store-ready zip (default)"
+  echo ""
+  echo "Optional env (see extension/extension.env):"
+  echo "  DEV_BASE_URL, DEV_DASHBOARD_URL, PROD_BASE_URL, PROD_DASHBOARD_URL"
+}
 
-# Validate environment
-if [[ "$ENVIRONMENT" != "development" && "$ENVIRONMENT" != "production" ]]; then
-    echo -e "${RED}❌ Invalid environment. Use 'development' or 'production'${NC}"
+raw="${1:-production}"
+case "$raw" in
+  development|dev|--dev|-d)
+    MODE=development
+    ;;
+  production|prod|--prod|-p)
+    MODE=production
+    ;;
+  help|-h|--help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo -e "${RED}Unknown mode: $raw${NC}" >&2
+    usage >&2
     exit 1
+    ;;
+esac
+
+if ! command -v jq &>/dev/null; then
+  echo -e "${RED}jq is required (brew install jq).${NC}" >&2
+  exit 1
 fi
 
-# Load environment variables from extension.env
-if [ -f "extension.env" ]; then
-    echo -e "${YELLOW}📄 Loading environment variables from extension.env${NC}"
-    export $(grep -v '^#' extension.env | xargs)
+if [ ! -d "$EXT_DIR" ]; then
+  echo -e "${RED}Missing extension sources: $EXT_DIR${NC}" >&2
+  exit 1
+fi
+
+ENV_FILE="$EXT_DIR/extension.env"
+if [ -f "$ENV_FILE" ]; then
+  echo -e "${YELLOW}Loading $ENV_FILE${NC}"
+  while IFS= read -r line || [ -n "$line" ]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line// }" ]] && continue
+    [[ "$line" == *"="* ]] || continue
+    export "$line"
+  done < "$ENV_FILE"
 else
-    echo -e "${YELLOW}⚠️  No extension.env file found, using defaults${NC}"
+  echo -e "${YELLOW}No extension.env (using defaults).${NC}"
 fi
 
-# Set environment-specific variables
-if [ "$ENVIRONMENT" = "development" ]; then
-    export EXT_ENV=development
-    export DEV_BASE_URL=${DEV_BASE_URL:-http://localhost:3000}
-    export DEV_DASHBOARD_URL=${DEV_DASHBOARD_URL:-http://localhost:3000}
-    echo -e "${GREEN}🔧 Development mode: Using localhost URLs${NC}"
+DEV_BASE_URL="${DEV_BASE_URL:-http://localhost:3000}"
+DEV_DASHBOARD_URL="${DEV_DASHBOARD_URL:-http://localhost:3000}"
+PROD_BASE_URL="${PROD_BASE_URL:-https://quirkly.technioz.com}"
+PROD_DASHBOARD_URL="${PROD_DASHBOARD_URL:-https://quirkly.technioz.com}"
+
+VERSION="$(node -p "require('$EXT_DIR/manifest.json').version")"
+
+if [ "$MODE" = "development" ]; then
+  IS_DEV_BOOL=true
+  ZIP_NAME="quirkly-extension-development-$(date +%Y%m%d-%H%M%S).zip"
+  echo -e "${BLUE}Building DEVELOPMENT extension (API: $DEV_BASE_URL)${NC}"
 else
-    export EXT_ENV=production
-    export PROD_BASE_URL=${PROD_BASE_URL:-https://quirkly.technioz.com}
-    export PROD_DASHBOARD_URL=${PROD_DASHBOARD_URL:-https://quirkly.technioz.com}
-    echo -e "${GREEN}🔧 Production mode: Using live URLs${NC}"
+  IS_DEV_BOOL=false
+  ZIP_NAME="quirkly-extension-v${VERSION}-production.zip"
+  echo -e "${BLUE}Building PRODUCTION extension v${VERSION} (API: $PROD_BASE_URL)${NC}"
 fi
 
-# Create build directory
-BUILD_DIR="build-${ENVIRONMENT}"
-echo -e "${BLUE}📁 Creating build directory: ${BUILD_DIR}${NC}"
+BUILD_DIR="$REPO_ROOT/build-extension-${MODE}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# Copy extension files
-echo -e "${BLUE}📋 Copying extension files${NC}"
-cp manifest.json "$BUILD_DIR/"
-cp background.js "$BUILD_DIR/"
-cp content.js "$BUILD_DIR/"
-cp popup.html "$BUILD_DIR/"
-cp popup.js "$BUILD_DIR/"
-cp styles.css "$BUILD_DIR/"
-cp -r icons "$BUILD_DIR/"
+echo -e "${BLUE}Copying extension sources from extension/${NC}"
+cp "$EXT_DIR/manifest.json" "$BUILD_DIR/"
+cp "$EXT_DIR/background.js" "$BUILD_DIR/"
+cp "$EXT_DIR/content.js" "$BUILD_DIR/"
+cp "$EXT_DIR/popup.html" "$BUILD_DIR/"
+cp "$EXT_DIR/popup.js" "$BUILD_DIR/"
+cp "$EXT_DIR/styles.css" "$BUILD_DIR/"
+cp "$EXT_DIR/profileExtractor.js" "$BUILD_DIR/"
+cp -r "$EXT_DIR/icons" "$BUILD_DIR/"
 
-# Create environment-specific config
-echo -e "${BLUE}⚙️  Creating environment-specific config${NC}"
+if [ "$MODE" = "production" ] && [ -d "$REPO_ROOT/public" ]; then
+  echo -e "${BLUE}Copying repo public/ into build${NC}"
+  cp -r "$REPO_ROOT/public" "$BUILD_DIR/"
+fi
+
+echo -e "${BLUE}Writing config.js${NC}"
 cat > "$BUILD_DIR/config.js" << EOF
-// Quirkly Extension Configuration - ${ENVIRONMENT.toUpperCase()} BUILD
-// Generated on $(date)
+// Quirkly Extension Configuration — ${MODE} build
+// Generated $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 const QuirklyConfig = {
-  // Environment detection
+  buildEnvironment: '${MODE}',
+
   isDevelopment: () => {
-    return ${ENVIRONMENT === "development" ? "true" : "false"};
+    return ${IS_DEV_BOOL};
   },
 
-  // Base URLs for different environments
   environments: {
     development: {
-      baseUrl: '${DEV_BASE_URL:-http://localhost:3000}',
+      baseUrl: '${DEV_BASE_URL}',
       authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
       profileEndpoint: '/api/profile/extract',
-      dashboardUrl: '${DEV_DASHBOARD_URL:-http://localhost:3000}'
+      dashboardUrl: '${DEV_DASHBOARD_URL}'
     },
     production: {
-      baseUrl: '${PROD_BASE_URL:-https://quirkly.technioz.com}',
+      baseUrl: '${PROD_BASE_URL}',
       authEndpoint: '/api/auth/validate',
       replyEndpoint: '/api/reply/generate',
       profileEndpoint: '/api/profile/extract',
-      dashboardUrl: '${PROD_DASHBOARD_URL:-https://quirkly.technioz.com}'
+      dashboardUrl: '${PROD_DASHBOARD_URL}'
     }
   },
 
-  // Get current environment configuration
   getConfig: function() {
     const env = this.isDevelopment() ? 'development' : 'production';
     const config = this.environments[env];
-    
     return {
       environment: env,
       baseUrl: config.baseUrl,
@@ -106,24 +147,19 @@ const QuirklyConfig = {
     };
   },
 
-  // Get specific URLs
   getAuthUrl: function() {
     return this.getConfig().authUrl;
   },
-
   getReplyUrl: function() {
     return this.getConfig().replyUrl;
   },
-
   getDashboardUrl: function() {
     return this.getConfig().dashboardUrl;
   },
-
   getProfileUrl: function() {
     return this.getConfig().profileUrl;
   },
 
-  // Debug info
   getEnvironmentInfo: function() {
     const config = this.getConfig();
     console.log('Quirkly Environment Info:', {
@@ -131,67 +167,73 @@ const QuirklyConfig = {
       authUrl: config.authUrl,
       replyUrl: config.replyUrl,
       dashboardUrl: config.dashboardUrl,
-      buildTime: '$(date)',
-      buildEnv: '${ENVIRONMENT}'
+      buildEnvironment: this.buildEnvironment
     });
     return config;
   }
 };
 
-// Make it available globally
 if (typeof window !== 'undefined') {
   window.QuirklyConfig = QuirklyConfig;
 }
-
-// Export for modules (if needed)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = QuirklyConfig;
 }
 EOF
 
-# Update manifest.json with environment-specific details
-echo -e "${BLUE}📝 Updating manifest.json${NC}"
-if [ "$ENVIRONMENT" = "development" ]; then
-    # Add development-specific permissions or settings
-    jq '. + {
-        "name": "Quirkly (Dev)",
-        "description": "AI-powered X replies - Development Build",
-        "version_name": (.version + "-dev"),
-        "env": "development"
-    }' "$BUILD_DIR/manifest.json" > "$BUILD_DIR/manifest.json.tmp" && mv "$BUILD_DIR/manifest.json.tmp" "$BUILD_DIR/manifest.json"
+echo -e "${BLUE}Patching manifest.json${NC}"
+if [ "$MODE" = "development" ]; then
+  jq '. + {
+    "name": "Quirkly (Dev)",
+    "description": "AI-powered X replies — development build",
+    "version_name": (.version + "-dev")
+  } | del(.env)' "$BUILD_DIR/manifest.json" > "$BUILD_DIR/manifest.json.tmp"
 else
-    # Production build
-    jq '. + {
-        "env": "production"
-    }' "$BUILD_DIR/manifest.json" > "$BUILD_DIR/manifest.json.tmp" && mv "$BUILD_DIR/manifest.json.tmp" "$BUILD_DIR/manifest.json"
+  jq '. + {"description": "Premium AI-powered reply generator for X (Twitter) with multiple tones and styles"} | del(.env)' \
+    "$BUILD_DIR/manifest.json" > "$BUILD_DIR/manifest.json.tmp"
+fi
+mv "$BUILD_DIR/manifest.json.tmp" "$BUILD_DIR/manifest.json"
+
+if [ "$MODE" = "production" ]; then
+  echo -e "${YELLOW}Verifying production config marker…${NC}"
+  if ! grep -q "buildEnvironment: 'production'" "$BUILD_DIR/config.js"; then
+    echo -e "${RED}Production config marker missing.${NC}" >&2
+    exit 1
+  fi
+  REQUIRED=(
+    "manifest.json"
+    "config.js"
+    "background.js"
+    "content.js"
+    "popup.html"
+    "popup.js"
+    "profileExtractor.js"
+    "styles.css"
+    "icons/icon16.png"
+    "icons/icon48.png"
+    "icons/icon128.png"
+  )
+  for f in "${REQUIRED[@]}"; do
+    if [ ! -f "$BUILD_DIR/$f" ]; then
+      echo -e "${RED}Missing required file: $f${NC}" >&2
+      exit 1
+    fi
+  done
+  echo -e "${GREEN}All required files present.${NC}"
 fi
 
-# Create zip file
-ZIP_NAME="quirkly-extension-${ENVIRONMENT}-$(date +%Y%m%d-%H%M%S).zip"
-echo -e "${BLUE}📦 Creating zip file: ${ZIP_NAME}${NC}"
-cd "$BUILD_DIR"
-zip -r "../${ZIP_NAME}" . > /dev/null
-cd ..
+echo -e "${BLUE}Creating ${ZIP_NAME}${NC}"
+(
+  cd "$BUILD_DIR"
+  zip -r "../${ZIP_NAME}" . -x "*.DS_Store" "*.git*" "node_modules/*" "*.md" "*.log" >/dev/null
+)
 
-# Clean up build directory
-echo -e "${BLUE}🧹 Cleaning up build directory${NC}"
 rm -rf "$BUILD_DIR"
 
-# Display build info
-echo -e "${GREEN}✅ Build completed successfully!${NC}"
-echo -e "${BLUE}📦 Extension package: ${ZIP_NAME}${NC}"
-echo -e "${YELLOW}🌐 Environment: ${ENVIRONMENT}${NC}"
-echo -e "${YELLOW}🔗 Base URL: $([ "$ENVIRONMENT" = "development" ] && echo "${DEV_BASE_URL:-http://localhost:3000}" || echo "${PROD_BASE_URL:-https://quirkly.technioz.com}")${NC}"
-
-# Usage instructions
-echo -e "\n${BLUE}📋 Usage Instructions:${NC}"
-echo -e "${YELLOW}1. Load the extension in Chrome:${NC}"
-echo -e "   - Open chrome://extensions/"
-echo -e "   - Enable 'Developer mode'"
-echo -e "   - Click 'Load unpacked' and select the build directory"
-echo -e "\n${YELLOW}2. Or install from zip:${NC}"
-echo -e "   - Download ${ZIP_NAME}"
-echo -e "   - Extract and load as unpacked extension"
-echo -e "\n${YELLOW}3. To switch environments:${NC}"
-echo -e "   - Development: ./build-extension.sh development"
-echo -e "   - Production: ./build-extension.sh production"
+echo -e "${GREEN}Done.${NC}  Output: $REPO_ROOT/$ZIP_NAME"
+echo -e "${YELLOW}Mode:${NC} $MODE"
+if [ "$MODE" = "development" ]; then
+  echo -e "${YELLOW}Load unpacked:${NC} unzip then chrome://extensions → Load unpacked"
+else
+  echo -e "${YELLOW}Upload ${ZIP_NAME} to Chrome Web Store.${NC}"
+fi

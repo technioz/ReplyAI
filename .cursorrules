@@ -23,12 +23,12 @@ XBot is an AI-powered platform that generates authentic, human-like social media
 - `pineconeService.ts` - Vector database operations
 - `cohereService.ts` - Generates embeddings for text
 
-#### 2. Knowledge Sources (Root Directory)
-- `profileContext.md` - Personal brand identity, voice, positioning (199 lines)
-- `postGenerationKnowledge.md` - Post structures, examples, style guide (31 diverse client stories)
-- `backendEngineeringKnowledge.md` - Technical knowledge base (24 sections across all domains)
-- `humanBehaviour.md` - Authentic X writing patterns analysis (7 style categories)
-- `OWNING_A_DESIRE_FRAMEWORK.md` - Engagement framework
+#### 2. Knowledge Sources (`knowledge-base/`)
+- `knowledge-base/profileContext.md` - Personal brand identity, voice, positioning (199 lines)
+- `knowledge-base/postGenerationKnowledge.md` - Post structures, examples, style guide (31 diverse client stories)
+- `knowledge-base/backendEngineeringKnowledge.md` - Technical knowledge base (24 sections across all domains)
+- `knowledge-base/humanBehaviour.md` - Authentic X writing patterns analysis (7 style categories)
+- `knowledge-base/OWNING_A_DESIRE_FRAMEWORK.md` - Engagement framework
 
 #### 3. AI Generation (`dashboard/src/lib/post-generation/`)
 - `aiAdapter.ts` - Handles API calls to Groq/XAI with optimized parameters
@@ -248,7 +248,7 @@ This script:
 5. Verifies upload
 
 ### Adding New Knowledge
-1. Create/edit markdown file in project root
+1. Create/edit markdown file in `knowledge-base/` (or add a new file there and wire it in the processor)
 2. Add processing logic in `chunkProcessor.ts`
 3. Run `npm run init-knowledge`
 4. Restart Next.js dev server

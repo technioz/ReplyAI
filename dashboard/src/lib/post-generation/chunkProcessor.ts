@@ -7,10 +7,12 @@ import { KnowledgeChunk, Pillar, PostType } from './types';
 
 export class KnowledgeChunkProcessor {
   private projectRoot: string;
+  private knowledgeBaseDir: string;
 
   constructor() {
     // Project root is one level up from dashboard directory
     this.projectRoot = path.join(process.cwd(), '..');
+    this.knowledgeBaseDir = path.join(this.projectRoot, 'knowledge-base');
   }
 
   /**
@@ -48,10 +50,10 @@ export class KnowledgeChunkProcessor {
    * Process profileContext.md - Personal brand and identity
    */
   private async processProfileContext(): Promise<KnowledgeChunk[]> {
-    const filePath = path.join(this.projectRoot, 'profileContext.md');
+    const filePath = path.join(this.knowledgeBaseDir, 'profileContext.md');
     
     if (!fs.existsSync(filePath)) {
-      console.warn('⚠️  profileContext.md not found, skipping');
+      console.warn(`⚠️  ${path.relative(this.projectRoot, filePath)} not found, skipping`);
       return [];
     }
     
@@ -124,7 +126,7 @@ export class KnowledgeChunkProcessor {
       });
     }
 
-    console.log(`✅ Extracted ${chunks.length} chunks from profileContext.md`);
+    console.log(`✅ Extracted ${chunks.length} chunks from ${path.relative(this.projectRoot, filePath)}`);
     return chunks;
   }
 
@@ -132,7 +134,7 @@ export class KnowledgeChunkProcessor {
    * Process postGenerationKnowledge.md
    */
   private async processPostGenerationKnowledge(): Promise<KnowledgeChunk[]> {
-    const filePath = path.join(this.projectRoot, 'postGenerationKnowledge.md');
+    const filePath = path.join(this.knowledgeBaseDir, 'postGenerationKnowledge.md');
     const content = fs.readFileSync(filePath, 'utf-8');
     
     const chunks: KnowledgeChunk[] = [];
@@ -301,7 +303,7 @@ export class KnowledgeChunkProcessor {
       });
     }
 
-    console.log(`✅ Extracted ${chunks.length} chunks from postGenerationKnowledge.md`);
+    console.log(`✅ Extracted ${chunks.length} chunks from ${path.relative(this.projectRoot, filePath)}`);
     return chunks;
   }
 
@@ -309,7 +311,7 @@ export class KnowledgeChunkProcessor {
    * Process OWNING_A_DESIRE_FRAMEWORK.md
    */
   private async processDesireFramework(): Promise<KnowledgeChunk[]> {
-    const filePath = path.join(this.projectRoot, 'OWNING_A_DESIRE_FRAMEWORK.md');
+    const filePath = path.join(this.knowledgeBaseDir, 'OWNING_A_DESIRE_FRAMEWORK.md');
     const content = fs.readFileSync(filePath, 'utf-8');
     
     const chunks: KnowledgeChunk[] = [];
@@ -395,7 +397,7 @@ export class KnowledgeChunkProcessor {
       });
     }
 
-    console.log(`✅ Extracted ${chunks.length} chunks from OWNING_A_DESIRE_FRAMEWORK.md`);
+    console.log(`✅ Extracted ${chunks.length} chunks from ${path.relative(this.projectRoot, filePath)}`);
     return chunks;
   }
 
@@ -403,10 +405,10 @@ export class KnowledgeChunkProcessor {
    * Process backendEngineeringKnowledge.md - Technical knowledge base
    */
   private async processBackendEngineering(): Promise<KnowledgeChunk[]> {
-    const filePath = path.join(this.projectRoot, 'backendEngineeringKnowledge.md');
+    const filePath = path.join(this.knowledgeBaseDir, 'backendEngineeringKnowledge.md');
     
     if (!fs.existsSync(filePath)) {
-      console.warn('⚠️  backendEngineeringKnowledge.md not found, skipping');
+      console.warn(`⚠️  ${path.relative(this.projectRoot, filePath)} not found, skipping`);
       return [];
     }
     
@@ -495,7 +497,7 @@ export class KnowledgeChunkProcessor {
       }
     }
 
-    console.log(`✅ Extracted ${chunks.length} chunks from backendEngineeringKnowledge.md`);
+    console.log(`✅ Extracted ${chunks.length} chunks from ${path.relative(this.projectRoot, filePath)}`);
     return chunks;
   }
 
@@ -579,10 +581,10 @@ export class KnowledgeChunkProcessor {
    * Process humanBehaviour.md - Human writing style patterns for X
    */
   private async processHumanBehaviour(): Promise<KnowledgeChunk[]> {
-    const filePath = path.join(this.projectRoot, 'humanBehaviour.md');
+    const filePath = path.join(this.knowledgeBaseDir, 'humanBehaviour.md');
     
     if (!fs.existsSync(filePath)) {
-      console.warn('⚠️  humanBehaviour.md not found, skipping');
+      console.warn(`⚠️  ${path.relative(this.projectRoot, filePath)} not found, skipping`);
       return [];
     }
     
@@ -631,7 +633,7 @@ export class KnowledgeChunkProcessor {
       }
     }
 
-    console.log(`✅ Extracted ${chunks.length} chunks from humanBehaviour.md`);
+    console.log(`✅ Extracted ${chunks.length} chunks from ${path.relative(this.projectRoot, filePath)}`);
     return chunks;
   }
 

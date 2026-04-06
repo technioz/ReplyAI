@@ -17,14 +17,19 @@ The browser extension that users install to use Quirkly on X/Twitter:
 
 ```
 XBot/
-├── manifest.json          # Extension configuration (v2.0.1)
-├── background.js          # Service worker (API communication)
-├── content.js             # X/Twitter page integration
-├── popup.js/popup.html    # Extension popup UI
-├── config.js              # Environment configuration
-├── profileExtractor.js    # X profile data extraction
-├── styles.css             # Extension styling
-└── icons/                 # Extension icons (16px, 48px, 128px)
+├── extension/             # Chrome extension sources (manifest v2.1.0)
+│   ├── manifest.json
+│   ├── background.js      # Service worker (API communication)
+│   ├── content.js         # X/Twitter page integration
+│   ├── popup.js, popup.html
+│   ├── config.js          # Environment configuration
+│   ├── profileExtractor.js
+│   ├── styles.css
+│   ├── env-manager.js
+│   ├── extension.env
+│   └── icons/
+├── build-extension.sh     # ./build-extension.sh development | production
+└── ...
 ```
 
 Key Features:

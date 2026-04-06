@@ -28,8 +28,8 @@ async function initializeKnowledgeBase() {
     console.log('\n📊 Processing Statistics:');
     console.log(`   Total Chunks: ${stats.total}`);
     console.log(`   By Source:`);
-    console.log(`     • postGenerationKnowledge.md: ${stats.bySource.postGeneration}`);
-    console.log(`     • OWNING_A_DESIRE_FRAMEWORK.md: ${stats.bySource.desireFramework}`);
+    console.log(`     • knowledge-base/postGenerationKnowledge.md: ${stats.bySource.postGeneration}`);
+    console.log(`     • knowledge-base/OWNING_A_DESIRE_FRAMEWORK.md: ${stats.bySource.desireFramework}`);
     console.log(`   By Category:`);
     console.log(`     • Pillars: ${stats.byCategory.pillar}`);
     console.log(`     • Post Types: ${stats.byCategory.postType}`);

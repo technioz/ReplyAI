@@ -97,16 +97,20 @@ The extension uses `config.js` for environment management:
 ### Files Structure
 ```
 XBot/
-├── manifest.json          # Extension configuration
-├── popup.html            # Settings interface
-├── popup.js              # Popup functionality
-├── content.js            # X/Twitter integration
-├── background.js         # Service worker
-├── styles.css            # Premium styling
-└── icons/                # Extension icons
-    ├── icon16.png
-    ├── icon48.png
-    └── icon128.png
+├── extension/             # Chrome extension (source)
+│   ├── manifest.json
+│   ├── popup.html
+│   ├── popup.js
+│   ├── content.js
+│   ├── background.js
+│   ├── styles.css
+│   ├── config.js
+│   ├── profileExtractor.js
+│   ├── env-manager.js
+│   ├── extension.env
+│   └── icons/
+├── build-extension.sh     # Package extension: ./build-extension.sh development|production
+└── dashboard/             # Next.js app
 ```
 
 ### Authentication Flow
@@ -196,7 +200,7 @@ Enable Chrome Developer Tools and check the Console tab for detailed logs:
 - [x] Responsive layout tested
 
 ### Chrome Web Store Submission
-1. Update `manifest.json` version
+1. Update `extension/manifest.json` version
 2. Test on multiple Chrome versions
 3. Prepare store assets (screenshots, descriptions)
 4. Submit for review
