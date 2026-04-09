@@ -1,33 +1,36 @@
 import { AIService } from './AIServiceFactory';
+import { getOllamaCandidateOrigins, getOllamaServerOrigin } from './ollamaServerUrl';
+import { openOllamaCompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class OllamaService implements AIService {
   private baseUrl: string;
   private model: string;
   private apiKey?: string;
   private useCloud: boolean;
-  
+
   constructor() {
     // Check if cloud Ollama should be used
     this.useCloud = process.env.OLLAMA_USE_CLOUD === 'true';
-    
+
     if (this.useCloud) {
       // Use Ollama Cloud API (ollama.com)
       this.baseUrl = 'https://ollama.com';
       this.apiKey = process.env.OLLAMA_CLOUD_API_KEY;
-      
+
       if (!this.apiKey) {
         console.warn('OLLAMA_CLOUD_API_KEY is not set. Cloud Ollama API requires an API key.');
       }
+      this.model = process.env.OLLAMA_MODEL || 'llama2';
+      console.log(`Ollama Service initialized: cloud (${this.baseUrl}), model: ${this.model}`);
     } else {
       // Use local or custom Ollama instance
-      const customUrl = process.env.OLLAMA_BASE_URL;
-      this.baseUrl = customUrl || 'http://localhost:11434';
+      this.baseUrl = getOllamaServerOrigin();
       this.apiKey = process.env.OLLAMA_API_KEY; // Optional API key for auth
+      this.model = process.env.OLLAMA_MODEL || 'llama2';
+      console.log(
+        `Ollama Service initialized: primary=${this.baseUrl}, candidates=[${getOllamaCandidateOrigins().join(', ')}], model=${this.model}`
+      );
     }
-    
-    this.model = process.env.OLLAMA_MODEL || 'llama2';
-    
-    console.log(`Ollama Service initialized: ${this.useCloud ? 'cloud' : 'local'} (${this.baseUrl}), model: ${this.model}`);
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
@@ -38,7 +41,31 @@ export class OllamaService implements AIService {
       if (this.useCloud) {
         return await this.callCloudAPI(systemPrompt, userPrompt);
       } else {
-        return await this.callLocalAPI(systemPrompt, userPrompt);
+        const { content, usage } = await openOllamaCompatibleChat({
+          apiKey: this.apiKey,
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          ...REPLY_CHAT_OPTIONS,
+        });
+
+        const validation = this.validateReply(content);
+        if (!validation.valid) {
+          console.warn('Reply validation issues:', validation.issues);
+        }
+
+        return {
+          reply: content,
+          processingTime: usage
+            ? {
+                promptTokens: usage.promptTokens,
+                completionTokens: usage.completionTokens,
+                totalTokens: usage.totalTokens,
+              }
+            : null,
+        };
       }
     } catch (error) {
       console.error('Ollama service error:', error);
@@ -82,7 +109,7 @@ export class OllamaService implements AIService {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Ollama Cloud API error:', response.status, errorData);
-      
+
       let errorMessage = `Ollama Cloud API error: ${response.status}`;
       try {
         const errorJson = JSON.parse(errorData);
@@ -95,18 +122,18 @@ export class OllamaService implements AIService {
       } catch (e) {
         errorMessage = `Ollama Cloud API error: ${response.status} - ${errorData}`;
       }
-      
+
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
-    
+
     if (!result.message || !result.message.content) {
       throw new Error('Invalid response from Ollama Cloud API');
     }
 
     const reply = result.message.content.trim();
-    
+
     // Validate reply quality
     const validation = this.validateReply(reply);
     if (!validation.valid) {
@@ -119,86 +146,6 @@ export class OllamaService implements AIService {
         promptTokens: result.prompt_eval_count || 0,
         completionTokens: result.eval_count || 0,
         totalTokens: (result.prompt_eval_count || 0) + (result.eval_count || 0)
-      } : null
-    };
-  }
-
-  private async callLocalAPI(systemPrompt: string, userPrompt: string) {
-    const requestBody = {
-      model: this.model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ],
-      max_tokens: 120, // Optimized for X replies
-      temperature: 0.8, // Natural but focused
-      top_p: 0.9,
-      stream: false
-    };
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'User-Agent': 'Quirkly-NextJS-API/1.0.0',
-      'Accept': 'application/json'
-    };
-
-    // Add Authorization header if API key is provided
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
-    const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Ollama API error:', response.status, errorData);
-      
-      let errorMessage = `Ollama API error: ${response.status}`;
-      try {
-        const errorJson = JSON.parse(errorData);
-        if (errorJson.error) {
-          errorMessage = `Ollama API error: ${errorJson.error}`;
-        }
-        if (errorJson.message) {
-          errorMessage += ` - ${errorJson.message}`;
-        }
-      } catch (e) {
-        errorMessage = `Ollama API error: ${response.status} - ${errorData}`;
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
-    
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      throw new Error('Invalid response from Ollama API');
-    }
-
-    const reply = result.choices[0].message.content.trim();
-    
-    // Validate reply quality
-    const validation = this.validateReply(reply);
-    if (!validation.valid) {
-      console.warn('Reply validation issues:', validation.issues);
-    }
-
-    return {
-      reply: reply,
-      processingTime: result.usage ? {
-        promptTokens: result.usage.prompt_tokens,
-        completionTokens: result.usage.completion_tokens,
-        totalTokens: result.usage.total_tokens
       } : null
     };
   }
@@ -270,35 +217,35 @@ Acceptance criteria: Replies must be natural and engaging, add value first, matc
   private formatPostMetadata(metadata: any): string {
     const elements = [];
     if (metadata.isThread) elements.push('Part of thread');
-    if (metadata.hasLinks) elements.push('Contains links');  
+    if (metadata.hasLinks) elements.push('Contains links');
     if (metadata.hasMedia) elements.push('Has media');
     return elements.length > 0 ? `Post context: ${elements.join(', ')}` : '';
   }
 
   private validateReply(reply: string): { valid: boolean; issues: string[] } {
     const issues: string[] = [];
-    
+
     // Length check
     if (reply.length > 280) {
       issues.push(`Too long: ${reply.length} chars (max 280)`);
     }
-    
+
     // Question check
     if (reply.includes('?')) {
       issues.push('Contains question mark (questions not allowed)');
     }
-    
+
     // Emoji check (simplified regex for compatibility)
     const emojiRegex = /[\uD800-\uDFFF]|[\u2600-\u27BF]/;
     if (emojiRegex.test(reply)) {
       issues.push('Contains emojis');
     }
-    
+
     // Quote wrapping check
     if ((reply.startsWith('"') && reply.endsWith('"')) || (reply.startsWith("'") && reply.endsWith("'"))) {
       issues.push('Wrapped in quotes');
     }
-    
+
     // AI-sounding phrases check
     const aiPhrases = ['great question', 'thanks for sharing', 'i appreciate', 'interesting point'];
     const lowerReply = reply.toLowerCase();
@@ -307,7 +254,7 @@ Acceptance criteria: Replies must be natural and engaging, add value first, matc
         issues.push(`Contains AI phrase: "${phrase}"`);
       }
     });
-    
+
     return {
       valid: issues.length === 0,
       issues

@@ -1,4 +1,5 @@
 import { AIService } from './AIServiceFactory';
+import { openAICompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class XAIService implements AIService {
   private apiKey: string;
@@ -17,80 +18,38 @@ export class XAIService implements AIService {
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     const model = process.env.XAI_MODEL || 'grok-4';
-    
+
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
-    
-    const requestBody = {
-      model: model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ],
-      max_tokens: 120, // Optimized for X replies
-      temperature: 0.8, // Natural but focused
-      top_p: 0.9,
-      stream: false
-    };
-    
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Quirkly-NextJS-API/1.0.0',
-        'Accept': 'application/json'
+
+    const { content, usage } = await openAICompatibleChat(
+      {
+        baseUrl: this.baseUrl,
+        apiKey: this.apiKey,
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        ...REPLY_CHAT_OPTIONS,
       },
-      body: JSON.stringify(requestBody)
-    });
+      'XAI'
+    );
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('XAI API error:', response.status, errorData);
-      
-      let errorMessage = `XAI API error: ${response.status}`;
-      try {
-        const errorJson = JSON.parse(errorData);
-        if (errorJson.error) {
-          errorMessage = `XAI API error: ${errorJson.error}`;
-        }
-        if (errorJson.message) {
-          errorMessage += ` - ${errorJson.message}`;
-        }
-      } catch (e) {
-        errorMessage = `XAI API error: ${response.status} - ${errorData}`;
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
-    
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      throw new Error('Invalid response from XAI API');
-    }
-
-    const reply = result.choices[0].message.content.trim();
-    
-    // Validate reply quality
-    const validation = this.validateReply(reply);
+    const validation = this.validateReply(content);
     if (!validation.valid) {
       console.warn('Reply validation issues:', validation.issues);
     }
 
     return {
-      reply: reply,
-      processingTime: result.usage ? {
-        promptTokens: result.usage.prompt_tokens,
-        completionTokens: result.usage.completion_tokens,
-        totalTokens: result.usage.total_tokens
-      } : null
+      reply: content,
+      processingTime: usage
+        ? {
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            totalTokens: usage.totalTokens,
+          }
+        : null,
     };
   }
 

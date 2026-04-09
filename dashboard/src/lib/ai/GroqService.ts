@@ -1,4 +1,5 @@
 import { AIService } from './AIServiceFactory';
+import { openAICompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class GroqService implements AIService {
   private apiKey: string;
@@ -13,58 +14,36 @@ export class GroqService implements AIService {
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
-    
+
     const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
     const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
-    
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Quirkly-NextJS-API/1.0.0'
-      },
-      body: JSON.stringify({
-        model: model,
+
+    const { content, usage } = await openAICompatibleChat(
+      {
+        baseUrl: this.baseUrl,
+        apiKey: this.apiKey,
+        model,
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
         ],
-        max_tokens: 120, // Shortened for X replies
-        temperature: 0.8, // More natural responses
-        top_p: 0.9, 
-        frequency_penalty: 0.4, // Avoid repetitive patterns
-        presence_penalty: 0.5, // Encourage unique perspectives
-        stream: false
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Groq API error:', response.status, errorData);
-      throw new Error(`Groq API error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Groq API response:', result.choices[0].message);
-    
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      throw new Error('Invalid response from Groq API');
-    }
+        ...REPLY_CHAT_OPTIONS,
+        frequency_penalty: 0.4,
+        presence_penalty: 0.5,
+      },
+      'Groq'
+    );
+    console.log('Groq API response length:', content.length);
 
     return {
-      reply: result.choices[0].message.content.trim(),
-      processingTime: result.usage ? {
-        promptTokens: result.usage.prompt_tokens,
-        completionTokens: result.usage.completion_tokens,
-        totalTokens: result.usage.total_tokens
-      } : null
+      reply: content,
+      processingTime: usage
+        ? {
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            totalTokens: usage.totalTokens,
+          }
+        : null,
     };
   }
 
