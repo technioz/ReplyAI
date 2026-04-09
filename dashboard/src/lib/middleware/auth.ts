@@ -115,20 +115,66 @@ export const protect = async (req: NextRequest): Promise<JWTPayload> => {
   return user;
 };
 
-// Validate JWT token for extension requests (replaces API key validation)
+// Validate JWT token OR API key for extension requests
+// Supports both JWT (Bearer token) and legacy API keys (qk_...)
 export const validateApiKey = async (req: NextRequest): Promise<JWTPayload> => {
-  const user = await getUserFromRequest(req);
+  // First try JWT authentication
+  const jwtUser = await getUserFromRequest(req);
   
-  if (!user) {
-    throw AppError.unauthorized('Valid JWT token is required', 'JWT_TOKEN_REQUIRED');
+  if (jwtUser) {
+    // Check if user is active
+    if (jwtUser.status !== 'active') {
+      throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
+    }
+    return jwtUser;
   }
-
-  // Check if user is active
-  if (user.status !== 'active') {
-    throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
+  
+  // If JWT fails, try API key authentication (for extension compatibility)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    
+    // Check if it's an API key (starts with qk_)
+    if (token && token.startsWith('qk_')) {
+      console.log('🔍 Trying API key authentication...');
+      
+      try {
+        // Import User model dynamically to avoid circular dependency
+        const User = require('../models/User').default;
+        const user = await User.findByApiKey(token);
+        
+        if (user) {
+          console.log('✅ API key auth successful for user:', user.email);
+          
+          // Check if user is active
+          if (user.status !== 'active') {
+            throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
+          }
+          
+          // Convert user to JWTPayload format
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            credits: {
+              available: user.credits.available,
+              used: user.credits.used,
+              total: user.credits.total
+            },
+            hasActiveSubscription: user.hasActiveSubscription || false,
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
+          };
+        }
+      } catch (error) {
+        console.error('❌ API key validation error:', error);
+        // Continue to throw unauthorized below
+      }
+    }
   }
-
-  return user;
+  
+  throw AppError.unauthorized('Valid authentication required', 'AUTHENTICATION_REQUIRED');
 };
 
 // Validate JWT token for dashboard requests (replaces session token validation)
