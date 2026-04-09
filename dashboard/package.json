@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit",
     "init-knowledge": "tsx scripts/initKnowledgeBase.ts",
     "db:sync-schema": "tsx scripts/syncDatabaseSchema.ts",
+    "db:admin": "tsx scripts/createDatabaseAndAdmin.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"

@@ -157,7 +157,10 @@ async function createAdminUser() {
     console.log('🔄 Connecting to MongoDB...');
     console.log('📊 Database:', process.env.MONGODB_DB_NAME || 'quirkly');
     console.log('🌍 Environment:', process.env.NODE_ENV);
-    console.log('📊 MONGODB_URI:', process.env.MONGODB_URI)
+    console.log(
+      '📊 MONGODB_URI:',
+      process.env.MONGODB_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@') || '(unset)'
+    );
 
     await mongoose.connect(uri, {
       dbName: process.env.MONGODB_DB_NAME || 'quirkly'
