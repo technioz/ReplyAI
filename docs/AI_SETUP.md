@@ -74,10 +74,35 @@ curl -X POST http://localhost:3000/api/reply/generate \
 - Replace `<api-key>` with a user API key (e.g. from `create-admin.js` output)
 - A successful response returns `reply`, `tone`, and `metadata.model`
 
-## 5. Troubleshooting
+## 5. Reply Generation with RAG (Experimental)
+
+Enable Retrieval Augmented Generation for replies to make them more contextual and less bookish:
+
+```
+REPLY_USE_RAG=true
+```
+
+**What it does:**
+- Retrieves writing style patterns from knowledge base
+- Finds contrarian takes relevant to the post topic
+- Injects human-like phrasing examples into the prompt
+- Makes replies more authentic and less generic
+
+**Trade-offs:**
+- Slightly slower (adds ~500-1000ms for embedding + retrieval)
+- Requires Pinecone and Cohere to be configured
+- Can be disabled instantly by setting `REPLY_USE_RAG=false`
+
+**To disable:**
+```
+REPLY_USE_RAG=false
+```
+
+## 6. Troubleshooting
 
 - Missing API key – ensure `GROQ_API_KEY` or `XAI_API_KEY` is defined before starting Next.js
 - Invalid tone – allowed values are `professional`, `casual`, `humorous`, `empathetic`, `analytical`, `enthusiastic`, `controversial`
 - Rate limits – Groq/XAI errors propagate as `RATE_LIMIT_EXCEEDED`; wait before retrying
+- RAG not working – check that `PINECONE_API_KEY` and `COHERE_API_KEY` are set
 
 Keep secrets out of version control—`.env.local` is gitignored.

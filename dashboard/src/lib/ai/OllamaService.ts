@@ -1,6 +1,7 @@
 import { AIService } from './AIServiceFactory';
 import { getOllamaCandidateOrigins, getOllamaServerOrigin } from './ollamaServerUrl';
 import { openOllamaCompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
+import { ReplyRAGService, ReplyRAGContext } from './ReplyRAGService';
 
 export class OllamaService implements AIService {
   private baseUrl: string;
@@ -35,7 +36,22 @@ export class OllamaService implements AIService {
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
     try {
-      const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
+      // Check if RAG is enabled for replies
+      const useRAG = ReplyRAGService.isEnabled();
+      let ragContext: ReplyRAGContext | null = null;
+      
+      if (useRAG) {
+        try {
+          const ragService = new ReplyRAGService();
+          ragContext = await ragService.retrieveReplyContext(tweetText, tone);
+          console.log(`[OllamaService] RAG ${ragContext ? 'enabled' : 'disabled'} for this reply`);
+        } catch (ragError) {
+          console.warn('[OllamaService] RAG retrieval failed, continuing without:', ragError);
+          // Continue without RAG if it fails
+        }
+      }
+
+      const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext, ragContext);
       const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
 
       if (this.useCloud) {
@@ -150,7 +166,7 @@ export class OllamaService implements AIService {
     };
   }
 
-  private buildSystemPrompt(tone: string, profileContext?: any): string {
+  private buildSystemPrompt(tone: string, profileContext?: any, ragContext?: ReplyRAGContext | null): string {
     let systemPrompt = `You are an AI designed to generate natural, human-like replies to social media posts. Your goal is to respond in a way that matches the profile's context, tone, and domain, while adding value and promoting engagement without over-explaining or using emojis. Follow these numbered steps for every reply:
 
 1. Analyze the provided post and profile: Identify the key tone (e.g., casual, professional, enthusiastic) and domain (e.g., fitness, tech). Use the specific tone instructed if given.
@@ -193,6 +209,11 @@ Acceptance criteria: Replies must be natural and engaging, add value first, matc
         systemPrompt += `- Expertise: ${userProfile.expertise.domains.join(', ')}`;
       }
       systemPrompt += `Incorporate this profile context naturally into your reply to make it personalized and authentic.`;
+    }
+
+    // Add RAG context if available (EXPERIMENTAL - can be disabled via REPLY_USE_RAG)
+    if (ragContext) {
+      systemPrompt += ReplyRAGService.formatContextForPrompt(ragContext);
     }
 
     return systemPrompt;
