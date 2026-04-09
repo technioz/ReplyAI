@@ -31,6 +31,8 @@ XAI_MODEL=grok-3   # default if unset
 
 ## 4. Ollama Configuration
 
+### Local Ollama (Default)
+
 ```
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama2   # default if unset
@@ -42,6 +44,18 @@ OLLAMA_API_KEY=your_ollama_api_key   # Optional, only if Ollama requires auth
 - Pull a model: `ollama pull llama2`
 - Set base URL to your Ollama instance (can be localhost or remote server)
 - API key is optional and only needed if your Ollama instance requires authentication
+
+### Cloud Ollama (ollama.com API)
+
+```
+OLLAMA_USE_CLOUD=true
+OLLAMA_CLOUD_API_KEY=your_ollama_cloud_api_key   # Required for cloud API
+OLLAMA_MODEL=llama2   # or any model available on ollama.com
+```
+
+- Sign up at [https://ollama.com](https://ollama.com) to get an API key
+- Uses the https://ollama.com/api/chat endpoint for chat completions
+- No need to run a local Ollama server
 
 ## 4. Testing Your Setup
 

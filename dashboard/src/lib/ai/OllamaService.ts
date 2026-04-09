@@ -4,15 +4,30 @@ export class OllamaService implements AIService {
   private baseUrl: string;
   private model: string;
   private apiKey?: string;
+  private useCloud: boolean;
   
   constructor() {
-    const customUrl = process.env.OLLAMA_BASE_URL;
-    this.baseUrl = customUrl || 'http://localhost:11434';
+    // Check if cloud Ollama should be used
+    this.useCloud = process.env.OLLAMA_USE_CLOUD === 'true';
+    
+    if (this.useCloud) {
+      // Use Ollama Cloud API (ollama.com)
+      this.baseUrl = 'https://ollama.com';
+      this.apiKey = process.env.OLLAMA_CLOUD_API_KEY;
+      
+      if (!this.apiKey) {
+        console.warn('OLLAMA_CLOUD_API_KEY is not set. Cloud Ollama API requires an API key.');
+      }
+    } else {
+      // Use local or custom Ollama instance
+      const customUrl = process.env.OLLAMA_BASE_URL;
+      this.baseUrl = customUrl || 'http://localhost:11434';
+      this.apiKey = process.env.OLLAMA_API_KEY; // Optional API key for auth
+    }
     
     this.model = process.env.OLLAMA_MODEL || 'llama2';
-    this.apiKey = process.env.OLLAMA_API_KEY; // Optional API key for auth
     
-    console.log(`Ollama Service initialized: ${this.baseUrl}, model: ${this.model}`);
+    console.log(`Ollama Service initialized: ${this.useCloud ? 'cloud' : 'local'} (${this.baseUrl}), model: ${this.model}`);
   }
 
   async generateReply(tweetText: string, tone: string, userContext: any = {}) {
@@ -20,87 +35,172 @@ export class OllamaService implements AIService {
       const systemPrompt = this.buildSystemPrompt(tone, userContext?.profileContext);
       const userPrompt = this.buildUserPrompt(tweetText, tone, userContext);
 
-      const requestBody = {
-        model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ],
-        max_tokens: 120, // Optimized for X replies
-        temperature: 0.8, // Natural but focused
-        top_p: 0.9,
-        stream: false
-      };
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Quirkly-NextJS-API/1.0.0',
-        'Accept': 'application/json'
-      };
-
-      // Add Authorization header if API key is provided
-      if (this.apiKey) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      if (this.useCloud) {
+        return await this.callCloudAPI(systemPrompt, userPrompt);
+      } else {
+        return await this.callLocalAPI(systemPrompt, userPrompt);
       }
-
-      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Ollama API error:', response.status, errorData);
-        
-        let errorMessage = `Ollama API error: ${response.status}`;
-        try {
-          const errorJson = JSON.parse(errorData);
-          if (errorJson.error) {
-            errorMessage = `Ollama API error: ${errorJson.error}`;
-          }
-          if (errorJson.message) {
-            errorMessage += ` - ${errorJson.message}`;
-          }
-        } catch (e) {
-          errorMessage = `Ollama API error: ${response.status} - ${errorData}`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
-      
-      if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-        throw new Error('Invalid response from Ollama API');
-      }
-
-      const reply = result.choices[0].message.content.trim();
-      
-      // Validate reply quality
-      const validation = this.validateReply(reply);
-      if (!validation.valid) {
-        console.warn('Reply validation issues:', validation.issues);
-      }
-
-      return {
-        reply: reply,
-        processingTime: result.usage ? {
-          promptTokens: result.usage.prompt_tokens,
-          completionTokens: result.usage.completion_tokens,
-          totalTokens: result.usage.total_tokens
-        } : null
-      };
     } catch (error) {
       console.error('Ollama service error:', error);
       throw new Error(`Failed to generate reply with Ollama: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  private async callCloudAPI(systemPrompt: string, userPrompt: string) {
+    const requestBody = {
+      model: this.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ],
+      stream: false
+    };
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Quirkly-NextJS-API/1.0.0',
+      'Accept': 'application/json'
+    };
+
+    // Add Authorization header for cloud API (required)
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Ollama Cloud API error:', response.status, errorData);
+      
+      let errorMessage = `Ollama Cloud API error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorData);
+        if (errorJson.error) {
+          errorMessage = `Ollama Cloud API error: ${errorJson.error}`;
+        }
+        if (errorJson.message) {
+          errorMessage += ` - ${errorJson.message}`;
+        }
+      } catch (e) {
+        errorMessage = `Ollama Cloud API error: ${response.status} - ${errorData}`;
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    
+    if (!result.message || !result.message.content) {
+      throw new Error('Invalid response from Ollama Cloud API');
+    }
+
+    const reply = result.message.content.trim();
+    
+    // Validate reply quality
+    const validation = this.validateReply(reply);
+    if (!validation.valid) {
+      console.warn('Reply validation issues:', validation.issues);
+    }
+
+    return {
+      reply: reply,
+      processingTime: result.eval_count ? {
+        promptTokens: result.prompt_eval_count || 0,
+        completionTokens: result.eval_count || 0,
+        totalTokens: (result.prompt_eval_count || 0) + (result.eval_count || 0)
+      } : null
+    };
+  }
+
+  private async callLocalAPI(systemPrompt: string, userPrompt: string) {
+    const requestBody = {
+      model: this.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ],
+      max_tokens: 120, // Optimized for X replies
+      temperature: 0.8, // Natural but focused
+      top_p: 0.9,
+      stream: false
+    };
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Quirkly-NextJS-API/1.0.0',
+      'Accept': 'application/json'
+    };
+
+    // Add Authorization header if API key is provided
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Ollama API error:', response.status, errorData);
+      
+      let errorMessage = `Ollama API error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorData);
+        if (errorJson.error) {
+          errorMessage = `Ollama API error: ${errorJson.error}`;
+        }
+        if (errorJson.message) {
+          errorMessage += ` - ${errorJson.message}`;
+        }
+      } catch (e) {
+        errorMessage = `Ollama API error: ${response.status} - ${errorData}`;
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    
+    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+      throw new Error('Invalid response from Ollama API');
+    }
+
+    const reply = result.choices[0].message.content.trim();
+    
+    // Validate reply quality
+    const validation = this.validateReply(reply);
+    if (!validation.valid) {
+      console.warn('Reply validation issues:', validation.issues);
+    }
+
+    return {
+      reply: reply,
+      processingTime: result.usage ? {
+        promptTokens: result.usage.prompt_tokens,
+        completionTokens: result.usage.completion_tokens,
+        totalTokens: result.usage.total_tokens
+      } : null
+    };
   }
 
   private buildSystemPrompt(tone: string, profileContext?: any): string {
