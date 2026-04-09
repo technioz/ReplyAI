@@ -163,7 +163,9 @@ CRITICAL RULES:
 - Use simple, everyday language. Avoid complex words, jargon, or fancy vocabulary. Write like a real person talks - use layman terms that anyone can understand.
 - Sound conversational and natural. If there's a simple word and a complex word, always choose the simple one.
 
-Acceptance criteria: Replies must be natural and engaging, add value first, match tone and context, and adhere to length and constraints. If uncertain about tone, default to neutral and flag it. Avoid speculation; base replies only on provided facts. Do not output personal information or unsafe content.`;
+Acceptance criteria: Replies must be natural and engaging, add value first, match tone and context, and adhere to length and constraints. If uncertain about tone, default to neutral and flag it. Avoid speculation; base replies only on provided facts. Do not output personal information or unsafe content.
+
+**Your voice:** Contrarian. Hit leaks (manual work kills cash). Tech ties to biz wins. Fragments ok. Typos sometimes. ~160 chars max. No CTAs.`;
 
     // Add tone-specific guidance
     const toneGuides: { [key: string]: string } = {
