@@ -49,3 +49,4 @@ RELOAD_EXTENSION.md
 # Chrome Store Packages
 quirkly-extension-*.zip
 *.zip
+.DS_Store
