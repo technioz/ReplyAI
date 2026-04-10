@@ -39,13 +39,8 @@ export const getUserFromJWT = (token: string): JWTPayload | null => {
     // Validate token format (should have 3 parts separated by dots)
     const tokenParts = cleanToken.split('.');
     if (tokenParts.length !== 3) {
-      console.error('❌ Invalid JWT format - should have 3 parts');
       return null;
     }
-
-    console.log('🔍 JWT token parts:', tokenParts.length);
-    console.log('🔍 JWT header:', tokenParts[0]?.substring(0, 20) + '...');
-    console.log('🔍 JWT payload:', tokenParts[1]?.substring(0, 20) + '...');
 
     const decoded = jwt.verify(cleanToken, secret) as JWTPayload;
     
@@ -69,7 +64,7 @@ export const getUserFromRequest = async (req: NextRequest): Promise<JWTPayload |
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    console.log('🔍 JWT Auth - token received:', token ? `${token.substring(0, 20)}...` : 'none');
+    console.log('🔍 JWT Auth - token received:', token ? `${token.substring(0, 10)}...` : 'none');
     
     const user = getUserFromJWT(token);
     if (user) {
@@ -115,6 +110,49 @@ export const protect = async (req: NextRequest): Promise<JWTPayload> => {
   return user;
 };
 
+// Look up user by API key (qk_...) and convert to JWTPayload
+const lookupApiKeyUser = async (token: string): Promise<JWTPayload | null> => {
+  if (!token || !token.startsWith('qk_')) {
+    return null;
+  }
+
+  console.log('🔍 Trying API key authentication...');
+
+  try {
+    const User = require('../models/User').default;
+    const user = await User.findByApiKey(token);
+
+    if (!user) {
+      return null;
+    }
+
+    if (user.status !== 'active') {
+      throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
+    }
+
+    console.log('✅ API key auth successful for user:', user.email);
+
+    return {
+      id: user.id.toString(),
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      credits: {
+        available: user.credits.available,
+        used: user.credits.used,
+        total: user.credits.total
+      },
+      hasActiveSubscription: user.hasActiveSubscription || false,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error('❌ API key validation error:', error);
+    return null;
+  }
+};
+
 // Validate JWT token OR API key for extension requests
 // Supports both JWT (Bearer token) and legacy API keys (qk_...)
 export const validateApiKey = async (req: NextRequest): Promise<JWTPayload> => {
@@ -122,7 +160,6 @@ export const validateApiKey = async (req: NextRequest): Promise<JWTPayload> => {
   const jwtUser = await getUserFromRequest(req);
   
   if (jwtUser) {
-    // Check if user is active
     if (jwtUser.status !== 'active') {
       throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
     }
@@ -133,44 +170,9 @@ export const validateApiKey = async (req: NextRequest): Promise<JWTPayload> => {
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    
-    // Check if it's an API key (starts with qk_)
-    if (token && token.startsWith('qk_')) {
-      console.log('🔍 Trying API key authentication...');
-      
-      try {
-        // Import User model dynamically to avoid circular dependency
-        const User = require('../models/User').default;
-        const user = await User.findByApiKey(token);
-        
-        if (user) {
-          console.log('✅ API key auth successful for user:', user.email);
-          
-          // Check if user is active
-          if (user.status !== 'active') {
-            throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
-          }
-          
-          // Convert user to JWTPayload format
-          return {
-            id: user.id.toString(),
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            credits: {
-              available: user.credits.available,
-              used: user.credits.used,
-              total: user.credits.total
-            },
-            hasActiveSubscription: user.hasActiveSubscription || false,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
-          };
-        }
-      } catch (error) {
-        console.error('❌ API key validation error:', error);
-        // Continue to throw unauthorized below
-      }
+    const apiKeyUser = await lookupApiKeyUser(token);
+    if (apiKeyUser) {
+      return apiKeyUser;
     }
   }
   
@@ -193,15 +195,29 @@ export const validateSession = async (req: NextRequest): Promise<JWTPayload> => 
   return user;
 };
 
-// Flexible authentication middleware (JWT-based)
+// Flexible authentication middleware (JWT-based + API key)
 export const authenticateUser = async (req: NextRequest): Promise<JWTPayload> => {
-  const user = await getUserFromRequest(req);
-  
-  if (!user) {
-    throw AppError.unauthorized('Authentication required', 'AUTHENTICATION_REQUIRED');
+  // First try JWT authentication
+  const jwtUser = await getUserFromRequest(req);
+  if (jwtUser) {
+    if (jwtUser.status !== 'active') {
+      throw AppError.forbidden('Your account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
+    }
+    return jwtUser;
   }
-  
-  return user;
+
+  // If JWT fails, try API key authentication (for extension compatibility)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    const apiKeyUser = await lookupApiKeyUser(token);
+    if (apiKeyUser) {
+      console.log('✅ authenticateUser: API key auth successful for user:', apiKeyUser.email);
+      return apiKeyUser;
+    }
+  }
+
+  throw AppError.unauthorized('Authentication required', 'AUTHENTICATION_REQUIRED');
 };
 
 // Check if user has sufficient credits (JWT-based)

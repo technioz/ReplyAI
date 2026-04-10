@@ -1,60 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateApiKey } from '@/lib/middleware/auth';
 import { handleApiError } from '@/lib/errors';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
-
-// API key validation for Chrome extension requests
-async function validateApiKey(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    console.log('🔍 Credit Use - Auth header:', authHeader?.substring(0, 30) + '...');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ Credit Use - No Bearer token found');
-      return null;
-    }
-
-    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
-    console.log('🔍 Credit Use - API key extracted:', apiKey?.substring(0, 20) + '...');
-    
-    if (!apiKey || apiKey.length < 10) {
-      console.log('❌ Credit Use - API key too short or missing');
-      return null;
-    }
-
-    // Find user by API key
-    const user = await User.findByApiKey(apiKey);
-    console.log('🔍 Credit Use - User found:', user ? `${user.email} (${user.id})` : 'null');
-    
-    if (!user || user.status !== 'active') {
-      console.log('❌ Credit Use - User not found or inactive');
-      return null;
-    }
-
-    console.log('✅ Credit Use - Validation successful');
-    return user;
-  } catch (error) {
-    console.error('❌ Credit Use - Validation error:', error);
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     console.log('🔍 Credit Use - Request received');
     
-    const user = await validateApiKey(request);
+    const userPayload = await validateApiKey(request);
+    console.log('✅ Credit Use - User authenticated:', userPayload.email);
+
+    // Fetch full user document for Mongoose methods
+    const user = await User.findById(userPayload.id);
     if (!user) {
-      console.log('❌ Credit Use - Authentication failed, returning 401');
-      return NextResponse.json({ 
-        error: 'Authentication required',
-        message: 'Valid API key is required',
-        hint: 'Make sure you are sending the API key in Authorization: Bearer <key> header'
-      }, { status: 401 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
-    console.log('✅ Credit Use - User authenticated:', user.email);
 
     const body = await request.json();
     const { amount = 1 } = body;

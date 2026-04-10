@@ -1,35 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/middleware/auth';
+import { validateApiKey } from '@/lib/middleware/auth';
 import { handleApiError } from '@/lib/errors';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
-
-// Import validateApiKey function from reply generation route
-async function validateApiKey(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
-    
-    if (!apiKey || apiKey.length < 10) {
-      return null;
-    }
-
-    // Find user by API key
-    const user = await User.findByApiKey(apiKey);
-    if (!user || user.status !== 'active') {
-      return null;
-    }
-
-    return user;
-  } catch (error) {
-    console.error('API key validation error:', error);
-    return null;
-  }
-}
 
 // Profile data interface
 interface XProfileData {
@@ -82,11 +55,8 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     
-    // Use API key authentication (same as reply generation)
+    // Use shared validateApiKey (supports both JWT and qk_ API keys)
     const user = await validateApiKey(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { profileData, userId } = body;
@@ -106,8 +76,14 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // Use the user from validateApiKey (already fetched from database)
-    const currentUser = user;
+    // Look up full user document for Mongoose methods (profileData storage)
+    const currentUser = await User.findById(user.id);
+    if (!currentUser) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'User not found' 
+      }, { status: 404 });
+    }
 
     // Process and enhance profile data
     const enhancedProfile = await processProfileData(profileData as XProfileData);
