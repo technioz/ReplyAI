@@ -73,11 +73,12 @@ export const getUserFromRequest = async (req: NextRequest): Promise<JWTPayload |
     }
   }
   
-  // Try to get token from body
+  // Try to get token from body (must clone: reading json() consumes the body; routes may need it next)
   try {
-    const body = await req.json().catch(() => ({}));
+    const clone = req.clone();
+    const body = await clone.json().catch(() => ({}));
     const token = body.token;
-    
+
     if (token) {
       console.log('🔍 JWT Auth - trying body token...');
       const user = getUserFromJWT(token);
