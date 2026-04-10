@@ -2,7 +2,7 @@
 // Separate from existing reply generation API
 
 import { NextRequest, NextResponse } from 'next/server';
-import { protect } from '@/lib/middleware/auth';
+import { validateApiKey } from '@/lib/middleware/auth';
 import { AppError, handleApiError } from '@/lib/errors';
 import { PostGenerationAIAdapter } from '@/lib/post-generation/aiAdapter';
 import { PostGenerationService } from '@/lib/post-generation/postGenerationService';
@@ -12,17 +12,13 @@ import User from '@/lib/models/User';
 
 export async function POST(request: NextRequest) {
   try {
-    // Connect to database
     await dbConnect();
-    
-    // Authenticate user (returns JWT payload)
-    const userPayload = await protect(request);
 
-    // Parse request body
+    const user = await validateApiKey(request);
+
     const body = await request.json();
     const { postType, platform, context } = body;
 
-    // Validate post type
     const validPostTypes: PostType[] = [
       'value-bomb-thread',
       'client-story-thread',
@@ -37,21 +33,18 @@ export async function POST(request: NextRequest) {
       throw AppError.validationError('Invalid post type. Must be one of: ' + validPostTypes.join(', '));
     }
 
-    // Validate platform
     if (!platform || !['X', 'LinkedIn'].includes(platform)) {
       throw AppError.validationError('Invalid platform. Must be X or LinkedIn');
     }
 
-    // Fetch actual user from database (protect returns JWT payload, not Mongoose doc)
-    const dbUser = await User.findById(userPayload.id);
+    const dbUser = await User.findById(user.id);
     if (!dbUser) {
       throw AppError.notFound('User not found');
     }
 
-    // Check user has enough credits (post generation costs more than replies)
     const CREDITS_REQUIRED = 5;
     if (dbUser.credits.available < CREDITS_REQUIRED) {
-      throw AppError.insufficientCredits(`Need ${CREDITS_REQUIRED} credits. You have ${dbUser.credits.available}`);
+      throw AppError.creditsExhausted(`Need ${CREDITS_REQUIRED} credits. You have ${dbUser.credits.available}`);
     }
 
     // Step 1: Initialize services
@@ -111,7 +104,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to list available post types
 export async function GET(request: NextRequest) {
   try {
-    await protect(request);
+    await validateApiKey(request);
 
     const postTypes = [
       {

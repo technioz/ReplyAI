@@ -132,7 +132,7 @@ describe('OllamaService', () => {
         .rejects.toThrow('Invalid response from Ollama Cloud API');
     });
 
-    it('should include processing time in response', async () => {
+    it('should return null processing time for cloud API calls', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -147,11 +147,7 @@ describe('OllamaService', () => {
       const service = new OllamaService();
       const result = await service.generateReply('Test', 'enthusiastic', {});
 
-      expect(result.processingTime).toEqual({
-        promptTokens: 25,
-        completionTokens: 15,
-        totalTokens: 40,
-      });
+      expect(result.processingTime).toBeNull();
     });
   });
 

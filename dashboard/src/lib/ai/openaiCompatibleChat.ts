@@ -225,6 +225,67 @@ export async function openOllamaCompatibleChat(
 }
 
 /**
+ * Call the Ollama Cloud API at https://ollama.com/api/chat
+ * This endpoint uses a different request/response format than OpenAI-compatible APIs.
+ */
+export async function callOllamaCloudChat(
+  model: string,
+  apiKey: string,
+  messages: ChatMessage[],
+  options: { max_tokens: number; temperature: number; top_p?: number; stream?: boolean }
+): Promise<string> {
+  const requestBody = {
+    model,
+    messages,
+    stream: false,
+    options: {
+      num_predict: options.max_tokens,
+      temperature: options.temperature,
+      top_p: options.top_p ?? 0.95,
+    },
+  };
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Quirkly-NextJS-API/1.0.0',
+    Accept: 'application/json',
+  };
+
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch('https://ollama.com/api/chat', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Ollama Cloud API error:', response.status, errorData);
+
+    let errorMessage = `Ollama Cloud API error: ${response.status}`;
+    try {
+      const errorJson = JSON.parse(errorData);
+      if (errorJson.error) errorMessage = `Ollama Cloud API error: ${errorJson.error}`;
+      if (errorJson.message) errorMessage += ` - ${errorJson.message}`;
+    } catch {
+      errorMessage = `Ollama Cloud API error: ${response.status} - ${errorData}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  const result = await response.json();
+
+  if (!result.message || !result.message.content) {
+    throw new Error('Invalid response from Ollama Cloud API');
+  }
+
+  return result.message.content.trim();
+}
+
+/**
  * Post / dashboard content generation — respects AI_PROVIDER (groq | xai | ollama).
  */
 export async function generatePostGenerationChat(
@@ -269,9 +330,23 @@ export async function generatePostGenerationChat(
       return content;
     }
     case 'ollama': {
+      const model = process.env.OLLAMA_MODEL || 'llama2';
+
+      if (process.env.OLLAMA_USE_CLOUD === 'true') {
+        const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
+        if (!apiKey) throw new Error('OLLAMA_CLOUD_API_KEY is required when OLLAMA_USE_CLOUD=true');
+        const content = await callOllamaCloudChat(
+          model,
+          apiKey,
+          messages,
+          POST_GENERATION_CHAT_OPTIONS
+        );
+        return content;
+      }
+
       const { content } = await openOllamaCompatibleChat({
         apiKey: process.env.OLLAMA_API_KEY,
-        model: process.env.OLLAMA_MODEL || 'llama2',
+        model,
         messages,
         ...POST_GENERATION_CHAT_OPTIONS,
       });
