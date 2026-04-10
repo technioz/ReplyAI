@@ -571,7 +571,7 @@ userSchema.statics.findByApiKey = function(apiKey: string) {
       { apiKey, status: 'active' }, // Legacy field
       { 'apiKeys.key': apiKey, status: 'active' } // New array field
     ]
-  }).select('+password');
+  });
 };
 
 // findBySessionToken method removed - using JWT tokens instead

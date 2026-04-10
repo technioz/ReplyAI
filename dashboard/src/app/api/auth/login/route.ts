@@ -6,24 +6,18 @@ import { createSendToken } from '@/lib/middleware/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Connect to database
     await dbConnect();
     
     const body = await request.json();
     const { email, password, action, timestamp, source } = body;
 
-    // Check if user exists and password is correct
-    const user = await User.findOne({ email }).select('+password').exec();
+    const user = await User.findOne({ email }).select('+password +loginAttempts +lockedUntil').exec();
 
-    if (!user || !(await user.correctPassword(password))) {
-      // Increment login attempts if user exists
-      if (user) {
-        await user.incLoginAttempts();
-      }
+    if (!user) {
       throw AppError.invalidCredentials();
     }
 
-    // Check if account is locked
+    // Check lock BEFORE password verification to avoid incrementing attempts on locked accounts
     if (user.isLocked) {
       throw AppError.accountLocked();
     }
@@ -33,6 +27,12 @@ export async function POST(request: NextRequest) {
       throw AppError.accountInactive();
     }
 
+    // Now verify password
+    if (!(await user.correctPassword(password))) {
+      await user.incLoginAttempts();
+      throw AppError.invalidCredentials();
+    }
+
     // Reset login attempts on successful login
     await user.resetLoginAttempts();
 
@@ -40,13 +40,10 @@ export async function POST(request: NextRequest) {
     user.lastLoginAt = new Date();
     user.lastLoginIP = request.ip || 'unknown';
     
-    // Save user with updated login info
     await user.save();
 
-    // Log successful login
     console.log(`✅ User logged in: ${email} from ${source || 'unknown'}`);
 
-    // Create and send JWT token
     return createSendToken(user, 200, 'Login successful');
 
   } catch (error) {

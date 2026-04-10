@@ -17,8 +17,15 @@ if (!cached) {
 }
 
 export const connectDatabase = async (): Promise<typeof mongoose> => {
+  // If we have a cached connection, verify it's still alive
   if (cached.conn) {
-    return cached.conn;
+    if (mongoose.connection.readyState === 1) {
+      return cached.conn;
+    }
+    // Connection was lost, reset and reconnect
+    console.log('🔄 MongoDB connection lost, reconnecting...');
+    cached.conn = null;
+    cached.promise = null;
   }
 
   if (!process.env.MONGODB_URI) {
@@ -26,7 +33,6 @@ export const connectDatabase = async (): Promise<typeof mongoose> => {
   }
 
   if (!cached.promise) {
-    // Connection options with database name
     const options = {
       bufferCommands: false,
       dbName: process.env.MONGODB_DB_NAME || 'quirkly'
@@ -34,14 +40,46 @@ export const connectDatabase = async (): Promise<typeof mongoose> => {
 
     console.log('🔄 Connecting to MongoDB...');
     console.log('📊 Database:', options.dbName);
-    console.log('📊 URI:', process.env.MONGODB_URI);
 
-    cached.promise = mongoose.connect(process.env.MONGODB_URI, options);
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, options)
+      .then((mongoose) => {
+        console.log('✅ MongoDB connected successfully');
+        return mongoose;
+      })
+      .catch((error) => {
+        console.error('❌ MongoDB connection failed:', error);
+        cached.promise = null;
+        throw error;
+      });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    cached.promise = null;
+    cached.conn = null;
+    throw error;
+  }
+
   return cached.conn;
 };
+
+// Handle connection events for robustness
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+  cached.conn = null;
+  cached.promise = null;
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected');
+  cached.conn = null;
+  cached.promise = null;
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+});
 
 export const checkDatabaseHealth = async (): Promise<boolean> => {
   const state: MongooseConnectionState = mongoose.connection.readyState;

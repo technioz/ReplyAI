@@ -27,9 +27,9 @@ export default function LoginPage() {
       await signIn(formData.email, formData.password);
       toast.success('Signed in successfully!');
       router.push('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Invalid email or password. Please try again.');
+      toast.error(error?.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -129,11 +129,7 @@ export default function LoginPage() {
           </div>
         </Card>
 
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Demo: Use any email and password to sign in
-          </p>
-        </div>
+
       </div>
     </div>
   );

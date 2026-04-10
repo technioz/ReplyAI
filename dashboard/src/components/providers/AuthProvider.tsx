@@ -227,14 +227,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const serverMessage = errorData?.message || errorData?.error;
+        
         if (response.status === 401) {
-          throw new Error('Invalid email or password');
+          throw new Error(serverMessage || 'Invalid email or password');
+        } else if (response.status === 423) {
+          throw new Error(serverMessage || 'Account is temporarily locked. Please try again later.');
         } else if (response.status === 403) {
-          throw new Error('Account suspended or expired');
+          throw new Error(serverMessage || 'Account is inactive. Please contact support.');
         } else if (response.status === 429) {
-          throw new Error('Too many login attempts. Please try again later');
+          throw new Error(serverMessage || 'Too many attempts. Please try again later.');
         }
-        throw new Error('Login failed. Please try again');
+        throw new Error(serverMessage || 'Login failed. Please try again.');
       }
 
       const data = await response.json();
