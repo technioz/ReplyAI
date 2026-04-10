@@ -1,4 +1,5 @@
 import { AIService } from './AIServiceFactory';
+import { normalizeReplyTone, LEGACY_SERVICE_TONE_GUIDES } from './replyToneGuides';
 import { openAICompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 
 export class XAIService implements AIService {
@@ -68,19 +69,9 @@ CRITICAL RULES:
 
 Acceptance criteria: Replies must be natural and engaging, add value first, match tone and context, and adhere to length and constraints. If uncertain about tone, default to neutral and flag it. Avoid speculation; base replies only on provided facts. Do not output personal information or unsafe content.`;
 
-    // Add tone-specific guidance
-    const toneGuides: { [key: string]: string } = {
-      professional: `Tone Guidance: Use professional but simple language. Show expertise through clear insights, not claims. Keep words everyday and easy to understand.`,
-      casual: `Tone Guidance: Be conversational and relatable. Talk like you're chatting with a friend. Use simple everyday words and a friendly approach.`,
-      analytical: `Tone Guidance: Focus on data and patterns. Break down complex ideas into simple, clear language that anyone can get.`,
-      empathetic: `Tone Guidance: Show understanding and support. Use warm, simple words to acknowledge how they feel.`,
-      humorous: `Tone Guidance: Be light and witty. Use simple, relatable humor that clicks right away.`,
-      enthusiastic: `Tone Guidance: Show genuine excitement with simple, energetic words. Be positive and motivating without overdoing it.`,
-      contrarian: `Tone Guidance: Challenge assumptions respectfully using straightforward language. Offer different views clearly and confidently.`
-    };
-
-    if (tone && toneGuides[tone.toLowerCase()]) {
-      systemPrompt += toneGuides[tone.toLowerCase()];
+    const toneKey = normalizeReplyTone(tone);
+    if (toneKey && LEGACY_SERVICE_TONE_GUIDES[toneKey]) {
+      systemPrompt += ` ${LEGACY_SERVICE_TONE_GUIDES[toneKey]}`;
     }
 
     // Add profile context if available
