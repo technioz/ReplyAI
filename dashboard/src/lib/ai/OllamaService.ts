@@ -2,7 +2,6 @@ import { AIService } from './AIServiceFactory';
 import { getOllamaCandidateOrigins, getOllamaServerOrigin } from './ollamaServerUrl';
 import { openOllamaCompatibleChat, REPLY_CHAT_OPTIONS } from './openaiCompatibleChat';
 import { ReplyRAGService, ReplyRAGContext } from './ReplyRAGService';
-import { normalizeReplyTone, OLLAMA_TONE_GUIDES } from './replyToneGuides';
 
 export class OllamaService implements AIService {
   private baseUrl: string;
@@ -210,8 +209,7 @@ export class OllamaService implements AIService {
       - Have a point of view
       - Disagree only if it feels earned
       - Do not force contrarian takes
-      - Match the post's world: if it is already about startups, money, fundraising, work, dating, or a niche scene, you may lean into that vocabulary and in-jokes (tight wordplay, one callback, parallel phrase) like a native of that timeline
-      - On posts that are not about work or money, do not default to hustle, productivity, or business-coach angles
+      - Do not force business, money, productivity, or efficiency angles
       - Keep the tone aligned with the post: thoughtful if serious, casual if light, sharp if needed
       - No CTA
       - No asking the other person to respond
@@ -228,11 +226,10 @@ export class OllamaService implements AIService {
       - reaction
       - agreement with a twist
       - small insight
-      - high disagreement with the post
+      - light disagreement
       - relatable observation
-      - dry/silly humor
-      - in-thread wordplay when the post invites it
-      - sound like someone who knows their shit
+      - dry humor
+      - blunt truth
 
       FINAL CHECK:
       Before answering, make sure:
@@ -244,9 +241,30 @@ export class OllamaService implements AIService {
 
       Return only the reply text. Nothing else.`;
 
-    const toneKey = normalizeReplyTone(tone);
-    if (toneKey && OLLAMA_TONE_GUIDES[toneKey]) {
-      systemPrompt += OLLAMA_TONE_GUIDES[toneKey];
+    // Add tone-specific guidance (minimal, just tweaks the voice)
+    const toneGuides: { [key: string]: string } = {
+      professional: `Tone: Work-appropriate but still casual. No corporate speak. "makes sense" not "I concur."`,
+      casual: `Tone: Text your friend. "ngl this wild" or "lowkey obsessed" or "this sick fr"`,
+      analytical: `Tone: Point out the pattern simply. "it's always like this" not "statistically speaking..."`,
+      empathetic: `Tone: Show you get it. "tough spot" or "been there" not "I understand your struggle."`,
+      humorous: `Tone: Dry or silly. "no way this real" or "my brain can't handle this" or "lmao what"`,
+      enthusiastic: `Tone: Actually excited, not fake. "this sick" or "genuinely hyped" not "incredible achievement!"`,
+      contrarian: `Tone: Soft pushback. "idk about that" or "devil's advocate here" or "what if opposite tho"`
+    };
+
+    // Add tone-specific guidance
+    // const toneGuides: { [key: string]: string } = {
+    //   professional: `Tone Guidance: Use professional but simple language. Show expertise through clear insights, not claims. Keep words everyday and easy to understand.`,
+    //   casual: `Tone Guidance: Be conversational and relatable. Talk like you're chatting with a friend. Use simple everyday words and a friendly approach.`,
+    //   analytical: `Tone Guidance: Focus on data and patterns. Break down complex ideas into simple, clear language that anyone can get.`,
+    //   empathetic: `Tone Guidance: Show understanding and support. Use warm, simple words to acknowledge how they feel.`,
+    //   humorous: `Tone Guidance: Be light and witty. Use simple, relatable humor that clicks right away.`,
+    //   enthusiastic: `Tone Guidance: Show genuine excitement with simple, energetic words. Be positive and motivating without overdoing it.`,
+    //   contrarian: `Tone Guidance: Challenge assumptions respectfully using straightforward language. Offer different views clearly and confidently.`
+    // };
+
+    if (tone && toneGuides[tone.toLowerCase()]) {
+      systemPrompt += toneGuides[tone.toLowerCase()];
     }
 
     // Add profile context if available
