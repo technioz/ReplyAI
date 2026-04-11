@@ -1,11 +1,14 @@
 import { SystemPromptBuilder } from './promptBuilder';
+import { BraveSearchService } from './braveSearchService';
 import { Platform, PostGenerationResponse } from './types';
 
 export class PostGenerationService {
   private promptBuilder: SystemPromptBuilder;
+  private braveSearch: BraveSearchService;
 
   constructor() {
     this.promptBuilder = new SystemPromptBuilder();
+    this.braveSearch = new BraveSearchService();
   }
 
   async prepareGeneration(request: {
@@ -19,9 +22,17 @@ export class PostGenerationService {
     systemPrompt: string;
     userPrompt: string;
   }> {
+    const topic = request.context?.topic || request.context?.trendingTopic || request.context?.technicalConcept;
+
+    let topicContext: string | null = null;
+    if (topic && this.braveSearch.isEnabled()) {
+      topicContext = await this.braveSearch.fetchTopicContext(topic, request.platform);
+    }
+
     const { systemPrompt, userPrompt } = this.promptBuilder.buildPrompt(
       request.platform,
-      request.context
+      request.context,
+      topicContext || undefined
     );
 
     return { systemPrompt, userPrompt };
