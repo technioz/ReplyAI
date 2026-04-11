@@ -1,84 +1,12 @@
 'use client';
 
-// Quick Post Generator Component
-// Separate from existing reply generation UI
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { toast } from 'react-hot-toast';
 import { Sparkles, Copy, RefreshCw, Loader2 } from 'lucide-react';
 
-interface PostType {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  estimatedTime: string;
-  creditCost: number;
-}
-
-const POST_TYPES: PostType[] = [
-  {
-    id: 'value-bomb-thread',
-    name: 'Value Bomb',
-    description: 'Educational thread with insights',
-    icon: '💣',
-    estimatedTime: '2-3 min',
-    creditCost: 5
-  },
-  {
-    id: 'client-story-thread',
-    name: 'Client Story',
-    description: 'Success story with results',
-    icon: '📈',
-    estimatedTime: '1-2 min',
-    creditCost: 5
-  },
-  {
-    id: 'contrarian-take',
-    name: 'Contrarian',
-    description: 'Challenge common thinking',
-    icon: '⚡',
-    estimatedTime: '30 sec',
-    creditCost: 5
-  },
-  {
-    id: 'pattern-recognition',
-    name: 'Pattern',
-    description: 'Show expertise through patterns',
-    icon: '🔍',
-    estimatedTime: '1 min',
-    creditCost: 5
-  },
-  {
-    id: 'personal-journey',
-    name: 'War Story',
-    description: 'Personal experience',
-    icon: '⚔️',
-    estimatedTime: '1-2 min',
-    creditCost: 5
-  },
-  {
-    id: 'engagement-question',
-    name: 'Question',
-    description: 'Spark conversation',
-    icon: '❓',
-    estimatedTime: '30 sec',
-    creditCost: 5
-  },
-  {
-    id: 'educational-deep-dive',
-    name: 'Deep Dive',
-    description: 'Technical teaching',
-    icon: '📚',
-    estimatedTime: '3-4 min',
-    creditCost: 5
-  }
-];
-
 export function QuickPostGenerator() {
-  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [platform, setPlatform] = useState<'X' | 'LinkedIn'>('X');
   const [topic, setTopic] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -88,11 +16,6 @@ export function QuickPostGenerator() {
   } | null>(null);
 
   const handleGenerate = async () => {
-    if (!selectedType) {
-      toast.error('Please select a post type');
-      return;
-    }
-
     setGenerating(true);
 
     try {
@@ -109,7 +32,6 @@ export function QuickPostGenerator() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          postType: selectedType,
           platform,
           context: {
             topic: topic || undefined
@@ -155,38 +77,12 @@ export function QuickPostGenerator() {
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-6 w-6 text-accent" />
-        <h2 className="text-2xl font-bold text-ink">Quick Post Generator</h2>
+        <h2 className="text-2xl font-bold text-ink">Post Generator</h2>
       </div>
       
       <p className="text-ink-mute mb-6">
-        Generate on-brand content using your expertise and knowledge base
+        Generate on-brand content in Gaurav&apos;s voice
       </p>
-
-      {/* Post Type Selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-ink mb-3">
-          Select Post Type
-        </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {POST_TYPES.map(type => (
-            <button
-              key={type.id}
-              onClick={() => setSelectedType(type.id)}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedType === type.id
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-500/50'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500'
-              }`}
-            >
-              <div className="text-2xl mb-2">{type.icon}</div>
-              <div className={`text-sm font-medium ${
-                selectedType === type.id ? 'text-purple-700 dark:text-purple-300' : 'text-ink'
-              }`}>{type.name}</div>
-              <div className="text-xs text-ink-mute mt-1">{type.estimatedTime}</div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Platform Selection */}
       <div className="mb-6">
@@ -237,7 +133,7 @@ export function QuickPostGenerator() {
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
-        disabled={!selectedType || generating}
+        disabled={generating}
         className="w-full mb-6"
       >
         {generating ? (
@@ -260,17 +156,9 @@ export function QuickPostGenerator() {
             <div>
               <h3 className="font-semibold text-ink">Generated Post</h3>
               <div className="flex gap-2 mt-2 text-xs text-ink-mute">
-                <span>Type: {generatedPost.metadata.postType}</span>
-                <span>•</span>
-                <span>Pillar: {generatedPost.metadata.pillar}</span>
+                <span>Platform: {generatedPost.metadata.platform}</span>
                 <span>•</span>
                 <span>{generatedPost.metadata.characterCount} chars</span>
-                {generatedPost.metadata.tweetCount && (
-                  <>
-                    <span>•</span>
-                    <span>{generatedPost.metadata.tweetCount} tweets</span>
-                  </>
-                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -302,7 +190,7 @@ export function QuickPostGenerator() {
 
           {generatedPost.metadata.validationIssues && generatedPost.metadata.validationIssues.length > 0 && (
             <div className="mt-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
-              <p className="text-xs font-medium text-warning mb-1">⚠️ Content Warnings:</p>
+              <p className="text-xs font-medium text-warning mb-1">Content Warnings:</p>
               <ul className="text-xs text-warning space-y-1">
                 {generatedPost.metadata.validationIssues.map((issue: string, i: number) => (
                   <li key={i}>• {issue}</li>
@@ -310,15 +198,8 @@ export function QuickPostGenerator() {
               </ul>
             </div>
           )}
-
-          <div className="mt-4 p-3 bg-accent/10 rounded-lg">
-            <p className="text-xs text-accent">
-              💡 Review the content and edit as needed before posting to {platform}
-            </p>
-          </div>
         </div>
       )}
     </Card>
   );
 }
-

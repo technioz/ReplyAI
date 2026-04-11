@@ -3,7 +3,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { KnowledgeChunk, Pillar, PostType } from './types';
+import { KnowledgeChunk, Pillar } from './types';
 
 export class KnowledgeChunkProcessor {
   private projectRoot: string;
@@ -203,7 +203,7 @@ export class KnowledgeChunkProcessor {
     }
 
     // Extract Post Type structures
-    const postTypes: Array<{name: string, id: PostType}> = [
+    const postTypes: Array<{name: string, id: string}> = [
       { name: '### 1. VALUE BOMB THREAD', id: 'value-bomb-thread' },
       { name: '### 2. CLIENT STORY THREAD', id: 'client-story-thread' },
       { name: '### 3. CONTRARIAN TAKE', id: 'contrarian-take' },
