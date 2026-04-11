@@ -128,8 +128,9 @@ describe('OllamaService', () => {
 
       const service = new OllamaService();
 
-      await expect(service.generateReply('Test', 'enthusiastic', {}))
-        .rejects.toThrow('Invalid response from Ollama Cloud API');
+      await expect(service.generateReply('Test', 'enthusiastic', {})).rejects.toThrow(
+        /Failed to generate reply with Ollama: Invalid response from Ollama Cloud API/
+      );
     });
 
     it('should return null processing time for cloud API calls', async () => {
