@@ -40,6 +40,12 @@ export interface PostGenerationResponse {
   };
 }
 
+export interface RepurposeRequest {
+  platform: Platform;
+  sourceText: string;
+  sourcePlatform?: 'X' | 'LinkedIn' | 'auto';
+}
+
 export interface RAGSearchResult {
   id: string;
   score: number;

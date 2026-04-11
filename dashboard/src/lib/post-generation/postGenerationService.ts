@@ -1,6 +1,6 @@
 import { SystemPromptBuilder } from './promptBuilder';
 import { BraveSearchService } from './braveSearchService';
-import { Platform, PostGenerationResponse } from './types';
+import { Platform, PostGenerationResponse, RepurposeRequest } from './types';
 
 export class PostGenerationService {
   private promptBuilder: SystemPromptBuilder;
@@ -36,6 +36,13 @@ export class PostGenerationService {
     );
 
     return { systemPrompt, userPrompt };
+  }
+
+  prepareRepurpose(request: RepurposeRequest): {
+    systemPrompt: string;
+    userPrompt: string;
+  } {
+    return this.promptBuilder.buildRepurposePrompt(request);
   }
 
   validateContent(content: string): {

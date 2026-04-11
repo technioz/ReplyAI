@@ -21,13 +21,15 @@ import {
   Settings,
   Users,
   RefreshCw,
-  User
+  User,
+  PenLine
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuirklyDashboardConfig from '@/lib/config';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { ProfileSettings } from '@/components/user/ProfileSettings';
 import { DetailedAnalytics } from '@/components/analytics/DetailedAnalytics';
+import { ContentStudio } from '@/components/post/ContentStudio';
 import ProfilePage from '../profile/page';
 
 interface ApiKey {
@@ -346,6 +348,18 @@ export default function DashboardPage() {
               <Bot className="h-4 w-4" />
               <span>Overview</span>
             </button>
+
+            <button
+              onClick={() => setActiveSection('content')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSection === 'content'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-ink-mute hover:text-ink'
+              }`}
+            >
+              <PenLine className="h-4 w-4" />
+              <span>Content</span>
+            </button>
             
             <button
               onClick={() => setActiveSection('profile')}
@@ -409,6 +423,12 @@ export default function DashboardPage() {
               <p className="text-ink-mute">Here's what's happening with your Quirkly account today.</p>
             </div>
           </>
+        )}
+
+        {activeSection === 'content' && (
+          <div className="max-w-3xl mx-auto">
+            <ContentStudio />
+          </div>
         )}
 
         {activeSection === 'profile' && <ProfilePage />}
@@ -663,6 +683,13 @@ export default function DashboardPage() {
           <div className="premium-card p-6">
             <h3 className="text-lg font-semibold text-ink mb-4">Quick Actions</h3>
             <div className="space-y-3">
+              <button 
+                className="btn-secondary w-full justify-start"
+                onClick={() => setActiveSection('content')}
+              >
+                <PenLine className="h-4 w-4 mr-2" />
+                Content Studio
+              </button>
               <button 
                 className="btn-secondary w-full justify-start"
                 onClick={() => setActiveSection('profile')}

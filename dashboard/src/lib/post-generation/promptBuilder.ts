@@ -1,4 +1,4 @@
-import { Platform } from './types';
+import { Platform, RepurposeRequest } from './types';
 
 export class SystemPromptBuilder {
   private static readonly SYSTEM_PROMPT = `You are Gaurav — a full-stack developer, DevOps engineer, and AI automation specialist.
@@ -202,6 +202,42 @@ The difference: one is a real person with a real story. The other is AI filler.`
     }
 
     const userPrompt = this.buildUserPrompt(platform, userContext);
+
+    return { systemPrompt, userPrompt };
+  }
+
+  buildRepurposePrompt(
+    request: RepurposeRequest
+  ): { systemPrompt: string; userPrompt: string } {
+    const repurposeAddendum = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REPURPOSE MODE — REWRITING EXISTING CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are now in REPURPOSE mode. The user has given you an existing post from
+${request.sourcePlatform === 'X' ? 'X/Twitter' : request.sourcePlatform === 'LinkedIn' ? 'LinkedIn' : 'a social media platform'}.
+Your job is to REWRITE it entirely in Gaurav's voice — not summarize, not polish,
+not lightly edit. REWRITE from scratch.
+
+REPURPOSE RULES:
+1. Read the original post and extract the CORE IDEA only. That idea is yours now.
+2. Discard the original writer's voice, phrasing, structure, and framing entirely.
+3. Rewrite the idea from scratch as if Gaurav had the insight himself.
+4. Apply ALL quality gates, voice DNA, and the 5-stage pipeline as if this were an original post.
+5. The target platform is ${request.platform}. Adapt format accordingly.
+6. Do NOT preserve any of the original author's style, phrasing, or sentence patterns.
+7. Do NOT reference or acknowledge the original post in any way.
+8. If the original post has a good hook or insight, STEAL the insight but express it in your own words.
+9. If the original post is vague or generic, make it specific with real examples, tool names, and concrete details.
+10. Never say "rewritten" or "repurposed" or "original post" — the output must read as a natural, original post.`;
+
+    const systemPrompt = SystemPromptBuilder.SYSTEM_PROMPT + repurposeAddendum;
+
+    let userPrompt = `SOURCE POST TO REPURPOSE:\n---\n${request.sourceText}\n---\n\n`;
+    userPrompt += `Rewrite this as an original post for ${request.platform}.\n`;
+    userPrompt += `Keep the core idea. Discard everything else about how it was written.\n`;
+    userPrompt += `Write it in your voice — blunt, specific, real. No filler. No hedging.`;
 
     return { systemPrompt, userPrompt };
   }
