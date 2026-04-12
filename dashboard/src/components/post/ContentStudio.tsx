@@ -229,16 +229,20 @@ export function ContentStudio() {
         <button
           onClick={() => { setMode('generate'); setResult(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-lg font-medium transition-all text-sm ${
-            mode === 'generate' ? 'bg-accent text-white shadow-sm' : 'text-ink-mute hover:text-ink'
+            mode === 'generate'
+              ? 'bg-accent text-white shadow-sm btn-primary'
+              : 'text-ink-mute hover:text-ink'
           }`}
         >
           <Sparkles className="h-4 w-4" />
-          Generate
+          Generate Post
         </button>
         <button
           onClick={() => { setMode('repurpose'); setResult(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-lg font-medium transition-all text-sm ${
-            mode === 'repurpose' ? 'bg-accent text-white shadow-sm' : 'text-ink-mute hover:text-ink'
+            mode === 'repurpose'
+              ? 'bg-accent text-white shadow-sm btn-primary'
+              : 'text-ink-mute hover:text-ink'
           }`}
         >
           <ArrowRightLeft className="h-4 w-4" />
@@ -247,7 +251,9 @@ export function ContentStudio() {
         <button
           onClick={() => { setMode('article'); setResult(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-lg font-medium transition-all text-sm ${
-            mode === 'article' ? 'bg-accent text-white shadow-sm' : 'text-ink-mute hover:text-ink'
+            mode === 'article'
+              ? 'bg-accent text-white shadow-sm btn-primary'
+              : 'text-ink-mute hover:text-ink'
           }`}
         >
           <BookOpen className="h-4 w-4" />
@@ -502,7 +508,7 @@ export function ContentStudio() {
         <button
           onClick={mode === 'generate' ? handleGenerate : mode === 'repurpose' ? handleRepurpose : handleArticle}
           disabled={isDisabled}
-          className="w-full py-3 px-4 bg-accent hover:bg-accent/90 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-accent hover:bg-accent/90 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 btn-primary"
         >
           {generating ? (
             <>
