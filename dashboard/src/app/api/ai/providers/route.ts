@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIServiceFactory } from '@/lib/ai/AIServiceFactory';
 import { getOllamaCandidateOrigins, getOllamaServerOrigin } from '@/lib/ai/ollamaServerUrl';
+import { OLLAMA_CLOUD_MODELS } from '@/lib/article-generation/types';
 
 export async function GET(request: NextRequest) {
   try {
     const currentProvider = AIServiceFactory.getCurrentProvider();
     const availableProviders = AIServiceFactory.getAvailableProviders();
+    const ollamaCloudModels = AIServiceFactory.getAvailableOllamaCloudModels();
     
     // Get environment configuration
     const config = {
@@ -33,6 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...config,
+      ollamaCloudModels,
       timestamp: new Date().toISOString()
     });
     
