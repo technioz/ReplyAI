@@ -255,7 +255,9 @@ function ollamaCloudNumPredict(model: string, requested: number): number {
   const isThinkingish =
     model.toLowerCase().includes('gpt-oss') ||
     model.toLowerCase().includes('qwen3') ||
-    model.toLowerCase().includes('deepseek');
+    model.toLowerCase().includes('deepseek') ||
+    model.toLowerCase().includes('gemma4') ||
+    model.toLowerCase().includes('kimi');
   const defaultFloor = isThinkingish ? 512 : 128;
   const cap = Number.isFinite(floor) && floor > 0 ? floor : defaultFloor;
   return Math.max(requested, cap);

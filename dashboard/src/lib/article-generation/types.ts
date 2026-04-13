@@ -9,12 +9,43 @@ export interface ArticleGenerationRequest {
   model: string;
 }
 
+/** Official Ollama Cloud tags (ollama.com/library) — tuned for reasoning + long-form writing. */
 export const OLLAMA_CLOUD_MODELS = [
-  { id: 'gemma3:27b', label: 'Gemma 3 27B', description: 'Best balance of speed and quality' },
-  { id: 'deepseek-v3.2', label: 'DeepSeek V3.2', description: 'Excellent reasoning and writing' },
-  { id: 'qwen3-coder:480b', label: 'Qwen3 Coder 480B', description: 'Largest model, best for technical articles' },
-  { id: 'kimi-k2:1t', label: 'Kimi K2 1T', description: 'Massive context window, great for research-heavy articles' },
-  { id: 'gemma3:4b', label: 'Gemma 3 4B', description: 'Fastest, good for drafts and iterations' },
+  {
+    id: 'deepseek-v3.2:cloud',
+    label: 'DeepSeek V3.2 (cloud)',
+    description: 'Top-tier reasoning and agent-style planning; 160K context',
+  },
+  {
+    id: 'qwen3.5:397b-cloud',
+    label: 'Qwen3.5 397B MoE (cloud)',
+    description: 'Largest Qwen3.5 cloud variant — strong instruction following and prose',
+  },
+  {
+    id: 'gemma4:31b-cloud',
+    label: 'Gemma 4 31B (cloud)',
+    description: 'Dense 31B with thinking modes; excellent reasoning and clarity',
+  },
+  {
+    id: 'kimi-k2.5:cloud',
+    label: 'Kimi K2.5 (cloud)',
+    description: 'Conversational + thinking modes; great narrative flow, 256K context',
+  },
+  {
+    id: 'gpt-oss:120b-cloud',
+    label: 'gpt-oss 120B (cloud)',
+    description: 'OpenAI open-weight; configurable reasoning depth for structured long output',
+  },
+  {
+    id: 'deepseek-v3.1:671b-cloud',
+    label: 'DeepSeek V3.1 671B (cloud)',
+    description: 'Top-tier reasoning and agent-style planning; 160K context',
+  },
+  {
+    id: 'qwen3-coder:480b-cloud',
+    label: 'Qwen3 Coder 480B (cloud)',
+    description: 'Largest Qwen3 Coder cloud variant — strong instruction following and prose',
+  }
 ] as const;
 
 export interface ArticleGenerationResponse {
