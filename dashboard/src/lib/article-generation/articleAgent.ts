@@ -53,15 +53,72 @@ function validateBrief(brief: Brief): void {
   }
 }
 
-function validateArticle(markdown: string, primaryKeyword?: string): void {
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Avoid false positives like "go" matching inside "good". */
+function textIncludesTokenInsensitive(text: string, token: string): boolean {
+  if (!token) return true;
+  const lower = text.toLowerCase();
+  const t = token.toLowerCase();
+  if (t.length >= 5) return lower.includes(t);
+  try {
+    const re = new RegExp(`(?<![a-z0-9])${escapeRegExp(t)}(?![a-z0-9])`, 'i');
+    return re.test(text);
+  } catch {
+    return lower.includes(t);
+  }
+}
+
+/**
+ * True if the article clearly reflects the primary SEO keyword.
+ * Models often split compounds (CI/CD vs "CI CD"), hyphenate differently, or weave
+ * words without the exact phrase — strict substring checks fail too often.
+ */
+function articleMatchesPrimaryKeyword(markdown: string, primaryKeyword: string): boolean {
+  const lower = markdown.toLowerCase();
+  const kwNorm = primaryKeyword.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!kwNorm) return true;
+
+  if (lower.includes(kwNorm)) return true;
+
+  const hyphenAsSpace = kwNorm.replace(/-/g, ' ');
+  if (hyphenAsSpace !== kwNorm && lower.includes(hyphenAsSpace)) return true;
+
+  const tokens = kwNorm.split(/[^a-z0-9]+/).filter((t) => t.length > 0);
+  if (tokens.length <= 1) {
+    const single = tokens[0] ?? kwNorm;
+    return textIncludesTokenInsensitive(markdown, single);
+  }
+
+  const required = tokens.filter((t) => t.length >= 2);
+  if (required.length === 0) {
+    return lower.includes(kwNorm);
+  }
+  return required.every((t) => textIncludesTokenInsensitive(markdown, t));
+}
+
+function validateArticle(
+  markdown: string,
+  primaryKeyword: string | undefined,
+  options: { requirePrimaryKeyword: boolean }
+): void {
   const trimmed = markdown.trim();
 
   if (!trimmed.startsWith('# ')) {
     throw new Error('Article must start with an H1 (# Title)');
   }
 
-  if (primaryKeyword && !trimmed.toLowerCase().includes(primaryKeyword.toLowerCase())) {
-    throw new Error('Primary keyword not found in article');
+  if (!options.requirePrimaryKeyword || !primaryKeyword?.trim()) {
+    return;
+  }
+
+  if (!articleMatchesPrimaryKeyword(trimmed, primaryKeyword)) {
+    throw new Error(
+      `Primary keyword not found in article (brief.primary_keyword: "${primaryKeyword.trim()}"). ` +
+        'Include that phrase or its clear constituent words in the title or body.'
+    );
   }
 }
 
@@ -192,7 +249,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   });
 
   const draft = await llmClient(draftMessages, { temperature: 0.6 });
-  validateArticle(draft, brief.primary_keyword);
+  validateArticle(draft, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
   console.log(`[ArticleAgent] Draft written: ${draft.split(/\s+/).filter(Boolean).length} words`);
 
@@ -208,7 +265,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   });
 
   const finalArticle = await llmClient(editMessages, { temperature: 0.4 });
-  validateArticle(finalArticle, brief.primary_keyword);
+  validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
   console.log(`[ArticleAgent] Final article: ${finalArticle.split(/\s+/).filter(Boolean).length} words`);
 
