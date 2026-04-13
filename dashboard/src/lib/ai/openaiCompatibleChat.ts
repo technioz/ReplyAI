@@ -505,8 +505,10 @@ export async function callOllamaCloudChat(
     temperature: number;
     top_p?: number;
     stream?: boolean;
-    /** When set, logs highlighted context-window usage after the call (e.g. article multi-step flow). */
     contextLogLabel?: string;
+    repeat_penalty?: number;
+    top_k?: number;
+    min_p?: number;
   }
 ): Promise<string> {
   const think = ollamaCloudThinkRequestField(model);
@@ -520,6 +522,9 @@ export async function callOllamaCloudChat(
       num_predict: numPredict,
       temperature: options.temperature,
       top_p: options.top_p ?? 0.95,
+      ...(options.repeat_penalty != null ? { repeat_penalty: options.repeat_penalty } : {}),
+      ...(options.top_k != null ? { top_k: options.top_k } : {}),
+      ...(options.min_p != null ? { min_p: options.min_p } : {}),
     },
   };
 

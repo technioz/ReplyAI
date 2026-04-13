@@ -271,7 +271,13 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
 
   const llmClient = async (
     messages: MsgType[],
-    opts?: { temperature?: number; contextLogLabel?: string }
+    opts?: {
+      temperature?: number;
+      contextLogLabel?: string;
+      repeat_penalty?: number;
+      top_k?: number;
+      min_p?: number;
+    }
   ): Promise<string> => {
     return callOllamaCloudChat(model, apiKey, messages, {
       max_tokens: maxTokens,
@@ -279,6 +285,9 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
       top_p: 0.95,
       stream: false,
       contextLogLabel: opts?.contextLogLabel,
+      repeat_penalty: opts?.repeat_penalty,
+      top_k: opts?.top_k,
+      min_p: opts?.min_p,
     });
   };
 
@@ -341,7 +350,10 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   });
 
   const finalArticle = await llmClient(editMessages, {
-    temperature: 0.2,
+    temperature: 0.85,
+    top_k: 40,
+    min_p: 0.05,
+    repeat_penalty: 1.5,
     contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill + voice)',
   });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
