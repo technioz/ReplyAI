@@ -525,7 +525,7 @@ export function ContentStudio() {
               {[
                 { step: 1, label: 'Brief', icon: ClipboardList },
                 { step: 2, label: 'Draft', icon: PenTool },
-                { step: 3, label: 'Polish', icon: Wand2 },
+                { step: 3, label: 'Humanize', icon: Wand2 },
               ].map(({ step, label, icon: Icon }) => (
                 <div key={step} className="flex items-center gap-2 flex-1">
                   <div className={`flex items-center justify-center w-7 h-7 rounded-full border-2 transition-all ${
@@ -552,7 +552,7 @@ export function ContentStudio() {
             <p className="text-xs text-ink-mute mt-2">
               {articleStep === 1 ? 'Analyzing topic and building article brief...' :
                articleStep === 2 ? 'Writing the full article draft...' :
-               articleStep === 3 ? 'Editing and polishing for human voice...' :
+               articleStep === 3 ? 'Humanizing — removing AI patterns and adding voice...' :
                'Starting 3-step generation...'}
             </p>
           </div>
@@ -568,7 +568,7 @@ export function ContentStudio() {
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               {mode === 'article'
-                ? `Step ${articleStep}/3: ${articleStep === 1 ? 'Brief' : articleStep === 2 ? 'Draft' : 'Polishing'}...`
+                ? `Step ${articleStep}/3: ${articleStep === 1 ? 'Brief' : articleStep === 2 ? 'Draft' : 'Humanizing'}...`
                 : mode === 'generate' ? 'Generating...' : 'Repurposing...'}
             </>
           ) : (

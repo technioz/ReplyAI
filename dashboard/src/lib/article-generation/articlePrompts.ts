@@ -85,9 +85,9 @@ Return ONLY the article markdown. Do not include the brief or any explanation.
 `;
 
 export const EDIT_POLISH_PROMPT = `
-Use the article-editing skill.
+Use the humanizer skill.
 
-You are editing and polishing the article below.
+You are humanizing the article draft below. Remove all AI writing patterns and make it sound like a real person wrote it.
 
 Original brief (JSON):
 {{brief_json}}
@@ -97,45 +97,63 @@ Draft article (markdown):
 
 Your tasks:
 
-1) Clean AI patterns
-- Remove or rewrite AI-sounding phrases.
-- Remove inflated symbolism, vague importance claims, and generic optimism.
-- Remove list-template filler and repeated points.
-- Remove business-speak and generic SEO boilerplate.
+1) Remove AI writing patterns
+- Remove inflated symbolism ("stands as", "testament to", "pivotal moment", "evolving landscape").
+- Remove promotional tone ("nestled", "vibrant", "breathtaking", "showcasing", "commitment to excellence").
+- Remove superficial -ing tail phrases ("highlighting...", "ensuring...", "symbolizing...").
+- Remove vague attributions ("experts say", "industry reports", "some critics argue").
+- Remove formulaic "Challenges and future prospects" sections.
+- Remove AI vocabulary spikes ("additionally", "delve", "intricate", "leverage", "robust", "tapestry", "garner", "underscore", "pivotal", "foster", "holistic").
+- Remove negative parallelisms ("It's not just X, it's Y", "not only... but...").
+- Remove rule of three stuffing.
+- Remove elegant variation (synonym cycling for the same entity).
+- Remove false ranges ("from X to Y" where X and Y are not on one scale).
+- Remove em dash overuse, boldface abuse, inline-header vertical lists.
+- Remove title-case-every-word headings.
+- Remove emojis, decorative asterisks.
+- Remove chat artifacts ("Here is an overview", "I hope this helps").
+- Remove knowledge-cutoff disclaimers.
+- Remove filler phrases ("in order to", "due to the fact that", "it is important to note that").
+- Remove excessive hedging and generic positive conclusions.
+- Use simple copulas (is/are/has) instead of "serves as", "stands as", "boasts".
 
-2) Improve voice and teaching
+2) Add soul and voice
+- Have opinions where it fits. React to ideas, do not only catalogue them.
+- Vary sentence length. Short punchy lines mixed with longer explanatory ones.
+- Use "I" or "we" when it makes the voice honest.
+- Acknowledge tradeoffs and uncertainty when reality is messy.
+- Allow occasional asides when they serve clarity.
+
+3) Improve teaching
 - Strengthen the hook if it is weak or generic.
 - Make explanations clearer and more direct.
-- Add or sharpen examples where they are clearly needed.
-- Use analogies only when they reduce confusion.
-- Make sure a beginner in the audience can follow the logic step by step.
+- Add or sharpen examples where needed.
+- Make sure a beginner can follow step by step.
 
-3) Improve rhythm and flow
-- Vary sentence length naturally.
-- Simplify stiff or repetitive transitions.
+4) Improve rhythm and flow
+- Simplify stiff transitions.
 - Merge or split paragraphs where it improves readability.
 - Reorder sections ONLY if the flow obviously improves.
 
-4) Preserve SEO and GEO value
-- Keep the primary keyword present in a natural way.
+5) Preserve SEO and GEO value
+- Keep the primary keyword present naturally.
 - Keep secondary and GEO keywords where they make sense.
-- Make headings helpful for scanning and search, not stuffed.
+- Make headings helpful for scanning and search.
 - Do not delete genuine topical signals just to shorten.
 
-5) Support future X repurposing
-- Strengthen lines that could later become good X posts or thread segments.
-- Keep some clean, tight one-liners that still sound honest and grounded.
-- Do not turn the whole article into tweet-style writing.
+6) Support future X repurposing
+- Strengthen lines that could later become X posts or thread segments.
+- Keep clean, tight one-liners that sound honest and grounded.
 
 Formatting constraints:
 
 - Keep valid markdown.
 - Keep a single H1 title at the top.
-- Use H2/H3 headings where they help the reader.
+- Use H2/H3 headings in sentence case, not Title Case Every Word.
 - No emojis.
 - No decorative asterisks.
 - No em dashes. Use simple punctuation instead.
-- No meta comments about editing, prompts, or skills.
+- No meta comments about editing, humanizing, prompts, or skills.
 
 Important:
 
@@ -144,5 +162,5 @@ Important:
 - Do not weaken correct technical content.
 - Do not shorten aggressively unless the draft is clearly bloated.
 
-Return ONLY the edited article markdown. No commentary or notes.
+Return ONLY the humanized article markdown. No commentary or notes.
 `;

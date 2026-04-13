@@ -262,20 +262,20 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
 
   console.log(`[ArticleAgent] Draft written: ${draft.split(/\s+/).filter(Boolean).length} words`);
 
-  // Step 3: Edit + polish — uses article-editing skill, NO context
-  console.log('[ArticleAgent] Step 3/3: Editing and polishing...');
+  // Step 3: Humanize — uses humanizer skill, NO context
+  console.log('[ArticleAgent] Step 3/3: Humanizing article...');
   const editPrompt = EDIT_POLISH_PROMPT
     .replace('{{brief_json}}', briefString)
     .replace('{{draft_markdown}}', draft);
 
   const editMessages = buildMessages({
     userPrompt: editPrompt,
-    skills: ['article-editing'],
+    skills: ['humanizer'],
   });
 
   const finalArticle = await llmClient(editMessages, {
     temperature: 0.4,
-    contextLogLabel: 'Article 3/3 — Edit & polish (brief + draft + article-editing skill)',
+    contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill)',
   });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
