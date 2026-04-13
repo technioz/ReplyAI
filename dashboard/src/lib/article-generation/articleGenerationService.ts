@@ -1,42 +1,34 @@
-import { ArticlePromptBuilder } from './promptBuilder';
-import { BraveSearchService } from '../post-generation/braveSearchService';
-import { ArticleTone, ArticleLength, ArticleGenerationResponse } from './types';
+import { ArticleTone, ArticleLength, ArticleGenerationResponse, Brief } from './types';
+import { ArticleGenerationAIAdapter } from './aiAdapter';
 
 export class ArticleGenerationService {
-  private promptBuilder: ArticlePromptBuilder;
-  private braveSearch: BraveSearchService;
+  private aiAdapter: ArticleGenerationAIAdapter;
 
   constructor() {
-    this.promptBuilder = new ArticlePromptBuilder();
-    this.braveSearch = new BraveSearchService();
+    this.aiAdapter = new ArticleGenerationAIAdapter();
   }
 
-  async prepareArticle(
+  async generateArticle(
     topic: string | undefined,
     tone: ArticleTone,
     length: ArticleLength,
-    includeSEO: boolean
-  ): Promise<{ systemPrompt: string; userPrompt: string }> {
-    let topicContext: string | null = null;
-
-    const searchTopic = topic || this.inferTopicFromTone(tone);
-
-    if (searchTopic && this.braveSearch.isEnabled()) {
-      topicContext = await this.braveSearch.fetchTopicContext(
-        `${searchTopic} devops automation AI long-form article insights`,
-        'X'
-      );
-    }
-
-    const { systemPrompt, userPrompt } = this.promptBuilder.buildArticlePrompt(
+    includeSEO: boolean,
+    model: string
+  ): Promise<{ content: string; brief: Brief; draft: string; final: string }> {
+    const result = await this.aiAdapter.generateArticle(
       topic,
       tone,
       length,
       includeSEO,
-      topicContext || undefined
+      model
     );
 
-    return { systemPrompt, userPrompt };
+    return {
+      content: result.final,
+      brief: result.brief,
+      draft: result.draft,
+      final: result.final,
+    };
   }
 
   extractMetadata(
@@ -44,7 +36,10 @@ export class ArticleGenerationService {
     tone: ArticleTone,
     length: ArticleLength,
     model: string,
-    includeSEO: boolean
+    includeSEO: boolean,
+    brief: Brief,
+    draft: string,
+    final: string
   ): ArticleGenerationResponse['metadata'] {
     const wordCount = content.split(/\s+/).filter(Boolean).length;
 
@@ -53,17 +48,10 @@ export class ArticleGenerationService {
       length,
       wordCount,
       model,
-      seoOptimized: includeSEO
+      seoOptimized: includeSEO,
+      brief,
+      draft,
+      final,
     };
-  }
-
-  private inferTopicFromTone(tone: ArticleTone): string {
-    const topics: Record<ArticleTone, string> = {
-      authoritative: 'DevOps best practices and infrastructure automation',
-      conversational: 'AI tools for developers and automation workflows',
-      contrarian: 'why most DevOps implementations fail and what actually works',
-      storytelling: 'real production incidents and lessons learned in DevOps'
-    };
-    return topics[tone];
   }
 }

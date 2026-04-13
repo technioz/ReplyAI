@@ -11,7 +11,11 @@ import {
   PenLine,
   ArrowRightLeft,
   BookOpen,
-  ChevronDown
+  ChevronDown,
+  Check,
+  ClipboardList,
+  PenTool,
+  Wand2
 } from 'lucide-react';
 import { OLLAMA_CLOUD_MODELS } from '@/lib/article-generation/types';
 
@@ -62,6 +66,9 @@ export function ContentStudio() {
     content: string;
     metadata: any;
   } | null>(null);
+
+  // Article generation steps
+  const [articleStep, setArticleStep] = useState<number>(0); // 0=idle, 1=brief, 2=draft, 3=edit
 
   useEffect(() => {
     if (mode === 'article' && !modelModelsFetched) {
@@ -165,10 +172,14 @@ export function ContentStudio() {
   const handleArticle = async () => {
     setGenerating(true);
     setResult(null);
+    setArticleStep(1);
 
     try {
       const token = localStorage.getItem('quirkly_token');
       if (!token) { toast.error('Not authenticated'); return; }
+
+      setArticleStep(1);
+      toast('Step 1/3: Building brief...', { icon: '📋' });
 
       const response = await fetch('/api/article/generate', {
         method: 'POST',
@@ -187,15 +198,20 @@ export function ContentStudio() {
         throw new Error(errorData.message || 'Failed to generate article');
       }
 
+      setArticleStep(2);
+      toast('Step 2/3: Writing draft...', { icon: '✍️' });
+
       const data = await response.json();
       if (data.success) {
+        setArticleStep(3);
         setResult({ content: data.data.content, metadata: data.data.metadata });
-        toast.success('Article generated!');
+        toast.success('Article generated! (3/3 steps complete)');
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to generate article');
     } finally {
       setGenerating(false);
+      setTimeout(() => setArticleStep(0), 3000);
     }
   };
 
@@ -502,6 +518,46 @@ export function ContentStudio() {
           </>
         )}
 
+        {/* Article Step Progress */}
+        {mode === 'article' && (generating || articleStep > 0) && (
+          <div className="mb-5 bg-card rounded-lg border border-stroke p-4">
+            <div className="flex items-center gap-4">
+              {[
+                { step: 1, label: 'Brief', icon: ClipboardList },
+                { step: 2, label: 'Draft', icon: PenTool },
+                { step: 3, label: 'Polish', icon: Wand2 },
+              ].map(({ step, label, icon: Icon }) => (
+                <div key={step} className="flex items-center gap-2 flex-1">
+                  <div className={`flex items-center justify-center w-7 h-7 rounded-full border-2 transition-all ${
+                    articleStep >= step
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-stroke text-ink-mute bg-card'
+                  }`}>
+                    {articleStep > step ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : articleStep === step ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Icon className="h-3.5 w-3.5" />
+                    )}
+                  </div>
+                  <span className={`text-sm font-medium transition-colors ${
+                    articleStep >= step ? 'text-accent' : 'text-ink-mute'
+                  }`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-ink-mute mt-2">
+              {articleStep === 1 ? 'Analyzing topic and building article brief...' :
+               articleStep === 2 ? 'Writing the full article draft...' :
+               articleStep === 3 ? 'Editing and polishing for human voice...' :
+               'Starting 3-step generation...'}
+            </p>
+          </div>
+        )}
+
         {/* Action Button */}
         <button
           onClick={mode === 'generate' ? handleGenerate : mode === 'repurpose' ? handleRepurpose : handleArticle}
@@ -511,7 +567,9 @@ export function ContentStudio() {
           {generating ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {mode === 'generate' ? 'Generating...' : mode === 'repurpose' ? 'Repurposing...' : 'Writing Article...'}
+              {mode === 'article'
+                ? `Step ${articleStep}/3: ${articleStep === 1 ? 'Brief' : articleStep === 2 ? 'Draft' : 'Polishing'}...`
+                : mode === 'generate' ? 'Generating...' : 'Repurposing...'}
             </>
           ) : (
             <>

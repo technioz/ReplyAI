@@ -1,15 +1,24 @@
 export type ArticleTone = 'authoritative' | 'conversational' | 'contrarian' | 'storytelling';
 export type ArticleLength = 'short' | 'medium' | 'long';
 
-export interface ArticleGenerationRequest {
-  topic?: string;
-  tone: ArticleTone;
-  length: ArticleLength;
-  includeSEO: boolean;
-  model: string;
-}
+export type Brief = {
+  topic: string;
+  audience: string;
+  search_intent: 'informational' | 'commercial' | 'transactional' | 'navigational';
+  primary_keyword: string;
+  secondary_keywords: string[];
+  geo_keywords: string[];
+  reader_level: 'beginner' | 'intermediate' | 'advanced';
+  article_type: 'tutorial' | 'explainer' | 'comparison' | 'opinion' | 'guide' | 'listicle';
+  core_questions: string[];
+  must_include: string[];
+  must_avoid: string[];
+  tone: string[];
+  target_length: 'short' | 'medium' | 'long' | 'very long';
+  cta_type: 'none' | 'soft' | 'direct';
+  output_format: 'markdown';
+};
 
-/** Official Ollama Cloud tags (ollama.com/library) — tuned for reasoning + long-form writing. */
 export const OLLAMA_CLOUD_MODELS = [
   {
     id: 'deepseek-v3.2:cloud',
@@ -56,5 +65,8 @@ export interface ArticleGenerationResponse {
     wordCount: number;
     model: string;
     seoOptimized: boolean;
+    brief: Brief;
+    draft: string;
+    final: string;
   };
 }

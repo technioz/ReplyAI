@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiKey } from '@/lib/middleware/auth';
 import { AppError, handleApiError } from '@/lib/errors';
-import { ArticleGenerationAIAdapter } from '@/lib/article-generation/aiAdapter';
 import { ArticleGenerationService } from '@/lib/article-generation/articleGenerationService';
 import { ArticleTone, ArticleLength, OLLAMA_CLOUD_MODELS } from '@/lib/article-generation/types';
 import dbConnect from '@/lib/database';
@@ -49,33 +48,37 @@ export async function POST(request: NextRequest) {
       throw AppError.creditsExhausted(`Need ${CREDITS_REQUIRED} credits. You have ${dbUser.credits.available}`);
     }
 
-    const aiAdapter = new ArticleGenerationAIAdapter();
     const articleService = new ArticleGenerationService();
 
-    const { systemPrompt, userPrompt } = await articleService.prepareArticle(
+    console.log(`[ArticleGenerate] Starting 3-step generation: model=${model}, tone=${tone}, length=${length}, topic=${topic || '(auto)'}`);
+
+    const result = await articleService.generateArticle(
       topic || undefined,
       tone as ArticleTone,
       length as ArticleLength,
-      seoEnabled
+      seoEnabled,
+      model
     );
 
-    console.log(`📝 Generating article with model: ${model}, tone: ${tone}, length: ${length}`);
-    const generatedContent = await aiAdapter.generateContent(systemPrompt, userPrompt, model);
-
     const metadata = articleService.extractMetadata(
-      generatedContent,
+      result.content,
       tone as ArticleTone,
       length as ArticleLength,
       model,
-      seoEnabled
+      seoEnabled,
+      result.brief,
+      result.draft,
+      result.final
     );
 
     await dbUser.useCredits(CREDITS_REQUIRED);
 
+    console.log(`[ArticleGenerate] Complete. Final word count: ${metadata.wordCount}, credits used: ${CREDITS_REQUIRED}`);
+
     return NextResponse.json({
       success: true,
       data: {
-        content: generatedContent,
+        content: result.content,
         metadata: {
           ...metadata,
           creditsUsed: CREDITS_REQUIRED,
