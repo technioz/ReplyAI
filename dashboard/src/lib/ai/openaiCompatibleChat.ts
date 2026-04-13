@@ -263,6 +263,91 @@ function ollamaCloudNumPredict(model: string, requested: number): number {
   return Math.max(requested, cap);
 }
 
+/** Rough token estimate when Ollama does not return prompt_eval_count (chars / 4). */
+function estimateTokensFromChatMessages(messages: ChatMessage[]): number {
+  let chars = 0;
+  for (const m of messages) {
+    chars += m.role.length + 12;
+    chars += typeof m.content === 'string' ? m.content.length : 0;
+  }
+  return Math.max(1, Math.ceil(chars / 4));
+}
+
+/**
+ * Approximate total context window (tokens) for Ollama Cloud models from id heuristics.
+ * Used only for logging utilization; real limits depend on the provider.
+ */
+function approximateOllamaCloudContextLimit(model: string): number {
+  const m = model.toLowerCase();
+  if (m.includes('256k') || m.includes('kimi') || m.includes('qwen3.5') || m.includes('gemma4')) {
+    return 256_000;
+  }
+  if (m.includes('deepseek-v3.2')) return 160_000;
+  if (m.includes('671b') || m.includes('671')) return 200_000;
+  if (m.includes('gpt-oss') || m.includes('120b-cloud') || m.includes('20b-cloud')) {
+    return 128_000;
+  }
+  if (m.includes('480b') || m.includes('coder')) return 128_000;
+  return 131_072;
+}
+
+function logOllamaCloudContextWindowUsage(params: {
+  label: string;
+  model: string;
+  messages: ChatMessage[];
+  numPredict: number;
+  result: unknown;
+  outputText: string;
+}): void {
+  const { label, model, messages, numPredict, result, outputText } = params;
+  const r = result && typeof result === 'object' ? (result as Record<string, unknown>) : {};
+
+  const apiPrompt =
+    typeof r.prompt_eval_count === 'number' && Number.isFinite(r.prompt_eval_count)
+      ? (r.prompt_eval_count as number)
+      : undefined;
+  const apiCompletion =
+    typeof r.eval_count === 'number' && Number.isFinite(r.eval_count) ? (r.eval_count as number) : undefined;
+
+  const estPrompt = estimateTokensFromChatMessages(messages);
+  const promptTok = apiPrompt ?? estPrompt;
+  const completionTok = apiCompletion ?? Math.max(1, Math.ceil(outputText.length / 4));
+
+  const limit = approximateOllamaCloudContextLimit(model);
+  const consumed = promptTok + completionTok;
+  const pct = limit > 0 ? ((consumed / limit) * 100).toFixed(1) : '?';
+  const promptPct = limit > 0 ? ((promptTok / limit) * 100).toFixed(1) : '?';
+
+  const B = '\x1b[1m';
+  const C = '\x1b[36m';
+  const Y = '\x1b[33m';
+  const G = '\x1b[32m';
+  const D = '\x1b[2m';
+  const R = '\x1b[0m';
+  const line = `${D}${'═'.repeat(72)}${R}`;
+
+  const srcPrompt = apiPrompt != null ? 'API prompt_eval_count' : 'estimated (chars/4)';
+  const srcComp = apiCompletion != null ? 'API eval_count' : 'estimated (chars/4)';
+
+  console.log(`\n${line}`);
+  console.log(
+    `${B}${C} CONTEXT WINDOW${R} ${B}|${R} ${Y}${label}${R} ${D}|${R} model=${G}${model}${R}`
+  );
+  console.log(`${line}`);
+  console.log(`  ${B}Input (prompt)${R}     ${promptTok.toLocaleString()} tok  ${D}(${srcPrompt})${R}`);
+  console.log(`  ${B}Output (completion)${R} ${completionTok.toLocaleString()} tok  ${D}(${srcComp})${R}`);
+  console.log(
+    `  ${B}Generation cap${R}       num_predict=${numPredict.toLocaleString()} ${D}(max new tokens requested)${R}`
+  );
+  console.log(
+    `  ${B}Approx. context limit${R} ${limit.toLocaleString()} tok  ${D}(heuristic from model id)${R}`
+  );
+  console.log(
+    `  ${B}Usage vs limit${R}      prompt alone ${promptPct}% of window  |  prompt+completion ${pct}% of window`
+  );
+  console.log(`${line}\n`);
+}
+
 /**
  * Pull assistant text from Ollama /api/chat JSON.
  * Uses public reply text only (`message.content`, etc.). Never uses `message.thinking` as the reply.
@@ -415,7 +500,14 @@ export async function callOllamaCloudChat(
   model: string,
   apiKey: string,
   messages: ChatMessage[],
-  options: { max_tokens: number; temperature: number; top_p?: number; stream?: boolean }
+  options: {
+    max_tokens: number;
+    temperature: number;
+    top_p?: number;
+    stream?: boolean;
+    /** When set, logs highlighted context-window usage after the call (e.g. article multi-step flow). */
+    contextLogLabel?: string;
+  }
 ): Promise<string> {
   const think = ollamaCloudThinkRequestField(model);
   const numPredict = ollamaCloudNumPredict(model, options.max_tokens);
@@ -472,6 +564,17 @@ export async function callOllamaCloudChat(
     throw new Error(
       'Invalid response from Ollama Cloud API (no assistant text; check server logs for full JSON)'
     );
+  }
+
+  if (options.contextLogLabel) {
+    logOllamaCloudContextWindowUsage({
+      label: options.contextLogLabel,
+      model,
+      messages,
+      numPredict,
+      result,
+      outputText: text,
+    });
   }
 
   return text;

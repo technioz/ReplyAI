@@ -210,14 +210,17 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   const { callOllamaCloudChat } = await import('../ai/openaiCompatibleChat');
   type MsgType = { role: 'system' | 'user' | 'assistant'; content: string };
 
-  const llmClient = async (messages: MsgType[], opts?: { temperature?: number }): Promise<string> => {
-    const result = await callOllamaCloudChat(model, apiKey, messages, {
+  const llmClient = async (
+    messages: MsgType[],
+    opts?: { temperature?: number; contextLogLabel?: string }
+  ): Promise<string> => {
+    return callOllamaCloudChat(model, apiKey, messages, {
       max_tokens: maxTokens,
       temperature: opts?.temperature ?? 0.6,
       top_p: 0.95,
       stream: false,
+      contextLogLabel: opts?.contextLogLabel,
     });
-    return result;
   };
 
   const userRequest = buildUserRequest(topic, tone, length, includeSEO);
@@ -229,7 +232,10 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     context: context || undefined,
   });
 
-  const briefRaw = await llmClient(briefMessages, { temperature: 0.2 });
+  const briefRaw = await llmClient(briefMessages, {
+    temperature: 0.2,
+    contextLogLabel: 'Article 1/3 — Brief builder (JSON brief + research context)',
+  });
   const briefJson = extractJsonFromResponse(briefRaw);
   const brief = safeJsonParse<Brief>(briefJson);
   validateBrief(brief);
@@ -248,7 +254,10 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     context: context || undefined,
   });
 
-  const draft = await llmClient(draftMessages, { temperature: 0.6 });
+  const draft = await llmClient(draftMessages, {
+    temperature: 0.6,
+    contextLogLabel: 'Article 2/3 — Draft (brief + article-writing skill + research)',
+  });
   validateArticle(draft, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
   console.log(`[ArticleAgent] Draft written: ${draft.split(/\s+/).filter(Boolean).length} words`);
@@ -264,7 +273,10 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     skills: ['article-editing'],
   });
 
-  const finalArticle = await llmClient(editMessages, { temperature: 0.4 });
+  const finalArticle = await llmClient(editMessages, {
+    temperature: 0.4,
+    contextLogLabel: 'Article 3/3 — Edit & polish (brief + draft + article-editing skill)',
+  });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
   console.log(`[ArticleAgent] Final article: ${finalArticle.split(/\s+/).filter(Boolean).length} words`);
