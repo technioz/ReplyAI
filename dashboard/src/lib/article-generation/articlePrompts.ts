@@ -85,82 +85,98 @@ Return ONLY the article markdown. Do not include the brief or any explanation.
 `;
 
 export const EDIT_POLISH_PROMPT = `
-Use the humanizer skill.
+Apply the humanizer skill to the article draft below.
 
-You are humanizing the article draft below. Remove all AI writing patterns and make it sound like a real person wrote it.
+You are a ruthless human editor. The draft was written by an AI and reads like one. Your job is to rewrite it so it sounds like a competent, opinionated human wrote it in one take.
 
-Original brief (JSON):
+The brief (JSON):
 {{brief_json}}
 
-Draft article (markdown):
+The draft (markdown):
 {{draft_markdown}}
 
-Your tasks:
+HOW TO EDIT:
 
-1) Remove AI writing patterns
-- Remove inflated symbolism ("stands as", "testament to", "pivotal moment", "evolving landscape").
-- Remove promotional tone ("nestled", "vibrant", "breathtaking", "showcasing", "commitment to excellence").
-- Remove superficial -ing tail phrases ("highlighting...", "ensuring...", "symbolizing...").
-- Remove vague attributions ("experts say", "industry reports", "some critics argue").
-- Remove formulaic "Challenges and future prospects" sections.
-- Remove AI vocabulary spikes ("additionally", "delve", "intricate", "leverage", "robust", "tapestry", "garner", "underscore", "pivotal", "foster", "holistic").
-- Remove negative parallelisms ("It's not just X, it's Y", "not only... but...").
-- Remove rule of three stuffing.
-- Remove elegant variation (synonym cycling for the same entity).
-- Remove false ranges ("from X to Y" where X and Y are not on one scale).
-- Remove em dash overuse, boldface abuse, inline-header vertical lists.
-- Remove title-case-every-word headings.
-- Remove emojis, decorative asterisks.
-- Remove chat artifacts ("Here is an overview", "I hope this helps").
-- Remove knowledge-cutoff disclaimers.
-- Remove filler phrases ("in order to", "due to the fact that", "it is important to note that").
-- Remove excessive hedging and generic positive conclusions.
-- Use simple copulas (is/are/has) instead of "serves as", "stands as", "boasts".
+Go through the draft paragraph by paragraph. For each paragraph, ask: "Would a human actually write this?" If no, rewrite it. If a paragraph only needs one sentence changed, change that sentence. If it needs a full rewrite, rewrite it.
 
-2) Add soul and voice
-- Have opinions where it fits. React to ideas, do not only catalogue them.
-- Vary sentence length. Short punchy lines mixed with longer explanatory ones.
-- Use "I" or "we" when it makes the voice honest.
-- Acknowledge tradeoffs and uncertainty when reality is messy.
-- Allow occasional asides when they serve clarity.
+BANNED PATTERNS (delete or rewrite on sight):
 
-3) Improve teaching
-- Strengthen the hook if it is weak or generic.
-- Make explanations clearer and more direct.
-- Add or sharpen examples where needed.
-- Make sure a beginner can follow step by step.
+1. Inflated symbolism
+   BEFORE: "This marks a pivotal moment in the evolution of cloud computing."
+   AFTER: "Cloud computing changed how teams ship software. This is just the latest shift."
 
-4) Improve rhythm and flow
-- Simplify stiff transitions.
-- Merge or split paragraphs where it improves readability.
-- Reorder sections ONLY if the flow obviously improves.
+2. Promotional tone
+   BEFORE: "Nestled in the heart of the ecosystem, this vibrant platform showcases cutting-edge capabilities."
+   AFTER: "The platform runs in the middle of the ecosystem and handles most common workloads."
 
-5) Preserve SEO and GEO value
-- Keep the primary keyword present naturally.
-- Keep secondary and GEO keywords where they make sense.
-- Make headings helpful for scanning and search.
-- Do not delete genuine topical signals just to shorten.
+3. -ing tail phrases
+   BEFORE: "The tool automates deployments, ensuring that teams can ship faster while reducing errors."
+   AFTER: "The tool automates deployments. Teams ship faster and make fewer errors."
 
-6) Support future X repurposing
-- Strengthen lines that could later become X posts or thread segments.
-- Keep clean, tight one-liners that sound honest and grounded.
+4. Vague attributions
+   BEFORE: "Experts say this approach is more effective."
+   AFTER: Delete it, or replace with a specific source.
 
-Formatting constraints:
+5. AI vocabulary that nobody says in real life
+   BANNED WORDS: additionally, delve, intricate, leverage (verb), robust, tapestry, garner, underscore (verb), pivotal, foster, holistic, landscape (abstract noun), testament, vibrant, seamlessly, comprehensive, myriad, paramount, noteworthy, efficacious, utilizes, endeavor
+   Replace with normal words. "additionally" becomes "also" or just start the sentence. "leverage" becomes "use". "robust" becomes "reliable" or "solid".
+
+6. Negative parallelisms
+   BEFORE: "It's not just a tool, it's a paradigm shift."
+   AFTER: "The tool changes how teams think about deployments."
+
+7. Rule of three stuffing
+   BEFORE: "The event features keynote sessions, panel discussions, and networking opportunities."
+   AFTER: "The event includes talks and panels, with time between sessions for networking."
+
+8. Copula avoidance
+   BEFORE: "Docker serves as the industry standard for containerization."
+   AFTER: "Docker is the industry standard for containerization."
+
+9. Em dash overuse
+   BEFORE: "The result - faster deployments - means teams can ship daily."
+   AFTER: "The result is faster deployments, so teams can ship daily."
+
+10. Bold-label colon lists
+    BEFORE: "- **Performance:** Performance improved by 40%."
+    AFTER: "Performance improved by 40%."
+
+11. Title-case headings
+    BEFORE: "## Best Practices And Implementation Strategies"
+    AFTER: "## Best practices and implementation strategies"
+
+12. Generic upbeat conclusions
+    BEFORE: "The future looks bright as organizations continue their journey toward excellence."
+    AFTER: Delete entirely, or replace with one specific concrete next step.
+
+13. Filler
+    BEFORE: "It is important to note that the data shows a clear trend."
+    AFTER: "The data shows a clear trend."
+
+WHAT TO ADD (the draft is clean but soulless):
+
+- Short sentences. Then a longer one that takes its time. Mix it up.
+- Opinions where they fit. "This approach works, but it's overkill for small teams."
+- "I" or "we" when it makes sense. "I've seen teams skip this step and regret it."
+- Acknowledge uncertainty. "This might change in the next year. It usually does."
+- Concrete numbers over vague claims. "3x faster" beats "significantly faster."
+- Asides that help. "Side note: this also means your CI bill goes up."
+- Strong hooks. Start with a real problem or surprising fact, not a thesis statement.
+
+PRESERVE:
+
+- The primary keyword (from the brief) must appear naturally in the article.
+- Secondary and GEO keywords where they fit.
+- All technical facts and specifics from the draft. Do not weaken them.
+- The overall structure and core meaning. You are editing, not rewriting from scratch.
+
+FORMATTING:
 
 - Keep valid markdown.
-- Keep a single H1 title at the top.
-- Use H2/H3 headings in sentence case, not Title Case Every Word.
-- No emojis.
-- No decorative asterisks.
-- No em dashes. Use simple punctuation instead.
-- No meta comments about editing, humanizing, prompts, or skills.
+- Keep a single H1 at the top.
+- Sentence-case headings, not Title Case Every Word.
+- No emojis. No decorative asterisks. No em dashes.
+- No meta-commentary about editing or humanizing.
 
-Important:
-
-- Preserve the core meaning and intent from the draft.
-- Do not invent new facts.
-- Do not weaken correct technical content.
-- Do not shorten aggressively unless the draft is clearly bloated.
-
-Return ONLY the humanized article markdown. No commentary or notes.
+Return ONLY the humanized article markdown. Nothing else.
 `;

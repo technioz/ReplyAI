@@ -21,39 +21,39 @@ export type Brief = {
 
 export const OLLAMA_CLOUD_MODELS = [
   {
-    id: 'deepseek-v3.2:cloud',
-    label: 'DeepSeek V3.2 (cloud)',
-    description: 'Top-tier reasoning and agent-style planning; 160K context',
-  },
-  {
     id: 'qwen3.5:397b-cloud',
-    label: 'Qwen3.5 397B MoE (cloud)',
-    description: 'Largest Qwen3.5 cloud variant — strong instruction following and prose',
-  },
-  {
-    id: 'gemma4:31b-cloud',
-    label: 'Gemma 4 31B (cloud)',
-    description: 'Dense 31B with thinking modes; excellent reasoning and clarity',
+    label: 'Qwen3.5 397B (cloud)',
+    description: 'Best for writing. Strong instruction following, natural prose, follows humanizer rules closely',
   },
   {
     id: 'kimi-k2.5:cloud',
     label: 'Kimi K2.5 (cloud)',
-    description: 'Conversational + thinking modes; great narrative flow, 256K context',
+    description: 'Best for narrative. Conversational flow, 256K context, less robotic output',
   },
   {
     id: 'gpt-oss:120b-cloud',
     label: 'gpt-oss 120B (cloud)',
-    description: 'OpenAI open-weight; configurable reasoning depth for structured long output',
+    description: 'Strong for editing. Configurable reasoning depth, follows rewrite instructions precisely',
+  },
+  {
+    id: 'deepseek-v3.2:cloud',
+    label: 'DeepSeek V3.2 (cloud)',
+    description: 'Strong reasoning, 160K context. Good for technical articles',
+  },
+  {
+    id: 'gemma4:31b-cloud',
+    label: 'Gemma 4 31B (cloud)',
+    description: 'Good reasoning and clarity. Dense 31B, thinking modes',
   },
   {
     id: 'deepseek-v3.1:671b-cloud',
     label: 'DeepSeek V3.1 671B (cloud)',
-    description: 'Top-tier reasoning and agent-style planning; 160K context',
+    description: 'Large reasoning model, 160K context. Good for complex technical topics',
   },
   {
     id: 'qwen3-coder:480b-cloud',
     label: 'Qwen3 Coder 480B (cloud)',
-    description: 'Largest Qwen3 Coder cloud variant — strong instruction following and prose',
+    description: 'Code-focused. Use only for highly technical articles with code samples',
   }
 ] as const;
 

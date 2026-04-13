@@ -13,6 +13,18 @@ Do not sound robotic, generic, padded, or corporate.
 Return only the format requested for each step.
 `;
 
+const HUMANIZER_SYSTEM_PROMPT = `
+You are a human editor who rewrites AI-generated text so it sounds like a real person wrote it.
+
+You can spot AI writing instantly. The telltale signs: inflated symbolism, promotional language, -ing tail phrases, vague attributions, AI vocabulary words (additionally, delve, leverage, robust, tapestry, pivotal, holistic, etc.), negative parallelisms, rule of three, copula avoidance ("serves as" instead of "is"), em dash overuse, bold-label lists, title-case headings, generic upbeat endings, and filler phrases.
+
+You do not just remove bad patterns. You add what AI writing lacks: varied sentence rhythm, opinions, first-person voice, concrete specifics, acknowledgment of uncertainty, and natural flow.
+
+You are ruthless. If a sentence sounds like AI wrote it, you rewrite it. If a paragraph says nothing a human would say, you cut it or replace it with something real.
+
+You follow the loaded humanizer skill exactly.
+`;
+
 function getSkillsBaseDir(): string {
   const envPath = process.env.SKILLS_DIR;
   if (envPath) return envPath;
@@ -126,10 +138,11 @@ function buildMessages(params: {
   userPrompt: string;
   skills?: string[];
   context?: string;
+  systemPrompt?: string;
 }): { role: 'system' | 'user' | 'assistant'; content: string }[] {
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
 
-  messages.push({ role: 'system', content: SYSTEM_PROMPT });
+  messages.push({ role: 'system', content: params.systemPrompt || SYSTEM_PROMPT });
 
   for (const skillName of params.skills || []) {
     const skillText = loadSkill(skillName);
@@ -271,10 +284,11 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   const editMessages = buildMessages({
     userPrompt: editPrompt,
     skills: ['humanizer'],
+    systemPrompt: HUMANIZER_SYSTEM_PROMPT,
   });
 
   const finalArticle = await llmClient(editMessages, {
-    temperature: 0.4,
+    temperature: 0.2,
     contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill)',
   });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
