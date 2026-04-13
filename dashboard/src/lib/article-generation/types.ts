@@ -19,6 +19,24 @@ export type Brief = {
   output_format: 'markdown';
 };
 
+export interface WriterProfile {
+  handle?: string;
+  displayName?: string;
+  bio?: string;
+  expertise?: {
+    domains?: string[];
+    keywords?: string[];
+    topics?: string[];
+  };
+  toneAnalysis?: {
+    primaryTone?: string;
+    secondaryTones?: string[];
+    vocabulary?: string[];
+    avgTweetLength?: number;
+  };
+  writingSamples?: string[];
+}
+
 export const OLLAMA_CLOUD_MODELS = [
   {
     id: 'qwen3.5:397b-cloud',

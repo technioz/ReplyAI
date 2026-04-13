@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateApiKey } from '@/lib/middleware/auth';
 import { AppError, handleApiError } from '@/lib/errors';
 import { ArticleGenerationService } from '@/lib/article-generation/articleGenerationService';
-import { ArticleTone, ArticleLength, OLLAMA_CLOUD_MODELS } from '@/lib/article-generation/types';
+import { ArticleTone, ArticleLength, OLLAMA_CLOUD_MODELS, WriterProfile } from '@/lib/article-generation/types';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
 
@@ -48,16 +48,19 @@ export async function POST(request: NextRequest) {
       throw AppError.creditsExhausted(`Need ${CREDITS_REQUIRED} credits. You have ${dbUser.credits.available}`);
     }
 
+    const writerProfile = buildWriterProfile(dbUser);
+
     const articleService = new ArticleGenerationService();
 
-    console.log(`[ArticleGenerate] Starting 3-step generation: model=${model}, tone=${tone}, length=${length}, topic=${topic || '(auto)'}`);
+    console.log(`[ArticleGenerate] Starting 3-step generation: model=${model}, tone=${tone}, length=${length}, topic=${topic || '(auto)'}, hasWriterProfile=${!!writerProfile}`);
 
     const result = await articleService.generateArticle(
       topic || undefined,
       tone as ArticleTone,
       length as ArticleLength,
       seoEnabled,
-      model
+      model,
+      writerProfile
     );
 
     const metadata = articleService.extractMetadata(
@@ -90,4 +93,29 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+function buildWriterProfile(dbUser: any): WriterProfile | undefined {
+  const pd = dbUser.profileData;
+  if (!pd || !pd.isActive) return undefined;
+
+  return {
+    handle: pd.xHandle || undefined,
+    displayName: pd.displayName || undefined,
+    bio: pd.bio || undefined,
+    expertise: pd.expertise ? {
+      domains: pd.expertise.domains || [],
+      keywords: pd.expertise.keywords || [],
+      topics: pd.expertise.topics || [],
+    } : undefined,
+    toneAnalysis: pd.toneAnalysis ? {
+      primaryTone: pd.toneAnalysis.primaryTone || undefined,
+      secondaryTones: pd.toneAnalysis.secondaryTones || [],
+      vocabulary: pd.toneAnalysis.vocabulary || [],
+      avgTweetLength: pd.toneAnalysis.avgTweetLength || undefined,
+    } : undefined,
+    writingSamples: (pd.privacy?.includeTweets && pd.recentTweets?.length > 0)
+      ? pd.recentTweets.slice(0, 5).map((t: any) => t.content).filter(Boolean)
+      : undefined,
+  };
 }

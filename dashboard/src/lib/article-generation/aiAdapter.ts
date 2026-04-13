@@ -1,6 +1,5 @@
-import { callOllamaCloudChat, ChatMessage } from '../ai/openaiCompatibleChat';
 import { AIServiceFactory } from '../ai/AIServiceFactory';
-import { Brief, ArticleTone, ArticleLength } from './types';
+import { Brief, ArticleTone, ArticleLength, WriterProfile } from './types';
 import { generateArticle } from './articleAgent';
 import { BraveSearchService } from '../post-generation/braveSearchService';
 
@@ -10,7 +9,8 @@ export class ArticleGenerationAIAdapter {
     tone: ArticleTone,
     length: ArticleLength,
     includeSEO: boolean,
-    model: string
+    model: string,
+    writerProfile?: WriterProfile
   ): Promise<{ brief: Brief; draft: string; final: string }> {
     const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
     if (!apiKey) {
@@ -39,6 +39,7 @@ export class ArticleGenerationAIAdapter {
       model,
       context,
       apiKey,
+      writerProfile,
     });
 
     return result;

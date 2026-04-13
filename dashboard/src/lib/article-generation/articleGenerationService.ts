@@ -1,4 +1,4 @@
-import { ArticleTone, ArticleLength, ArticleGenerationResponse, Brief } from './types';
+import { ArticleTone, ArticleLength, ArticleGenerationResponse, Brief, WriterProfile } from './types';
 import { ArticleGenerationAIAdapter } from './aiAdapter';
 
 export class ArticleGenerationService {
@@ -13,14 +13,16 @@ export class ArticleGenerationService {
     tone: ArticleTone,
     length: ArticleLength,
     includeSEO: boolean,
-    model: string
+    model: string,
+    writerProfile?: WriterProfile
   ): Promise<{ content: string; brief: Brief; draft: string; final: string }> {
     const result = await this.aiAdapter.generateArticle(
       topic,
       tone,
       length,
       includeSEO,
-      model
+      model,
+      writerProfile
     );
 
     return {

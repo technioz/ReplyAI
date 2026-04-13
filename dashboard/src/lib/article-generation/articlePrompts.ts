@@ -54,32 +54,31 @@ The brief (JSON):
 
 {{brief_json}}
 
-Your job:
+PRIORITIES (in order):
 
-- Write a complete article in clean markdown.
-- Follow the topic, audience, search intent, and reader level.
-- Use the primary keyword naturally in the title, intro, and relevant sections.
-- Use secondary and GEO keywords only where they fit naturally.
-- Teach like a patient, competent teacher.
-- Use simple language first, then detail.
-- Use examples and short analogies when they help understanding.
-- Make the hook strong and concrete.
-- Avoid AI-sounding filler, corporate slang, and generic patterns.
-- Make sure each section answers a real reader question.
-- End with a clear next step, checklist, or practical move, not a summary.
+1. DEPTH AND VALUE — Write something worth reading. Every section must teach the reader something real. Do not write surface-level descriptions. Go deep. Explain the "why" and the "how", not just the "what".
 
-Formatting rules:
+2. EXPLAIN LIKE A HUMAN — When you explain a concept, explain it like you are talking to a colleague at a whiteboard. Start simple. Build up. Use real examples. Say "think of it like..." when it helps. Do not use jargon without explaining it first.
 
-- Start with a single H1 title line: "# ...".
-- Use H2 and H3 headings only when they improve readability.
-- Keep paragraphs short but meaningful.
-- Use bullet lists for steps, options, or grouped points.
-- Use numbered lists only when order matters.
-- Use tables only if they truly help compare options or settings.
-- Use fenced code blocks with language tags for commands, code, or configuration when relevant.
-- Do not use emojis.
-- Do not use decorative asterisks.
-- Do not use em dashes.
+3. DON'T HOLD BACK — If something is complicated, explain it fully. Do not gloss over hard parts. Do not say "this is beyond the scope of this article." If it matters, include it. If you need more words to explain something properly, use them.
+
+4. OPINIONS WHERE THEY FIT — If there is a clear better approach, say so. "Most teams should start with X because Y" is better than "X and Y are both valid approaches." Be direct.
+
+5. SPECIFIC OVER VAGUE — Real tool names, real numbers, real error messages, real scenarios. "Terraform timed out after 15 minutes on a 200-resource stack" beats "infrastructure deployment can sometimes be slow."
+
+6. USE THE BRIEF — Follow the topic, audience, search intent, and reader level. Use the primary keyword naturally. Use secondary and GEO keywords only where they fit. Teach like a patient, competent teacher.
+
+7. END WITH ACTION — Close with a clear next step, checklist, or practical move. Not a summary. Not "conclusion." Something the reader can do right now.
+
+FORMATTING:
+
+- Start with a single H1: "# ...".
+- H2/H3 headings when they improve readability.
+- Short paragraphs. Bullet lists for steps or grouped points. Numbered lists when order matters.
+- Tables only for real comparison. Code blocks with language tags when relevant.
+- No emojis. No decorative asterisks. No em dashes.
+
+Do not worry about perfect voice or style here. Step 3 will humanize the writing. Focus on making the CONTENT as strong and valuable as possible. The best humanizer in the world cannot fix empty content.
 
 Return ONLY the article markdown. Do not include the brief or any explanation.
 `;

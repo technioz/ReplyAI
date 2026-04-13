@@ -200,6 +200,51 @@ function buildUserRequest(
   return request;
 }
 
+function buildWriterVoiceBlock(profile: import('./types').WriterProfile | undefined): string {
+  if (!profile) return '';
+
+  const parts: string[] = [];
+
+  parts.push('========================================');
+  parts.push('WRITER VOICE PROFILE');
+  parts.push('========================================');
+
+  if (profile.displayName || profile.handle) {
+    parts.push(`Writer: ${profile.displayName || ''}${profile.handle ? ` (@${profile.handle})` : ''}`);
+  }
+
+  if (profile.bio) {
+    parts.push(`Bio: ${profile.bio}`);
+  }
+
+  if (profile.toneAnalysis) {
+    const t = profile.toneAnalysis;
+    if (t.primaryTone) parts.push(`Primary tone: ${t.primaryTone}`);
+    if (t.secondaryTones?.length) parts.push(`Secondary tones: ${t.secondaryTones.join(', ')}`);
+    if (t.vocabulary?.length) parts.push(`Vocabulary markers: ${t.vocabulary.join(', ')}`);
+  }
+
+  if (profile.expertise) {
+    const e = profile.expertise;
+    if (e.domains?.length) parts.push(`Expertise domains: ${e.domains.join(', ')}`);
+    if (e.keywords?.length) parts.push(`Expertise keywords: ${e.keywords.join(', ')}`);
+    if (e.topics?.length) parts.push(`Expertise topics: ${e.topics.join(', ')}`);
+  }
+
+  if (profile.writingSamples?.length) {
+    parts.push('');
+    parts.push('ACTUAL WRITING SAMPLES (write like this):');
+    for (const sample of profile.writingSamples.slice(0, 5)) {
+      parts.push(`> ${sample}`);
+    }
+  }
+
+  parts.push('');
+  parts.push('INSTRUCTION: Draft the article with deep, valuable content first. Then the humanization step will match this voice. But even in the draft, write with the personality shown above. Explain things like a person would explain to a friend. Do not hold back. Do not be vague. Say what you mean.');
+
+  return parts.join('\n');
+}
+
 export interface GenerateArticleOptions {
   topic?: string;
   tone: string;
@@ -209,6 +254,7 @@ export interface GenerateArticleOptions {
   context?: string;
   apiKey: string;
   maxTokens?: number;
+  writerProfile?: import('./types').WriterProfile;
 }
 
 export interface GenerateArticleResult {
@@ -218,7 +264,7 @@ export interface GenerateArticleResult {
 }
 
 export async function generateArticle(options: GenerateArticleOptions): Promise<GenerateArticleResult> {
-  const { topic, tone, length, includeSEO, model, context, apiKey, maxTokens = 8192 } = options;
+  const { topic, tone, length, includeSEO, model, context, apiKey, maxTokens = 8192, writerProfile } = options;
 
   const { callOllamaCloudChat } = await import('../ai/openaiCompatibleChat');
   type MsgType = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -237,6 +283,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
   };
 
   const userRequest = buildUserRequest(topic, tone, length, includeSEO);
+  const writerVoiceBlock = buildWriterVoiceBlock(writerProfile);
 
   // Step 1: Brief builder — context is injected here
   console.log('[ArticleAgent] Step 1/3: Building brief...');
@@ -257,9 +304,12 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
 
   const briefString = JSON.stringify(brief, null, 2);
 
-  // Step 2: Draft writer — uses article-writing skill, context also injected here
+  // Step 2: Draft writer — uses article-writing skill, context + writer voice
   console.log('[ArticleAgent] Step 2/3: Writing draft...');
-  const draftPrompt = DRAFT_PROMPT.replace('{{brief_json}}', briefString);
+  let draftPrompt = DRAFT_PROMPT.replace('{{brief_json}}', briefString);
+  if (writerVoiceBlock) {
+    draftPrompt += `\n\n${writerVoiceBlock}`;
+  }
 
   const draftMessages = buildMessages({
     userPrompt: draftPrompt,
@@ -269,17 +319,20 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
 
   const draft = await llmClient(draftMessages, {
     temperature: 0.6,
-    contextLogLabel: 'Article 2/3 — Draft (brief + article-writing skill + research)',
+    contextLogLabel: 'Article 2/3 — Draft (brief + article-writing skill + research + voice)',
   });
   validateArticle(draft, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
   console.log(`[ArticleAgent] Draft written: ${draft.split(/\s+/).filter(Boolean).length} words`);
 
-  // Step 3: Humanize — uses humanizer skill, NO context
+  // Step 3: Humanize — uses humanizer skill, writer voice for reference, NO context
   console.log('[ArticleAgent] Step 3/3: Humanizing article...');
-  const editPrompt = EDIT_POLISH_PROMPT
+  let editPrompt = EDIT_POLISH_PROMPT
     .replace('{{brief_json}}', briefString)
     .replace('{{draft_markdown}}', draft);
+  if (writerVoiceBlock) {
+    editPrompt += `\n\n${writerVoiceBlock}`;
+  }
 
   const editMessages = buildMessages({
     userPrompt: editPrompt,
@@ -289,7 +342,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
 
   const finalArticle = await llmClient(editMessages, {
     temperature: 0.2,
-    contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill)',
+    contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill + voice)',
   });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 
