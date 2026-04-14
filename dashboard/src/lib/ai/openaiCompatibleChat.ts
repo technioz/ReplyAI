@@ -174,7 +174,7 @@ export async function openAICompatibleChat(
 
 /** Options tuned for short X/Twitter replies */
 export const REPLY_CHAT_OPTIONS = {
-  max_tokens: 120,
+  max_tokens: 1024,
   temperature: 0.8,
   top_p: 0.9,
   stream: false as const,

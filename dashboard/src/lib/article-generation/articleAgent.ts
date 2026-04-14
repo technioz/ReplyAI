@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { ChatMessage } from '../ai/openaiCompatibleChat';
+import type { ArticleLlmCallOptions } from './articleLlmClient';
 import { BRIEF_PROMPT, DRAFT_PROMPT, EDIT_POLISH_PROMPT } from './articlePrompts';
 import { Brief } from './types';
 
@@ -139,8 +141,8 @@ function buildMessages(params: {
   skills?: string[];
   context?: string;
   systemPrompt?: string;
-}): { role: 'system' | 'user' | 'assistant'; content: string }[] {
-  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
+}): ChatMessage[] {
+  const messages: ChatMessage[] = [];
 
   messages.push({ role: 'system', content: params.systemPrompt || SYSTEM_PROMPT });
 
@@ -250,11 +252,14 @@ export interface GenerateArticleOptions {
   tone: string;
   length: string;
   includeSEO: boolean;
+  /** Resolved model id (from adapter); used for logging alignment with the LLM. */
   model: string;
   context?: string;
-  apiKey: string;
-  maxTokens?: number;
   writerProfile?: import('./types').WriterProfile;
+  /**
+   * Provider-specific chat completion (Ollama Cloud, xAI, or Groq), built in the adapter from AI_PROVIDER.
+   */
+  completeChat: (messages: ChatMessage[], opts?: ArticleLlmCallOptions) => Promise<string>;
 }
 
 export interface GenerateArticleResult {
@@ -264,32 +269,11 @@ export interface GenerateArticleResult {
 }
 
 export async function generateArticle(options: GenerateArticleOptions): Promise<GenerateArticleResult> {
-  const { topic, tone, length, includeSEO, model, context, apiKey, maxTokens = 8192, writerProfile } = options;
+  const { topic, tone, length, includeSEO, model, context, writerProfile, completeChat } = options;
 
-  const { callOllamaCloudChat } = await import('../ai/openaiCompatibleChat');
-  type MsgType = { role: 'system' | 'user' | 'assistant'; content: string };
+  const callLlm = (messages: ChatMessage[], opts?: ArticleLlmCallOptions) => completeChat(messages, opts);
 
-  const llmClient = async (
-    messages: MsgType[],
-    opts?: {
-      temperature?: number;
-      contextLogLabel?: string;
-      repeat_penalty?: number;
-      top_k?: number;
-      min_p?: number;
-    }
-  ): Promise<string> => {
-    return callOllamaCloudChat(model, apiKey, messages, {
-      max_tokens: maxTokens,
-      temperature: opts?.temperature ?? 0.6,
-      top_p: 0.95,
-      stream: false,
-      contextLogLabel: opts?.contextLogLabel,
-      repeat_penalty: opts?.repeat_penalty,
-      top_k: opts?.top_k,
-      min_p: opts?.min_p,
-    });
-  };
+  console.log(`[ArticleAgent] 3-step pipeline (model id: ${model})`);
 
   const userRequest = buildUserRequest(topic, tone, length, includeSEO);
   const writerVoiceBlock = buildWriterVoiceBlock(writerProfile);
@@ -301,7 +285,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     context: context || undefined,
   });
 
-  const briefRaw = await llmClient(briefMessages, {
+  const briefRaw = await callLlm(briefMessages, {
     temperature: 0.2,
     contextLogLabel: 'Article 1/3 — Brief builder (JSON brief + research context)',
   });
@@ -326,7 +310,7 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     context: context || undefined,
   });
 
-  const draft = await llmClient(draftMessages, {
+  const draft = await callLlm(draftMessages, {
     temperature: 0.6,
     contextLogLabel: 'Article 2/3 — Draft (brief + article-writing skill + research + voice)',
   });
@@ -349,12 +333,14 @@ export async function generateArticle(options: GenerateArticleOptions): Promise<
     systemPrompt: HUMANIZER_SYSTEM_PROMPT,
   });
 
-  const finalArticle = await llmClient(editMessages, {
+  const finalArticle = await callLlm(editMessages, {
     temperature: 0.85,
-    top_k: 40,
-    min_p: 0.05,
-    repeat_penalty: 1.5,
     contextLogLabel: 'Article 3/3 — Humanize (brief + draft + humanizer skill + voice)',
+    ollamaOptions: {
+      repeat_penalty: 1.5,
+      top_k: 40,
+      min_p: 0.05,
+    },
   });
   validateArticle(finalArticle, brief.primary_keyword, { requirePrimaryKeyword: includeSEO });
 

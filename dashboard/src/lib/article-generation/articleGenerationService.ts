@@ -15,7 +15,7 @@ export class ArticleGenerationService {
     includeSEO: boolean,
     model: string,
     writerProfile?: WriterProfile
-  ): Promise<{ content: string; brief: Brief; draft: string; final: string }> {
+  ): Promise<{ content: string; brief: Brief; draft: string; final: string; modelUsed: string }> {
     const result = await this.aiAdapter.generateArticle(
       topic,
       tone,
@@ -30,6 +30,7 @@ export class ArticleGenerationService {
       brief: result.brief,
       draft: result.draft,
       final: result.final,
+      modelUsed: result.modelUsed,
     };
   }
 

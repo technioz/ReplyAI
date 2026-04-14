@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIServiceFactory } from '@/lib/ai/AIServiceFactory';
 import { getOllamaCandidateOrigins, getOllamaServerOrigin } from '@/lib/ai/ollamaServerUrl';
-import { OLLAMA_CLOUD_MODELS } from '@/lib/article-generation/types';
+import { ArticleGenerationAIAdapter } from '@/lib/article-generation/aiAdapter';
+import { getArticleLlmProvider } from '@/lib/article-generation/articleLlmConfig';
 
 export async function GET(request: NextRequest) {
   try {
     const currentProvider = AIServiceFactory.getCurrentProvider();
     const availableProviders = AIServiceFactory.getAvailableProviders();
     const ollamaCloudModels = AIServiceFactory.getAvailableOllamaCloudModels();
+    const articleLlmProvider = getArticleLlmProvider();
+    const articleModels = ArticleGenerationAIAdapter.getAvailableModels();
     
     // Get environment configuration
     const config = {
@@ -36,6 +39,8 @@ export async function GET(request: NextRequest) {
       success: true,
       ...config,
       ollamaCloudModels,
+      articleLlmProvider,
+      articleModels,
       timestamp: new Date().toISOString()
     });
     

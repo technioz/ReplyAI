@@ -1,7 +1,8 @@
-import { AIServiceFactory } from '../ai/AIServiceFactory';
 import { Brief, ArticleTone, ArticleLength, WriterProfile } from './types';
 import { generateArticle } from './articleAgent';
 import { BraveSearchService } from '../post-generation/braveSearchService';
+import { createArticleChatCompleter } from './articleLlmClient';
+import { getArticleLlmProvider, getArticleModelsForPicker, resolveArticleModel } from './articleLlmConfig';
 
 export class ArticleGenerationAIAdapter {
   async generateArticle(
@@ -11,11 +12,9 @@ export class ArticleGenerationAIAdapter {
     includeSEO: boolean,
     model: string,
     writerProfile?: WriterProfile
-  ): Promise<{ brief: Brief; draft: string; final: string }> {
-    const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
-    if (!apiKey) {
-      throw new Error('OLLAMA_CLOUD_API_KEY is required for article generation');
-    }
+  ): Promise<{ brief: Brief; draft: string; final: string; modelUsed: string }> {
+    const provider = getArticleLlmProvider();
+    const modelUsed = resolveArticleModel(model);
 
     const braveSearch = new BraveSearchService();
     let context: string | undefined;
@@ -29,23 +28,27 @@ export class ArticleGenerationAIAdapter {
       context = searchContext || undefined;
     }
 
-    console.log(`[ArticleGen] Using Ollama Cloud model: ${model}, tone: ${tone}, length: ${length}`);
+    console.log(
+      `[ArticleGen] AI_PROVIDER=${provider}, model=${modelUsed}, tone: ${tone}, length: ${length}`
+    );
+
+    const completeChat = createArticleChatCompleter(modelUsed);
 
     const result = await generateArticle({
       topic,
       tone,
       length,
       includeSEO,
-      model,
+      model: modelUsed,
       context,
-      apiKey,
+      completeChat,
       writerProfile,
     });
 
-    return result;
+    return { ...result, modelUsed };
   }
 
   static getAvailableModels() {
-    return AIServiceFactory.getAvailableOllamaCloudModels();
+    return getArticleModelsForPicker();
   }
 }

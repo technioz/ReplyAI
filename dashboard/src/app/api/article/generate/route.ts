@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateApiKey } from '@/lib/middleware/auth';
 import { AppError, handleApiError } from '@/lib/errors';
 import { ArticleGenerationService } from '@/lib/article-generation/articleGenerationService';
-import { ArticleTone, ArticleLength, OLLAMA_CLOUD_MODELS, WriterProfile } from '@/lib/article-generation/types';
+import { ArticleTone, ArticleLength, WriterProfile } from '@/lib/article-generation/types';
+import { getAllowedArticleModelIds } from '@/lib/article-generation/articleLlmConfig';
 import dbConnect from '@/lib/database';
 import User from '@/lib/models/User';
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       throw AppError.validationError('Invalid length. Must be: short, medium, or long');
     }
 
-    const validModelIds = OLLAMA_CLOUD_MODELS.map(m => m.id);
+    const validModelIds = getAllowedArticleModelIds();
     if (!model || !validModelIds.includes(model)) {
       throw AppError.validationError(`Invalid model. Must be one of: ${validModelIds.join(', ')}`);
     }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       result.content,
       tone as ArticleTone,
       length as ArticleLength,
-      model,
+      result.modelUsed,
       seoEnabled,
       result.brief,
       result.draft,

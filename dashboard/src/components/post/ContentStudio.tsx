@@ -60,6 +60,7 @@ export function ContentStudio() {
   const [selectedModel, setSelectedModel] = useState('');
   const [models, setModels] = useState<OllamaModel[]>([]);
   const [modelModelsFetched, setModelModelsFetched] = useState(false);
+  const [articleLlmProvider, setArticleLlmProvider] = useState<string>('ollama');
 
   // Result
   const [result, setResult] = useState<{
@@ -87,11 +88,17 @@ export function ContentStudio() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.ollamaCloudModels?.length > 0) {
-          setModels(data.ollamaCloudModels);
-          if (!selectedModel) {
-            setSelectedModel(data.ollamaCloudModels[0].id);
-          }
+        if (typeof data.articleLlmProvider === 'string') {
+          setArticleLlmProvider(data.articleLlmProvider);
+        }
+        const articleList =
+          data.articleModels?.length > 0 ? data.articleModels : data.ollamaCloudModels;
+        if (articleList?.length > 0) {
+          setModels(articleList);
+          setSelectedModel((prev) => {
+            if (prev && articleList.some((m: OllamaModel) => m.id === prev)) return prev;
+            return articleList[0].id;
+          });
         }
       }
     } catch {
@@ -323,7 +330,12 @@ export function ContentStudio() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-mute pointer-events-none" />
             </div>
             <p className="text-xs text-ink-mute mt-1.5">
-              Powered by Ollama Cloud. Larger models produce better writing but take longer.
+              {articleLlmProvider === 'xai' &&
+                'Articles use xAI (XAI_MODEL) while AI_PROVIDER=xai. Switch AI_PROVIDER to ollama to pick Ollama Cloud models.'}
+              {articleLlmProvider === 'groq' &&
+                'Articles use Groq (GROQ_MODEL) while AI_PROVIDER=groq. Switch AI_PROVIDER to ollama for Ollama Cloud.'}
+              {articleLlmProvider === 'ollama' &&
+                'Powered by Ollama Cloud. Larger models produce better writing but take longer.'}
             </p>
           </div>
         )}

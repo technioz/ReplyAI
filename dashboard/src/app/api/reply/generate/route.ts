@@ -73,39 +73,39 @@ export async function POST(request: NextRequest) {
     try {
       // Get profile context if user is authenticated
       let profileContext = null;
-      if (user && !isFreeUser) {
-        try {
-          console.log(`🔍 Loading profile context for user: ${user.email}`);
+      // if (user && !isFreeUser) {
+      //   try {
+      //     console.log(`🔍 Loading profile context for user: ${user.email}`);
           
-          // Make internal API call to get profile context
-          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/profile/${user.id}/context`, {
-            headers: {
-              'Authorization': request.headers.get('Authorization') || '',
-              'Content-Type': 'application/json'
-            }
-          });
+      //     // Make internal API call to get profile context
+      //     const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/profile/${user.id}/context`, {
+      //       headers: {
+      //         'Authorization': request.headers.get('Authorization') || '',
+      //         'Content-Type': 'application/json'
+      //       }
+      //     });
           
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            if (profileData.success && profileData.hasContext) {
-              profileContext = profileData.context;
-              console.log(`✅ Profile context loaded:`, {
-                hasProfile: !!profileContext?.userProfile,
-                expertise: profileContext?.userProfile?.expertise?.domains?.length || 0,
-                tone: profileContext?.userProfile?.tone?.primaryTone,
-                handle: profileContext?.userProfile?.handle
-              });
-            } else {
-              console.log(`ℹ️ No profile context available for user: ${user.email}`);
-            }
-          } else {
-            console.log(`⚠️ Failed to load profile context: ${profileResponse.status}`);
-          }
-        } catch (error) {
-          console.log('❌ Error loading profile context:', error.message);
-          // Continue without profile context
-        }
-      }
+      //     if (profileResponse.ok) {
+      //       const profileData = await profileResponse.json();
+      //       if (profileData.success && profileData.hasContext) {
+      //         profileContext = profileData.context;
+      //         console.log(`✅ Profile context loaded:`, {
+      //           hasProfile: !!profileContext?.userProfile,
+      //           expertise: profileContext?.userProfile?.expertise?.domains?.length || 0,
+      //           tone: profileContext?.userProfile?.tone?.primaryTone,
+      //           handle: profileContext?.userProfile?.handle
+      //         });
+      //       } else {
+      //         console.log(`ℹ️ No profile context available for user: ${user.email}`);
+      //       }
+      //     } else {
+      //       console.log(`⚠️ Failed to load profile context: ${profileResponse.status}`);
+      //     }
+      //   } catch (error) {
+      //     console.log('❌ Error loading profile context:', error.message);
+      //     // Continue without profile context
+      //   }
+      // }
 
       // Generate reply using AI service with profile context
       console.log(`🔧 Creating AI service with provider: ${AIServiceFactory.getCurrentProvider()}`);
@@ -146,6 +146,8 @@ export async function POST(request: NextRequest) {
         
         console.log(`✅ Credit check passed: ${user.email} (credits remaining: ${user.credits.available})`);
       }
+
+      console.log(aiResult)
 
       // Prepare response
       const response: any = {
