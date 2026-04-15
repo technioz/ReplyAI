@@ -1031,14 +1031,14 @@ class Quirkly {
         
         // Use the simplified method: inject directly into the Twitter reply box
         try {
-          const success = this.fillReplyBox(null, replyData.reply);
+          const success = await this.fillReplyBox(null, replyData.reply);
           if (success) {
             this.showSuccess('Reply generated and inserted successfully! ✨');
             
             // Additional verification: check if the reply actually appeared
             setTimeout(() => {
               this.verifyReplyInjection(replyData.reply);
-            }, 1000);
+            }, 2000);
           } else {
             this.showError('Could not find Twitter reply textarea');
           }
@@ -1081,46 +1081,108 @@ class Quirkly {
 
 
 
-  // Fill the reply box with the generated reply text using simple, effective injection
-  fillReplyBox(editableContent, replyText) {
+  async fillReplyBox(editableContent, replyText) {
     try {
-      
       if (!replyText || typeof replyText !== 'string') {
         throw new Error('Invalid reply text');
       }
-      
-      // Simple and effective approach: locate the Twitter reply textarea and inject text
+
       const textarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
-      
-      if (textarea) {
-        
-        // Focus the textarea first
-        textarea.focus();
-        
-        // Use execCommand to insert text (works for contentEditable elements)
-        document.execCommand('insertText', false, replyText);
-        
-        // Dispatch input event so Twitter registers the change
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        // Additional events to ensure Twitter recognizes the input
-        textarea.dispatchEvent(new Event('change', { bubbles: true }));
-        textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
-        
-        
-        // Hide placeholder text if present
-        const placeholder = textarea.parentElement?.querySelector('.public-DraftEditorPlaceholder-inner');
-        if (placeholder) {
-          placeholder.style.display = 'none';
-        }
-        
-        return true;
-      } else {
+
+      if (!textarea) {
         return false;
       }
-      
+
+      textarea.focus();
+
+      const placeholder = textarea.parentElement?.querySelector('.public-DraftEditorPlaceholder-inner');
+      if (placeholder) {
+        placeholder.style.display = 'none';
+      }
+
+      await this.simulateTyping(textarea, replyText);
+
+      return true;
     } catch (error) {
+      const textarea = document.querySelector('div[role="textbox"][data-testid="tweetTextarea_0"]');
+      if (textarea) {
+        textarea.focus();
+        document.execCommand('insertText', false, replyText);
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
+      }
       throw error;
+    }
+  }
+
+  async simulateTyping(element, text) {
+    const baseDelay = 30;
+    const variance = 40;
+    const punctuationPause = 80;
+    const spacePause = 20;
+    const punctChars = new Set(['.', ',', '!', '?', ';', ':', '-', '—', '…', '\n']);
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const isEnter = char === '\n';
+
+      if (isEnter) {
+        this.dispatchKeyboardEvent(element, 'keydown', 'Enter', 13);
+        document.execCommand('insertLineBreak');
+        this.dispatchInputEvent(element);
+        this.dispatchKeyboardEvent(element, 'keyup', 'Enter', 13);
+      } else {
+        const keyCode = char.charCodeAt(0);
+        this.dispatchKeyboardEvent(element, 'keydown', char, keyCode);
+        document.execCommand('insertText', false, char);
+        this.dispatchInputEvent(element);
+        this.dispatchKeyboardEvent(element, 'keyup', char, keyCode);
+      }
+
+      let delay;
+      if (punctChars.has(char)) {
+        delay = baseDelay + variance + Math.random() * punctuationPause;
+      } else if (char === ' ') {
+        delay = baseDelay + Math.random() * spacePause;
+      } else {
+        delay = baseDelay + Math.random() * variance;
+      }
+
+      if (Math.random() < 0.03) {
+        delay += 150 + Math.random() * 200;
+      }
+
+      await new Promise(r => setTimeout(r, delay));
+    }
+
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  dispatchKeyboardEvent(element, type, key, keyCode) {
+    const event = new KeyboardEvent(type, {
+      key: key,
+      code: key === 'Enter' ? 'Enter' : 'Key' + key.toUpperCase(),
+      keyCode: keyCode,
+      which: keyCode,
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    });
+    element.dispatchEvent(event);
+  }
+
+  dispatchInputEvent(element) {
+    try {
+      const event = new InputEvent('input', {
+        inputType: 'insertText',
+        data: null,
+        bubbles: true,
+        cancelable: false,
+        composed: true
+      });
+      element.dispatchEvent(event);
+    } catch (e) {
+      element.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
 
